@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- Makes the app display correctly on phones/tablets -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Budget Tracker</title>
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- ========================================
+         APP WRAPPER
+    ========================================= -->
+    <div class="app">
+
+        <!-- ========================================
+             TOP HEADER
+        ========================================= -->
+        <header class="app-header">
+
+            <div class="header-content">
+                <div>
+                    <p class="header-label">Budget Tracker</p>
+                    <h1 id="current-month">August 2026</h1>
+                </div>
+
+                <button
+                    class="header-button"
+                    id="settings-button"
+                    type="button"
+                    aria-label="Open settings"
+                    data-page="settings"
+                >
+                    ⚙
+                </button>
+            </div>
+
+        </header>
+
+
+        <!-- ========================================
+             MAIN APP CONTENT
+        ========================================= -->
+        <main class="app-content">
+
+
+            <!-- ====================================
+                 DASHBOARD PAGE
+            ===================================== -->
+            <section
+                class="page active"
+                id="home-page"
+                data-page-content="home"
+            >
+
+                <div class="page-heading">
+                    <h2>Dashboard</h2>
+                    <p>Your monthly budget overview.</p>
+                </div>
+
+
+                <!-- Main Checking Balance -->
+                <section class="balance-card">
+                    <p>Current Checking Balance</p>
+
+                    <h2 id="checking-balance">
+                        $0.00
+                    </h2>
+
+                    <div class="balance-details">
+
+                        <div>
+                            <span>Monthly Remaining</span>
+                            <strong id="monthly-remaining">
+                                $0.00
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Monthly Savings</span>
+                            <strong id="monthly-savings">
+                                $0.00
+                            </strong>
+                        </div>
+
+                    </div>
+                </section>
+
+
+                <!-- Monthly Summary -->
+                <section class="dashboard-section">
+
+                    <div class="section-header">
+                        <h3>Monthly Summary</h3>
+                    </div>
+
+                    <div class="summary-grid">
+
+                        <article class="summary-card">
+                            <span>Income</span>
+                            <strong id="total-income">
+                                $0.00
+                            </strong>
+                        </article>
+
+                        <article class="summary-card">
+                            <span>Bills</span>
+                            <strong id="total-bills">
+                                $0.00
+                            </strong>
+                        </article>
+
+                        <article class="summary-card">
+                            <span>Expenses</span>
+                            <strong id="total-expenses">
+                                $0.00
+                            </strong>
+                        </article>
+
+                        <article class="summary-card">
+                            <span>Savings</span>
+                            <strong id="total-savings">
+                                $0.00
+                            </strong>
+                        </article>
+
+                    </div>
+
+                </section>
+
+
+                <!-- Upcoming Bills -->
+                <section class="dashboard-section">
+
+                    <div class="section-header">
+                        <h3>Upcoming Bills</h3>
+
+                        <button
+                            type="button"
+                            class="text-button"
+                            data-page="budget"
+                        >
+                            View All
+                        </button>
+                    </div>
+
+                    <div
+                        class="list-container"
+                        id="upcoming-bills"
+                    >
+
+                        <p class="empty-message">
+                            No upcoming bills.
+                        </p>
+
+                    </div>
+
+                </section>
+
+
+                <!-- Next Paycheck -->
+                <section class="dashboard-section">
+
+                    <div class="section-header">
+                        <h3>Next Paycheck</h3>
+                    </div>
+
+                    <article class="info-card">
+
+                        <div>
+                            <span>Pay Date</span>
+                            <strong id="next-pay-date">
+                                —
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Estimated Amount</span>
+                            <strong id="next-pay-amount">
+                                $0.00
+                            </strong>
+                        </div>
+
+                    </article>
+
+                </section>
+
+
+                <!-- Savings Overview -->
+                <section class="dashboard-section">
+
+                    <div class="section-header">
+
+                        <h3>Savings</h3>
+
+                        <button
+                            type="button"
+                            class="text-button"
+                            data-page="savings"
+                        >
+                            View Savings
+                        </button>
+
+                    </div>
+
+                    <div
+                        class="list-container"
+                        id="savings-overview"
+                    >
+
+                        <p class="empty-message">
+                            No savings goals yet.
+                        </p>
+
+                    </div>
+
+                </section>
+
+            </section>
+
+
+            <!-- ====================================
+                 MONTHLY BUDGET PAGE
+            ===================================== -->
+            <section
+                class="page"
+                id="budget-page"
+                data-page-content="budget"
+            >
+
+                <div class="page-heading">
+                    <h2>Monthly Budget</h2>
+                    <p>Plan your income, bills and expenses.</p>
+                </div>
+
+
+                <!-- Starting Balance -->
+                <section class="budget-block">
+
+                    <div class="section-header">
+                        <h3>Starting Balance</h3>
+                    </div>
+
+                    <div class="amount-display">
+                        <span>Checking Balance</span>
+
+                        <strong id="starting-balance">
+                            $0.00
+                        </strong>
+                    </div>
+
+                </section>
+
+
+                <!-- Paychecks -->
+                <section class="budget-block">
+
+                    <div class="section-header">
+
+                        <h3>Paychecks</h3>
+
+                        <button
+                            class="add-button"
+                            id="add-paycheck-button"
+                            type="button"
+                        >
+                            + Add
+                        </button>
+
+                    </div>
+
+                    <div
+                        class="table-container"
+                        id="paycheck-list"
+                    >
+
+                        <p class="empty-message">
+                            No paychecks added.
+                        </p>
+
+                    </div>
+
+                </section>
+
+
+                <!-- Bills -->
+                <section class="budget-block">
+
+                    <div class="section-header">
+
+                        <h3>Monthly Bills</h3>
+
+                        <button
+                            class="add-button"
+                            id="add-bill-button"
+                            type="button"
+                        >
+                            + Add
+                        </button>
+
+                    </div>
+
+                    <div
+                        class="table-container"
+                        id="bill-list"
+                    >
+
+                        <p class="empty-message">
+                            No bills added.
+                        </p>
+
+                    </div>
+
+                </section>
+
+
+                <!-- Expenses -->
+                <section class="budget-block">
+
+                    <div class="section-header">
+
+                        <h3>Monthly Expenses</h3>
+
+                        <button
+                            class="add-button"
+                            id="add-expense-button"
+                            type="button"
+                        >
+                            + Add
+                        </button>
+
+                    </div>
+
+                    <div
+                        class="table-container"
+                        id="expense-list"
+                    >
+
+                        <p class="empty-message">
+                            No expenses added.
+                        </p>
+
+                    </div>
+
+                </section>
+
+            </section>
+
+
+            <!-- ====================================
+                 TRANSACTIONS PAGE
+            ===================================== -->
+            <section
+                class="page"
+                id="transactions-page"
+                data-page-content="transactions"
+            >
+
+                <div class="page-heading">
+
+                    <div>
+                        <h2>Transactions</h2>
+                        <p>Everything moving in and out.</p>
+                    </div>
+
+                    <button
+                        class="primary-button"
+                        id="add-transaction-button"
+                        type="button"
+                    >
+                        + Transaction
+                    </button>
+
+                </div>
+
+                <div
+                    class="transaction-list"
+                    id="transaction-list"
+                >
+
+                    <p class="empty-message">
+                        No transactions yet.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- ====================================
+                 SAVINGS PAGE
+            ===================================== -->
+            <section
+                class="page"
+                id="savings-page"
+                data-page-content="savings"
+            >
+
+                <div class="page-heading">
+
+                    <div>
+                        <h2>Savings</h2>
+                        <p>Track your savings accounts and goals.</p>
+                    </div>
+
+                    <button
+                        class="primary-button"
+                        id="add-savings-button"
+                        type="button"
+                    >
+                        + Goal
+                    </button>
+
+                </div>
+
+
+                <!-- Total Savings -->
+                <section class="balance-card">
+
+                    <p>Total Savings Balance</p>
+
+                    <h2 id="savings-balance">
+                        $0.00
+                    </h2>
+
+                </section>
+
+
+                <!-- Savings Goals -->
+                <section class="dashboard-section">
+
+                    <div class="section-header">
+                        <h3>Savings Goals</h3>
+                    </div>
+
+                    <div
+                        class="savings-goals"
+                        id="savings-goals"
+                    >
+
+                        <p class="empty-message">
+                            No savings goals created.
+                        </p>
+
+                    </div>
+
+                </section>
+
+            </section>
+
+
+            <!-- ====================================
+                 REPORTS PAGE
+            ===================================== -->
+            <section
+                class="page"
+                id="reports-page"
+                data-page-content="reports"
+            >
+
+                <div class="page-heading">
+                    <h2>Reports</h2>
+                    <p>See where your money is going.</p>
+                </div>
+
+
+                <section class="dashboard-section">
+
+                    <div class="section-header">
+                        <h3>Monthly Overview</h3>
+                    </div>
+
+                    <div
+                        class="chart-placeholder"
+                        id="monthly-chart"
+                    >
+
+                        Reports will appear here.
+
+                    </div>
+
+                </section>
+
+            </section>
+
+
+            <!-- ====================================
+                 SETTINGS PAGE
+            ===================================== -->
+            <section
+                class="page"
+                id="settings-page"
+                data-page-content="settings"
+            >
+
+                <div class="page-heading">
+                    <h2>Settings</h2>
+                    <p>Manage your budget tracker.</p>
+                </div>
+
+
+                <section class="settings-section">
+
+                    <button
+                        type="button"
+                        class="settings-item"
+                        id="change-starting-balance"
+                    >
+                        Starting Balance
+                    </button>
+
+                    <button
+                        type="button"
+                        class="settings-item"
+                        id="export-data"
+                    >
+                        Export Budget Data
+                    </button>
+
+                    <button
+                        type="button"
+                        class="settings-item"
+                        id="clear-data"
+                    >
+                        Reset Budget Data
+                    </button>
+
+                </section>
+
+            </section>
+
+
+        </main>
+
+
+        <!-- ========================================
+             BOTTOM NAVIGATION
+        ========================================= -->
+        <nav class="bottom-nav">
+
+            <button
+                class="nav-button active"
+                type="button"
+                data-page="home"
+            >
+                <span class="nav-icon">⌂</span>
+                <span>Home</span>
+            </button>
+
+
+            <button
+                class="nav-button"
+                type="button"
+                data-page="budget"
+            >
+                <span class="nav-icon">$</span>
+                <span>Budget</span>
+            </button>
+
+
+            <button
+                class="nav-button"
+                type="button"
+                data-page="transactions"
+            >
+                <span class="nav-icon">⇄</span>
+                <span>Activity</span>
+            </button>
+
+
+            <button
+                class="nav-button"
+                type="button"
+                data-page="savings"
+            >
+                <span class="nav-icon">◇</span>
+                <span>Savings</span>
+            </button>
+
+
+            <button
+                class="nav-button"
+                type="button"
+                data-page="reports"
+            >
+                <span class="nav-icon">▥</span>
+                <span>Reports</span>
+            </button>
+
+        </nav>
+
+
+    </div>
+
+
+    <!-- ========================================
+         JAVASCRIPT
+    ========================================= -->
+
+    <!-- Storage loads first -->
+    <script src="js/storage.js"></script>
+
+    <!-- Navigation -->
+    <script src="js/nav.js"></script>
+
+    <!-- Main App -->
+    <script src="js/app.js"></script>
+
+</body>
+</html>

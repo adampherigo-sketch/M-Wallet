@@ -1,0 +1,1146 @@
+/* =========================================================
+   BUDGET TRACKER
+   Base Theme + Layout
+   ========================================================= */
+
+
+/* =========================================================
+   1. ROOT VARIABLES
+   ========================================================= */
+
+:root {
+    /* Main colors */
+    --bg: #f4f1e8;
+    --surface: #ffffff;
+    --surface-soft: #f9f7f1;
+
+    /* Money greens */
+    --green-dark: #163b2b;
+    --green: #245c42;
+    --green-light: #dcebdc;
+    --green-soft: #edf5ec;
+
+    /* Accent colors */
+    --gold: #c3a35a;
+    --gold-soft: #eee4c7;
+
+    --purple: #8d6ca8;
+    --purple-soft: #eee7f4;
+
+    /* Neutral colors */
+    --charcoal: #1d1f1e;
+    --text: #252826;
+    --muted: #70756f;
+    --border: #ddd9cf;
+
+    /* Status colors */
+    --danger: #a84343;
+    --danger-soft: #f7dddd;
+
+    --success: #2d7a52;
+    --success-soft: #daf0e2;
+
+    /* Shadows */
+    --shadow-sm: 0 4px 14px rgba(25, 40, 31, 0.06);
+    --shadow-md: 0 10px 30px rgba(25, 40, 31, 0.10);
+
+    /* Sizing */
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+
+    --nav-height: 76px;
+
+    /* Transitions */
+    --transition: 0.2s ease;
+}
+
+
+/* =========================================================
+   2. RESET
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    color: var(--text);
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(195, 163, 90, 0.08),
+            transparent 35%
+        ),
+        linear-gradient(
+            180deg,
+            #f7f5ee 0%,
+            var(--bg) 100%
+        );
+}
+
+
+/* =========================================================
+   3. BUTTON RESET
+   ========================================================= */
+
+button {
+    font: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   4. MAIN APP WRAPPER
+   ========================================================= */
+
+.app {
+    width: 100%;
+    min-height: 100vh;
+}
+
+
+/* =========================================================
+   5. HEADER
+   ========================================================= */
+
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+
+    background: rgba(244, 241, 232, 0.94);
+    backdrop-filter: blur(16px);
+
+    border-bottom: 1px solid rgba(221, 217, 207, 0.8);
+}
+
+.header-content {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 20px 22px;
+}
+
+.header-label {
+    margin-bottom: 3px;
+
+    color: var(--green);
+    font-size: 0.72rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+
+.app-header h1 {
+    color: var(--charcoal);
+    font-size: clamp(1.35rem, 3vw, 1.8rem);
+    font-weight: 750;
+}
+
+.header-button {
+    width: 44px;
+    height: 44px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid var(--border);
+    border-radius: 50%;
+
+    background: var(--surface);
+
+    color: var(--green-dark);
+    font-size: 1.2rem;
+
+    box-shadow: var(--shadow-sm);
+
+    transition:
+        transform var(--transition),
+        background var(--transition);
+}
+
+.header-button:hover {
+    transform: translateY(-2px);
+    background: var(--green-soft);
+}
+
+
+/* =========================================================
+   6. MAIN CONTENT
+   ========================================================= */
+
+.app-content {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+
+    padding:
+        28px
+        22px
+        calc(var(--nav-height) + 40px);
+}
+
+
+/* =========================================================
+   7. PAGE SYSTEM
+   ========================================================= */
+
+.page {
+    display: none;
+    animation: fadeIn 0.25s ease;
+}
+
+.page.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* =========================================================
+   8. PAGE HEADINGS
+   ========================================================= */
+
+.page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 20px;
+
+    margin-bottom: 24px;
+}
+
+.page-heading h2 {
+    margin-bottom: 5px;
+
+    font-size: clamp(1.55rem, 4vw, 2rem);
+    font-weight: 760;
+
+    color: var(--charcoal);
+}
+
+.page-heading p {
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   9. MAIN BALANCE CARD
+   ========================================================= */
+
+.balance-card {
+    position: relative;
+    overflow: hidden;
+
+    margin-bottom: 26px;
+    padding: 28px;
+
+    border-radius: var(--radius-lg);
+
+    color: #ffffff;
+
+    background:
+        radial-gradient(
+            circle at 90% 10%,
+            rgba(195, 163, 90, 0.26),
+            transparent 28%
+        ),
+        linear-gradient(
+            135deg,
+            var(--green-dark),
+            #204d37 55%,
+            #183c2d
+        );
+
+    box-shadow: var(--shadow-md);
+}
+
+.balance-card::after {
+    content: "$";
+
+    position: absolute;
+    right: 18px;
+    bottom: -35px;
+
+    color: rgba(255, 255, 255, 0.04);
+
+    font-size: 10rem;
+    font-weight: 900;
+}
+
+.balance-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.balance-card > p {
+    margin-bottom: 7px;
+
+    color: rgba(255, 255, 255, 0.72);
+
+    font-size: 0.82rem;
+    font-weight: 700;
+
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.balance-card h2 {
+    font-size: clamp(2.35rem, 8vw, 3.8rem);
+    line-height: 1;
+
+    letter-spacing: -0.04em;
+
+    font-weight: 780;
+}
+
+.balance-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 12px;
+
+    margin-top: 28px;
+}
+
+.balance-details div {
+    padding: 15px;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.balance-details span {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: rgba(255, 255, 255, 0.65);
+
+    font-size: 0.75rem;
+}
+
+.balance-details strong {
+    font-size: 1rem;
+}
+
+
+/* =========================================================
+   10. GENERAL SECTIONS
+   ========================================================= */
+
+.dashboard-section,
+.budget-block,
+.settings-section {
+    margin-bottom: 22px;
+    padding: 22px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    background: var(--surface);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 16px;
+
+    margin-bottom: 18px;
+}
+
+.section-header h3 {
+    color: var(--charcoal);
+
+    font-size: 1.02rem;
+    font-weight: 750;
+}
+
+
+/* =========================================================
+   11. MONTHLY SUMMARY CARDS
+   ========================================================= */
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+
+    gap: 12px;
+}
+
+.summary-card {
+    min-width: 0;
+
+    padding: 17px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    background: var(--surface-soft);
+}
+
+.summary-card span {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: var(--muted);
+
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+
+.summary-card strong {
+    color: var(--charcoal);
+
+    font-size: 1.18rem;
+}
+
+
+/* Individual money categories */
+
+.summary-card:nth-child(1) {
+    border-top: 3px solid var(--success);
+}
+
+.summary-card:nth-child(2) {
+    border-top: 3px solid var(--charcoal);
+}
+
+.summary-card:nth-child(3) {
+    border-top: 3px solid var(--purple);
+}
+
+.summary-card:nth-child(4) {
+    border-top: 3px solid var(--gold);
+}
+
+
+/* =========================================================
+   12. INFO CARD
+   ========================================================= */
+
+.info-card {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 16px;
+}
+
+.info-card div {
+    padding: 16px;
+
+    border-radius: var(--radius-sm);
+
+    background: var(--green-soft);
+}
+
+.info-card span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: var(--muted);
+
+    font-size: 0.75rem;
+}
+
+.info-card strong {
+    color: var(--green-dark);
+
+    font-size: 1rem;
+}
+
+
+/* =========================================================
+   13. AMOUNT DISPLAY
+   ========================================================= */
+
+.amount-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 18px 20px;
+
+    border-radius: var(--radius-sm);
+
+    background: var(--green-soft);
+}
+
+.amount-display span {
+    color: var(--muted);
+}
+
+.amount-display strong {
+    color: var(--green-dark);
+
+    font-size: 1.4rem;
+}
+
+
+/* =========================================================
+   14. LIST CONTAINERS
+   ========================================================= */
+
+.list-container,
+.transaction-list,
+.savings-goals,
+.table-container {
+    width: 100%;
+}
+
+.empty-message {
+    padding: 22px 12px;
+
+    color: var(--muted);
+
+    text-align: center;
+
+    font-size: 0.9rem;
+}
+
+
+/* =========================================================
+   15. BUTTONS
+   ========================================================= */
+
+.primary-button,
+.add-button,
+.text-button {
+    border: none;
+
+    font-weight: 700;
+
+    transition:
+        transform var(--transition),
+        box-shadow var(--transition),
+        background var(--transition);
+}
+
+
+/* Primary action */
+
+.primary-button {
+    padding: 11px 16px;
+
+    border-radius: 999px;
+
+    background: var(--green-dark);
+    color: white;
+
+    box-shadow: 0 5px 14px rgba(22, 59, 43, 0.18);
+}
+
+.primary-button:hover {
+    transform: translateY(-2px);
+
+    background: var(--green);
+}
+
+
+/* Small add button */
+
+.add-button {
+    padding: 8px 13px;
+
+    border-radius: 999px;
+
+    background: var(--green-soft);
+    color: var(--green-dark);
+}
+
+.add-button:hover {
+    background: var(--green-light);
+}
+
+
+/* Link-style button */
+
+.text-button {
+    background: transparent;
+
+    color: var(--green);
+
+    font-size: 0.83rem;
+}
+
+.text-button:hover {
+    color: var(--green-dark);
+}
+
+
+/* =========================================================
+   16. TABLE STYLING
+   ========================================================= */
+
+table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    overflow: hidden;
+}
+
+thead {
+    background: var(--green-dark);
+    color: #ffffff;
+}
+
+th,
+td {
+    padding: 13px 12px;
+
+    text-align: left;
+
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    font-size: 0.75rem;
+    font-weight: 750;
+
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+td {
+    font-size: 0.88rem;
+}
+
+tbody tr {
+    transition: background var(--transition);
+}
+
+tbody tr:hover {
+    background: var(--green-soft);
+}
+
+
+/* =========================================================
+   17. TRANSACTION ITEMS
+   For later JS-generated transactions
+   ========================================================= */
+
+.transaction-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 15px 0;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.transaction-item:last-child {
+    border-bottom: none;
+}
+
+.transaction-icon {
+    width: 42px;
+    height: 42px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+
+    background: var(--green-soft);
+
+    color: var(--green-dark);
+
+    font-weight: 800;
+}
+
+.transaction-info strong {
+    display: block;
+
+    margin-bottom: 3px;
+
+    color: var(--charcoal);
+}
+
+.transaction-info span {
+    color: var(--muted);
+
+    font-size: 0.78rem;
+}
+
+.transaction-amount {
+    font-weight: 750;
+}
+
+.transaction-amount.income {
+    color: var(--success);
+}
+
+.transaction-amount.expense {
+    color: var(--danger);
+}
+
+
+/* =========================================================
+   18. SAVINGS GOAL CARDS
+   For later JS-generated savings goals
+   ========================================================= */
+
+.savings-goal-card {
+    padding: 18px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    background: var(--surface-soft);
+
+    margin-bottom: 14px;
+}
+
+.savings-goal-card:last-child {
+    margin-bottom: 0;
+}
+
+.savings-goal-header {
+    display: flex;
+    justify-content: space-between;
+
+    gap: 16px;
+
+    margin-bottom: 12px;
+}
+
+.savings-goal-header strong {
+    color: var(--green-dark);
+}
+
+.savings-progress {
+    width: 100%;
+    height: 10px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: #e4e2da;
+}
+
+.savings-progress-bar {
+    height: 100%;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--green),
+            var(--gold)
+        );
+}
+
+
+/* =========================================================
+   19. REPORT PLACEHOLDER
+   ========================================================= */
+
+.chart-placeholder {
+    min-height: 260px;
+
+    display: grid;
+    place-items: center;
+
+    padding: 24px;
+
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-md);
+
+    color: var(--muted);
+
+    background: var(--surface-soft);
+}
+
+
+/* =========================================================
+   20. SETTINGS
+   ========================================================= */
+
+.settings-section {
+    display: grid;
+    gap: 10px;
+}
+
+.settings-item {
+    width: 100%;
+
+    padding: 16px 18px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    background: var(--surface-soft);
+
+    color: var(--charcoal);
+
+    text-align: left;
+
+    font-weight: 650;
+
+    transition:
+        background var(--transition),
+        transform var(--transition);
+}
+
+.settings-item:hover {
+    transform: translateX(3px);
+
+    background: var(--green-soft);
+}
+
+
+/* =========================================================
+   21. FORM STYLING
+   We'll use this when we create forms/modals.
+   ========================================================= */
+
+input,
+select,
+textarea {
+    width: 100%;
+
+    padding: 12px 14px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    outline: none;
+
+    color: var(--text);
+    background: var(--surface);
+
+    transition:
+        border var(--transition),
+        box-shadow var(--transition);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--green);
+
+    box-shadow: 0 0 0 3px rgba(36, 92, 66, 0.1);
+}
+
+label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: var(--charcoal);
+
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   22. BOTTOM NAVIGATION
+   ========================================================= */
+
+.bottom-nav {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    z-index: 200;
+
+    width: min(700px, 100%);
+
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+
+    padding:
+        8px
+        8px
+        calc(8px + env(safe-area-inset-bottom));
+
+    transform: translateX(-50%);
+
+    border: 1px solid rgba(221, 217, 207, 0.9);
+    border-bottom: none;
+
+    border-radius: 20px 20px 0 0;
+
+    background: rgba(255, 255, 255, 0.96);
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 -8px 26px rgba(20, 40, 30, 0.08);
+}
+
+.nav-button {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 4px;
+
+    padding: 8px 4px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: transparent;
+
+    color: var(--muted);
+
+    font-size: 0.68rem;
+    font-weight: 650;
+
+    transition:
+        color var(--transition),
+        background var(--transition),
+        transform var(--transition);
+}
+
+.nav-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.nav-button:hover {
+    color: var(--green-dark);
+}
+
+.nav-button.active {
+    color: var(--green-dark);
+    background: var(--green-soft);
+}
+
+
+/* =========================================================
+   23. MONEY UTILITY CLASSES
+   Useful later in JavaScript
+   ========================================================= */
+
+.money-positive {
+    color: var(--success) !important;
+}
+
+.money-negative {
+    color: var(--danger) !important;
+}
+
+.money-neutral {
+    color: var(--charcoal) !important;
+}
+
+.gold-accent {
+    color: var(--gold);
+}
+
+.purple-accent {
+    color: var(--purple);
+}
+
+
+/* =========================================================
+   24. SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width: 9px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+    border: 2px solid var(--bg);
+    border-radius: 999px;
+
+    background: #b6b2a8;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--green);
+}
+
+
+/* =========================================================
+   25. TABLET / SMALL LAPTOP
+   ========================================================= */
+
+@media (max-width: 800px) {
+
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+}
+
+
+/* =========================================================
+   26. MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .header-content {
+        padding: 17px 16px;
+    }
+
+    .app-content {
+        padding:
+            22px
+            15px
+            calc(var(--nav-height) + 34px);
+    }
+
+    .page-heading {
+        flex-direction: column;
+
+        gap: 12px;
+    }
+
+    .balance-card {
+        padding: 24px 20px;
+    }
+
+    .balance-details {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dashboard-section,
+    .budget-block,
+    .settings-section {
+        padding: 18px;
+    }
+
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .info-card {
+        grid-template-columns: 1fr;
+    }
+
+    .amount-display {
+        align-items: flex-start;
+        flex-direction: column;
+
+        gap: 5px;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 620px;
+    }
+
+}
+
+
+/* =========================================================
+   27. EXTRA SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 390px) {
+
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .balance-details {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-button {
+        font-size: 0.61rem;
+    }
+
+    .nav-icon {
+        font-size: 1.1rem;
+    }
+
+}
+
+
+/* =========================================================
+   28. DESKTOP
+   ========================================================= */
+
+@media (min-width: 1000px) {
+
+    .app-content {
+        padding-top: 38px;
+    }
+
+    .balance-card {
+        padding: 34px;
+    }
+
+    .dashboard-section,
+    .budget-block {
+        padding: 26px;
+    }
+
+}
