@@ -3358,6 +3358,61 @@ const BudgetApp = {
                         }
                     );
 
+
+                    (snapshot.manualTransactions || [])
+                        .filter(
+                            transaction =>
+                                Number(
+                                    transaction.amount
+                                ) < 0
+                        )
+                        .forEach(
+                            transaction => {
+
+                                const amount =
+                                    Math.abs(
+                                        Number(
+                                            transaction.amount
+                                        ) || 0
+                                    );
+
+
+                                const category =
+                                    transaction.category ||
+                                    "Other";
+
+
+                                reportData.categories[
+                                    category
+                                ] =
+                                    (
+                                        reportData.categories[
+                                            category
+                                        ] || 0
+                                    )
+                                    +
+                                    amount;
+
+
+                                const merchant =
+                                    transaction.merchant ||
+                                    transaction.description ||
+                                    "Unassigned";
+
+
+                                reportData.merchants[
+                                    merchant
+                                ] =
+                                    (
+                                        reportData.merchants[
+                                            merchant
+                                        ] || 0
+                                    )
+                                    +
+                                    amount;
+                            }
+                        );
+
                 }
 
                 catch (error) {
