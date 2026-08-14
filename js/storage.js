@@ -2,7 +2,11 @@
    M-WALLET
    Local Storage / Data Management
    storage.js
-   Phase 2.2 - Income + Expense Management
+
+   Savings System Upgrade
+   Version 5
+
+   Checking ↔ General Savings ↔ Savings Goals
    ========================================================= */
 
 const BudgetStorage = {
@@ -13,7 +17,7 @@ const BudgetStorage = {
         "budgetTrackerData"
     ],
 
-    version: 4,
+    version: 5,
 
 
     /* =====================================================
@@ -32,6 +36,7 @@ const BudgetStorage = {
 
         const number =
             Number(value);
+
 
         return Number.isFinite(number)
             ? number
@@ -58,6 +63,7 @@ const BudgetStorage = {
             String(
                 value ?? ""
             ).trim();
+
 
         return text || fallback;
 
@@ -123,6 +129,7 @@ const BudgetStorage = {
         const year =
             date.getUTCFullYear();
 
+
         const month =
             String(
                 date.getUTCMonth() + 1
@@ -130,6 +137,7 @@ const BudgetStorage = {
                 2,
                 "0"
             );
+
 
         const day =
             String(
@@ -352,6 +360,43 @@ const BudgetStorage = {
     },
 
 
+    getTodayDate() {
+
+        const today =
+            new Date();
+
+
+        const year =
+            today.getFullYear();
+
+
+        const month =
+            String(
+                today.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        const day =
+            String(
+                today.getDate()
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        return (
+            `${year}-` +
+            `${month}-` +
+            `${day}`
+        );
+
+    },
+
+
     getSelectedMonthKey() {
 
         const monthSelect =
@@ -546,6 +591,14 @@ const BudgetStorage = {
                 this.version,
 
 
+            migrations: {
+
+                savingsAccountV5:
+                    true
+
+            },
+
+
             settings: {
 
                 currency:
@@ -568,6 +621,8 @@ const BudgetStorage = {
 
             savingsGoals: [],
 
+            savingsTransfers: [],
+
 
             accounts: {
 
@@ -585,7 +640,7 @@ const BudgetStorage = {
                 savings: {
 
                     name:
-                        "Savings",
+                        "General Savings",
 
                     balance:
                         0
@@ -614,11 +669,6 @@ const BudgetStorage = {
                 0,
 
 
-            /*
-                Legacy monthly collections remain
-                available for compatibility.
-            */
-
             paychecks: [],
 
             bills: [],
@@ -628,6 +678,14 @@ const BudgetStorage = {
             transactions: [],
 
             savingsDeposits: [],
+
+
+            /*
+                Kept for older versions of M-Wallet.
+
+                Internal Savings → Goal transfers now live
+                globally in data.savingsTransfers.
+            */
 
             savingsTransfers: [],
 
@@ -648,7 +706,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       3. NORMALIZATION / MIGRATION
+       3. NORMALIZATION
        ===================================================== */
 
     normalizeMonth(
@@ -730,6 +788,24 @@ const BudgetStorage = {
 
         }
 
+
+        month.savingsDeposits =
+            month.savingsDeposits.map(
+                deposit =>
+                    this.normalizeSavingsDeposit(
+                        deposit,
+                        monthKey
+                    )
+            );
+
+
+        /*
+            Monthly savingsTransfers remains a compatibility
+            alias only.
+
+            New internal goal allocations live in the
+            global data.savingsTransfers array.
+        */
 
         month.savingsTransfers =
             month.savingsDeposits;
@@ -1085,6 +1161,335 @@ const BudgetStorage = {
     },
 
 
+    normalizeSavingsGoal(
+        goal
+    ) {
+
+        const targetAmount =
+            this.toPositiveNumber(
+                goal?.targetAmount
+            );
+
+
+        const currentAmount =
+            this.toPositiveNumber(
+                goal?.currentAmount
+            );
+
+
+        return {
+
+            id:
+                this.getRecordId(
+                    goal,
+                    "goal"
+                ),
+
+
+            name:
+                this.normalizeString(
+                    goal?.name,
+                    "Savings Goal"
+                ),
+
+
+            targetAmount,
+
+            currentAmount,
+
+
+            createdMonthKey:
+                goal?.createdMonthKey ||
+                goal?.monthKey ||
+                this.getSelectedMonthKey(),
+
+
+            targetDate:
+                this.isDateString(
+                    goal?.targetDate
+                )
+
+                    ? goal.targetDate
+
+                    : "",
+
+
+            notes:
+                this.normalizeString(
+                    goal?.notes
+                ),
+
+
+            completed:
+                targetAmount > 0 &&
+                currentAmount >=
+                    targetAmount,
+
+
+            createdAt:
+                goal?.createdAt ||
+                this.now(),
+
+
+            updatedAt:
+                goal?.updatedAt ||
+                this.now()
+
+        };
+
+    },
+
+
+    normalizeSavingsDeposit(
+        deposit,
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        const goalId =
+            deposit?.goalId ||
+            null;
+
+
+        const rawAmount =
+            this.toNumber(
+                deposit?.amount
+            );
+
+
+        let transferType =
+            this.normalizeString(
+                deposit?.transferType ||
+                deposit?.type
+            );
+
+
+        if (
+            !transferType
+        ) {
+
+            if (
+                goalId
+            ) {
+
+                transferType =
+                    "goal-deposit";
+
+            }
+
+            else if (
+                rawAmount < 0
+            ) {
+
+                transferType =
+                    "withdrawal";
+
+            }
+
+            else {
+
+                transferType =
+                    "deposit";
+
+            }
+
+        }
+
+
+        let amount =
+            rawAmount;
+
+
+        if (
+            transferType ===
+            "withdrawal"
+        ) {
+
+            amount =
+                -this.toPositiveNumber(
+                    rawAmount
+                );
+
+        }
+
+        else {
+
+            amount =
+                this.toPositiveNumber(
+                    rawAmount
+                );
+
+        }
+
+
+        const direction =
+
+            transferType ===
+                "withdrawal"
+
+                ? "savings-to-checking"
+
+                : goalId
+
+                    ? "checking-to-goal"
+
+                    : "checking-to-savings";
+
+
+        return {
+
+            id:
+                this.getRecordId(
+                    deposit,
+                    "savings-deposit"
+                ),
+
+
+            goalId,
+
+            name:
+                this.normalizeString(
+
+                    deposit?.name,
+
+                    transferType ===
+                        "withdrawal"
+
+                        ? "Savings Withdrawal"
+
+                        : goalId
+
+                            ? "Savings Goal Deposit"
+
+                            : "Savings Deposit"
+
+                ),
+
+
+            date:
+                this.isDateString(
+                    deposit?.date
+                )
+
+                    ? deposit.date
+
+                    : this
+                        .getDefaultDateForMonth(
+                            monthKey
+                        ),
+
+
+            monthKey:
+                deposit?.monthKey ||
+                monthKey,
+
+
+            amount,
+
+            transferType,
+
+            direction,
+
+
+            notes:
+                this.normalizeString(
+                    deposit?.notes
+                ),
+
+
+            createdAt:
+                deposit?.createdAt ||
+                this.now(),
+
+
+            updatedAt:
+                deposit?.updatedAt ||
+                deposit?.createdAt ||
+                this.now()
+
+        };
+
+    },
+
+
+    normalizeSavingsTransfer(
+        transfer
+    ) {
+
+        const type =
+            this.normalizeString(
+                transfer?.type,
+                "savings-to-goal"
+            );
+
+
+        const date =
+            this.isDateString(
+                transfer?.date
+            )
+
+                ? transfer.date
+
+                : this.getTodayDate();
+
+
+        return {
+
+            id:
+                this.getRecordId(
+                    transfer,
+                    "savings-transfer"
+                ),
+
+
+            type,
+
+
+            goalId:
+                transfer?.goalId ||
+                null,
+
+
+            goalName:
+                this.normalizeString(
+                    transfer?.goalName
+                ),
+
+
+            amount:
+                this.toPositiveNumber(
+                    transfer?.amount
+                ),
+
+
+            date,
+
+            monthKey:
+                transfer?.monthKey ||
+                this.getMonthKeyFromDate(
+                    date
+                ),
+
+
+            notes:
+                this.normalizeString(
+                    transfer?.notes
+                ),
+
+
+            createdAt:
+                transfer?.createdAt ||
+                this.now()
+
+        };
+
+    },
+
+
+    /* =====================================================
+       4. MIGRATIONS
+       ===================================================== */
+
     migrateLegacyPaychecks(
         data
     ) {
@@ -1260,6 +1665,122 @@ const BudgetStorage = {
     },
 
 
+    migrateSavingsAccountV5(
+        data,
+        previousVersion
+    ) {
+
+        if (
+            data.migrations
+                ?.savingsAccountV5
+        ) {
+
+            return;
+
+        }
+
+
+        let legacyGeneralSavings =
+            0;
+
+
+        Object.values(
+            data.months ||
+            {}
+        ).forEach(
+            month => {
+
+                const deposits =
+                    Array.isArray(
+                        month.savingsDeposits
+                    )
+
+                        ? month.savingsDeposits
+
+                        : [];
+
+
+                deposits.forEach(
+                    deposit => {
+
+                        /*
+                            Goal deposits already exist inside
+                            goal.currentAmount.
+
+                            Only unallocated/general deposits
+                            become the new General Savings pool.
+                        */
+
+                        if (
+                            !deposit.goalId
+                        ) {
+
+                            legacyGeneralSavings +=
+                                this.toNumber(
+                                    deposit.amount
+                                );
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+
+        const existingBalance =
+            this.toNumber(
+                data.accounts
+                    ?.savings
+                    ?.balance
+            );
+
+
+        /*
+            accounts.savings.balance existed before v5 but
+            was not actively used by M-Wallet.
+
+            For v4 and older, rebuild it from saved general
+            savings deposits.
+        */
+
+        if (
+            Number(
+                previousVersion
+            ) < 5
+        ) {
+
+            data.accounts.savings.balance =
+                Math.max(
+                    0,
+                    legacyGeneralSavings
+                );
+
+        }
+
+        else {
+
+            data.accounts.savings.balance =
+                Math.max(
+                    0,
+                    existingBalance
+                );
+
+        }
+
+
+        data.migrations =
+            data.migrations ||
+            {};
+
+
+        data.migrations.savingsAccountV5 =
+            true;
+
+    },
+
+
     normalizeData(
         data
     ) {
@@ -1276,6 +1797,12 @@ const BudgetStorage = {
         }
 
 
+        const previousVersion =
+            Number(
+                data.version
+            ) || 0;
+
+
         const defaults =
             this.createDefaultData();
 
@@ -1285,6 +1812,13 @@ const BudgetStorage = {
             ...defaults.settings,
 
             ...(data.settings || {})
+
+        };
+
+
+        data.migrations = {
+
+            ...(data.migrations || {})
 
         };
 
@@ -1299,28 +1833,6 @@ const BudgetStorage = {
                 {};
 
         }
-
-
-        Object.keys(
-            data.months
-        ).forEach(
-            monthKey => {
-
-                data.months[
-                    monthKey
-                ] =
-                    this.normalizeMonth(
-
-                        data.months[
-                            monthKey
-                        ],
-
-                        monthKey
-
-                    );
-
-            }
-        );
 
 
         if (
@@ -1359,6 +1871,18 @@ const BudgetStorage = {
         }
 
 
+        if (
+            !Array.isArray(
+                data.savingsTransfers
+            )
+        ) {
+
+            data.savingsTransfers =
+                [];
+
+        }
+
+
         data.income =
             data.income.map(
                 item =>
@@ -1377,6 +1901,24 @@ const BudgetStorage = {
             );
 
 
+        data.savingsGoals =
+            data.savingsGoals.map(
+                goal =>
+                    this.normalizeSavingsGoal(
+                        goal
+                    )
+            );
+
+
+        data.savingsTransfers =
+            data.savingsTransfers.map(
+                transfer =>
+                    this.normalizeSavingsTransfer(
+                        transfer
+                    )
+            );
+
+
         if (
             !data.accounts ||
             typeof data.accounts !==
@@ -1384,9 +1926,68 @@ const BudgetStorage = {
         ) {
 
             data.accounts =
-                defaults.accounts;
+                {};
 
         }
+
+
+        data.accounts.checking = {
+
+            ...defaults.accounts.checking,
+
+            ...(data.accounts.checking || {})
+
+        };
+
+
+        data.accounts.savings = {
+
+            ...defaults.accounts.savings,
+
+            ...(data.accounts.savings || {})
+
+        };
+
+
+        data.accounts.checking.balance =
+            this.toNumber(
+                data.accounts
+                    .checking
+                    .balance
+            );
+
+
+        data.accounts.savings.balance =
+            Math.max(
+                0,
+                this.toNumber(
+                    data.accounts
+                        .savings
+                        .balance
+                )
+            );
+
+
+        Object.keys(
+            data.months
+        ).forEach(
+            monthKey => {
+
+                data.months[
+                    monthKey
+                ] =
+                    this.normalizeMonth(
+
+                        data.months[
+                            monthKey
+                        ],
+
+                        monthKey
+
+                    );
+
+            }
+        );
 
 
         this.migrateLegacyPaychecks(
@@ -1396,6 +1997,12 @@ const BudgetStorage = {
 
         this.migrateLegacyExpenses(
             data
+        );
+
+
+        this.migrateSavingsAccountV5(
+            data,
+            previousVersion
         );
 
 
@@ -1409,7 +2016,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       4. LOAD / SAVE
+       5. LOAD / SAVE
        ===================================================== */
 
     load() {
@@ -1554,14 +2161,10 @@ const BudgetStorage = {
     },
 
 
-    getMonth(
-        monthKey =
-            this.getSelectedMonthKey()
+    ensureMonthInData(
+        data,
+        monthKey
     ) {
-
-        const data =
-            this.load();
-
 
         if (
             !data.months[
@@ -1575,11 +2178,6 @@ const BudgetStorage = {
                 this.createDefaultMonth(
                     monthKey
                 );
-
-
-            this.save(
-                data
-            );
 
         }
 
@@ -1601,6 +2199,32 @@ const BudgetStorage = {
         return data.months[
             monthKey
         ];
+
+    },
+
+
+    getMonth(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        const data =
+            this.load();
+
+
+        const month =
+            this.ensureMonthInData(
+                data,
+                monthKey
+            );
+
+
+        this.save(
+            data
+        );
+
+
+        return month;
 
     },
 
@@ -1651,7 +2275,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       5. STARTING BALANCE
+       6. STARTING BALANCE
        ===================================================== */
 
     setStartingBalance(
@@ -1678,6 +2302,11 @@ const BudgetStorage = {
         );
 
 
+        this.syncCheckingAccountBalance(
+            monthKey
+        );
+
+
         return month.startingBalance;
 
     },
@@ -1700,7 +2329,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       6. INCOME
+       7. INCOME
        ===================================================== */
 
     addIncome(income) {
@@ -2451,7 +3080,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       7. LEGACY PAYCHECK COMPATIBILITY
+       8. LEGACY PAYCHECK COMPATIBILITY
        ===================================================== */
 
     addPaycheck(
@@ -2773,7 +3402,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       8. BILLS
+       9. BILLS
        ===================================================== */
 
     addBill(
@@ -3001,8 +3630,7 @@ const BudgetStorage = {
         bill.paidDate =
             paid
 
-                ? this.now()
-                    .split("T")[0]
+                ? this.getTodayDate()
 
                 : "";
 
@@ -3061,7 +3689,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       9. EXPENSES - P2.2
+       10. EXPENSES
        ===================================================== */
 
     addExpense(
@@ -3533,11 +4161,6 @@ const BudgetStorage = {
     },
 
 
-    /*
-        Compatibility:
-        app.js already calls getExpenses().
-    */
-
     getExpenses(
         monthKey =
             this.getSelectedMonthKey()
@@ -3603,7 +4226,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       10. MANUAL TRANSACTIONS
+       11. MANUAL TRANSACTIONS
        ===================================================== */
 
     addTransaction(
@@ -3852,7 +4475,108 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       11. SAVINGS GOALS
+       12. SAVINGS ACCOUNT
+       ===================================================== */
+
+    getSavingsBalance() {
+
+        const data =
+            this.load();
+
+
+        return Math.max(
+            0,
+            this.toNumber(
+                data.accounts
+                    ?.savings
+                    ?.balance
+            )
+        );
+
+    },
+
+
+    getCheckingAccountBalance() {
+
+        return this.toNumber(
+            this.load()
+                .accounts
+                ?.checking
+                ?.balance
+        );
+
+    },
+
+
+    getAllocatedSavingsTotal() {
+
+        return this
+            .getSavingsGoals()
+            .reduce(
+                (
+                    total,
+                    goal
+                ) =>
+
+                    total +
+                    this.toPositiveNumber(
+                        goal.currentAmount
+                    ),
+
+                0
+            );
+
+    },
+
+
+    getTotalSavingsBalance() {
+
+        return (
+
+            this.getSavingsBalance()
+
+            +
+
+            this.getAllocatedSavingsTotal()
+
+        );
+
+    },
+
+
+    syncCheckingAccountBalance(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        const endingBalance =
+            this.calculateEndingBalance(
+                monthKey
+            );
+
+
+        const data =
+            this.load();
+
+
+        data.accounts.checking.balance =
+            this.toNumber(
+                endingBalance
+            );
+
+
+        this.save(
+            data
+        );
+
+
+        return endingBalance;
+
+    },
+
+
+    /* =====================================================
+       13. SAVINGS GOALS
        ===================================================== */
 
     getSavingsGoals() {
@@ -3861,6 +4585,25 @@ const BudgetStorage = {
             ...this.load()
                 .savingsGoals
         ];
+
+    },
+
+
+    getSavingsGoalById(
+        goalId
+    ) {
+
+        return (
+            this.load()
+                .savingsGoals
+                .find(
+                    goal =>
+                        goal.id ===
+                        goalId
+                )
+            ||
+            null
+        );
 
     },
 
@@ -3891,59 +4634,38 @@ const BudgetStorage = {
             this.load();
 
 
-        const targetAmount =
+        const requestedStartingAmount =
             this.toPositiveNumber(
-                goal.targetAmount
+                goal?.currentAmount
             );
 
 
-        const currentAmount =
-            this.toPositiveNumber(
-                goal.currentAmount
-            );
+        const newGoal =
+            this.normalizeSavingsGoal({
 
+                ...goal,
 
-        const newGoal = {
+                id:
+                    goal?.id ||
+                    this.generateId(
+                        "goal"
+                    ),
 
-            id:
-                this.getRecordId(
-                    goal,
-                    "goal"
-                ),
+                currentAmount:
+                    0,
 
-            name:
-                goal.name ||
-                "Savings Goal",
+                createdMonthKey:
+                    goal?.monthKey ||
+                    monthKey,
 
-            targetAmount,
+                createdAt:
+                    goal?.createdAt ||
+                    this.now(),
 
-            currentAmount,
+                updatedAt:
+                    this.now()
 
-            createdMonthKey:
-                goal.monthKey ||
-                monthKey,
-
-            targetDate:
-                goal.targetDate ||
-                "",
-
-            notes:
-                goal.notes ||
-                "",
-
-            completed:
-                targetAmount > 0 &&
-                currentAmount >=
-                    targetAmount,
-
-            createdAt:
-                goal.createdAt ||
-                this.now(),
-
-            updatedAt:
-                this.now()
-
-        };
+            });
 
 
         data.savingsGoals.push(
@@ -3954,6 +4676,52 @@ const BudgetStorage = {
         this.save(
             data
         );
+
+
+        /*
+            If a goal is created with a starting amount,
+            fund it from General Savings instead of creating
+            money from nowhere.
+        */
+
+        if (
+            requestedStartingAmount >
+            0
+        ) {
+
+            try {
+
+                return this
+                    .allocateSavingsToGoal(
+
+                        newGoal.id,
+
+                        requestedStartingAmount,
+
+                        {
+                            date:
+                                this.getTodayDate(),
+
+                            notes:
+                                "Starting savings goal allocation"
+                        }
+
+                    );
+
+            }
+
+            catch (error) {
+
+                this.deleteSavingsGoal(
+                    newGoal.id
+                );
+
+
+                throw error;
+
+            }
+
+        }
 
 
         return newGoal;
@@ -3987,10 +4755,153 @@ const BudgetStorage = {
         }
 
 
+        const oldCurrent =
+            this.toPositiveNumber(
+                goal.currentAmount
+            );
+
+
+        const hasCurrentAmountUpdate =
+            Object.prototype
+                .hasOwnProperty
+                .call(
+                    updates || {},
+                    "currentAmount"
+                );
+
+
+        const newCurrent =
+            hasCurrentAmountUpdate
+
+                ? this.toPositiveNumber(
+                    updates.currentAmount
+                )
+
+                : oldCurrent;
+
+
+        const difference =
+            newCurrent -
+            oldCurrent;
+
+
+        if (
+            difference > 0
+        ) {
+
+            const available =
+                this.toPositiveNumber(
+                    data.accounts
+                        .savings
+                        .balance
+                );
+
+
+            if (
+                difference >
+                available
+            ) {
+
+                throw new Error(
+                    "Not enough General Savings to increase this fund."
+                );
+
+            }
+
+
+            data.accounts
+                .savings
+                .balance -=
+                    difference;
+
+
+            data.savingsTransfers.push(
+
+                this.normalizeSavingsTransfer({
+
+                    type:
+                        "savings-to-goal",
+
+                    goalId:
+                        goal.id,
+
+                    goalName:
+                        goal.name,
+
+                    amount:
+                        difference,
+
+                    date:
+                        updates?.date ||
+                        this.getTodayDate(),
+
+                    notes:
+                        "Savings goal balance edited"
+
+                })
+
+            );
+
+        }
+
+
+        if (
+            difference < 0
+        ) {
+
+            const returnedAmount =
+                Math.abs(
+                    difference
+                );
+
+
+            data.accounts
+                .savings
+                .balance +=
+                    returnedAmount;
+
+
+            data.savingsTransfers.push(
+
+                this.normalizeSavingsTransfer({
+
+                    type:
+                        "goal-to-savings",
+
+                    goalId:
+                        goal.id,
+
+                    goalName:
+                        goal.name,
+
+                    amount:
+                        returnedAmount,
+
+                    date:
+                        updates?.date ||
+                        this.getTodayDate(),
+
+                    notes:
+                        "Savings goal balance edited"
+
+                })
+
+            );
+
+        }
+
+
         Object.assign(
             goal,
             updates
         );
+
+
+        goal.name =
+            this.normalizeString(
+                goal.name,
+                "Savings Goal"
+            );
 
 
         goal.targetAmount =
@@ -4000,9 +4911,7 @@ const BudgetStorage = {
 
 
         goal.currentAmount =
-            this.toPositiveNumber(
-                goal.currentAmount
-            );
+            newCurrent;
 
 
         goal.completed =
@@ -4051,9 +4960,16 @@ const BudgetStorage = {
         }
 
 
-        goal.currentAmount +=
-            this.toNumber(
-                amount
+        goal.currentAmount =
+            Math.max(
+                0,
+                this.toPositiveNumber(
+                    goal.currentAmount
+                )
+                +
+                this.toNumber(
+                    amount
+                )
             );
 
 
@@ -4085,14 +5001,78 @@ const BudgetStorage = {
             this.load();
 
 
-        const before =
-            data.savingsGoals.length;
+        const goal =
+            data.savingsGoals.find(
+                item =>
+                    item.id ===
+                    goalId
+            );
+
+
+        if (
+            !goal
+        ) {
+
+            return false;
+
+        }
+
+
+        /*
+            Money currently allocated to a deleted fund
+            returns to General Savings.
+        */
+
+        const returnedAmount =
+            this.toPositiveNumber(
+                goal.currentAmount
+            );
+
+
+        if (
+            returnedAmount >
+            0
+        ) {
+
+            data.accounts
+                .savings
+                .balance +=
+                    returnedAmount;
+
+
+            data.savingsTransfers.push(
+
+                this.normalizeSavingsTransfer({
+
+                    type:
+                        "goal-to-savings",
+
+                    goalId:
+                        goal.id,
+
+                    goalName:
+                        goal.name,
+
+                    amount:
+                        returnedAmount,
+
+                    date:
+                        this.getTodayDate(),
+
+                    notes:
+                        "Savings goal deleted - funds returned to General Savings"
+
+                })
+
+            );
+
+        }
 
 
         data.savingsGoals =
             data.savingsGoals.filter(
-                goal =>
-                    goal.id !==
+                item =>
+                    item.id !==
                     goalId
             );
 
@@ -4102,16 +5082,13 @@ const BudgetStorage = {
         );
 
 
-        return (
-            data.savingsGoals.length !==
-            before
-        );
+        return true;
 
     },
 
 
     /* =====================================================
-       12. SAVINGS DEPOSITS
+       14. GENERAL SAVINGS DEPOSITS / WITHDRAWALS
        ===================================================== */
 
     addSavingsDeposit(
@@ -4120,55 +5097,182 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
+        const data =
+            this.load();
+
+
         const month =
-            this.getMonth(
+            this.ensureMonthInData(
+                data,
+                monthKey
+            );
+
+
+        const normalized =
+            this.normalizeSavingsDeposit(
+                deposit,
                 monthKey
             );
 
 
         const amount =
-            this.toPositiveNumber(
-                deposit.amount
+            this.toNumber(
+                normalized.amount
             );
 
 
-        const newDeposit = {
+        /*
+            CHECKING → GOAL
 
-            id:
-                this.getRecordId(
-                    deposit,
-                    "savings-deposit"
-                ),
+            Legacy compatibility.
 
-            goalId:
-                deposit.goalId ||
-                null,
+            New UI should generally put money into
+            General Savings first and then allocate it.
+        */
 
-            name:
-                deposit.name ||
-                "Savings Deposit",
+        if (
+            normalized.goalId
+        ) {
 
-            date:
-                deposit.date ||
-                this.getDefaultDateForMonth(
-                    monthKey
-                ),
+            const goal =
+                data.savingsGoals.find(
+                    item =>
+                        item.id ===
+                        normalized.goalId
+                );
 
-            amount,
 
-            notes:
-                deposit.notes ||
-                "",
+            if (
+                !goal
+            ) {
 
-            createdAt:
-                deposit.createdAt ||
-                this.now()
+                throw new Error(
+                    "Savings goal was not found."
+                );
 
-        };
+            }
+
+
+            normalized.transferType =
+                "goal-deposit";
+
+
+            normalized.direction =
+                "checking-to-goal";
+
+
+            normalized.amount =
+                this.toPositiveNumber(
+                    amount
+                );
+
+
+            goal.currentAmount +=
+                normalized.amount;
+
+
+            goal.completed =
+                goal.targetAmount > 0 &&
+                goal.currentAmount >=
+                    goal.targetAmount;
+
+
+            goal.updatedAt =
+                this.now();
+
+        }
+
+
+        /*
+            SAVINGS → CHECKING
+        */
+
+        else if (
+            normalized.transferType ===
+            "withdrawal" ||
+            amount < 0
+        ) {
+
+            const withdrawalAmount =
+                this.toPositiveNumber(
+                    amount
+                );
+
+
+            const currentSavings =
+                this.toPositiveNumber(
+                    data.accounts
+                        .savings
+                        .balance
+                );
+
+
+            if (
+                withdrawalAmount >
+                currentSavings
+            ) {
+
+                throw new Error(
+                    "You cannot withdraw more than your General Savings balance."
+                );
+
+            }
+
+
+            normalized.transferType =
+                "withdrawal";
+
+
+            normalized.direction =
+                "savings-to-checking";
+
+
+            normalized.amount =
+                -withdrawalAmount;
+
+
+            data.accounts
+                .savings
+                .balance -=
+                    withdrawalAmount;
+
+        }
+
+
+        /*
+            CHECKING → GENERAL SAVINGS
+        */
+
+        else {
+
+            const depositAmount =
+                this.toPositiveNumber(
+                    amount
+                );
+
+
+            normalized.transferType =
+                "deposit";
+
+
+            normalized.direction =
+                "checking-to-savings";
+
+
+            normalized.amount =
+                depositAmount;
+
+
+            data.accounts
+                .savings
+                .balance +=
+                    depositAmount;
+
+        }
 
 
         month.savingsDeposits.push(
-            newDeposit
+            normalized
         );
 
 
@@ -4176,28 +5280,262 @@ const BudgetStorage = {
             month.savingsDeposits;
 
 
-        this.saveMonth(
-            monthKey,
-            month
+        month.updatedAt =
+            this.now();
+
+
+        this.save(
+            data
         );
 
 
+        this.syncCheckingAccountBalance(
+            monthKey
+        );
+
+
+        return normalized;
+
+    },
+
+
+    depositToSavings(
+        amount,
+        options = {}
+    ) {
+
+        const date =
+            options.date ||
+            this.getTodayDate();
+
+
+        const monthKey =
+            options.monthKey ||
+            this.getMonthKeyFromDate(
+                date
+            );
+
+
+        return this.addSavingsDeposit(
+
+            {
+
+                name:
+                    options.name ||
+                    "Savings Deposit",
+
+                amount:
+                    this.toPositiveNumber(
+                        amount
+                    ),
+
+                date,
+
+                transferType:
+                    "deposit",
+
+                notes:
+                    options.notes ||
+                    ""
+
+            },
+
+            monthKey
+
+        );
+
+    },
+
+
+    withdrawFromSavings(
+        amount,
+        options = {}
+    ) {
+
+        const withdrawalAmount =
+            this.toPositiveNumber(
+                amount
+            );
+
+
         if (
-            newDeposit.goalId
+            withdrawalAmount <=
+            0
         ) {
 
-            this.addToSavingsGoal(
-
-                newDeposit.goalId,
-
-                amount
-
+            throw new Error(
+                "Enter an amount greater than zero."
             );
 
         }
 
 
-        return newDeposit;
+        if (
+            withdrawalAmount >
+            this.getSavingsBalance()
+        ) {
+
+            throw new Error(
+                "You cannot withdraw more than your General Savings balance."
+            );
+
+        }
+
+
+        const date =
+            options.date ||
+            this.getTodayDate();
+
+
+        const monthKey =
+            options.monthKey ||
+            this.getMonthKeyFromDate(
+                date
+            );
+
+
+        return this.addSavingsDeposit(
+
+            {
+
+                name:
+                    options.name ||
+                    "Savings Withdrawal",
+
+                amount:
+                    -withdrawalAmount,
+
+                date,
+
+                transferType:
+                    "withdrawal",
+
+                notes:
+                    options.notes ||
+                    ""
+
+            },
+
+            monthKey
+
+        );
+
+    },
+
+
+    setSavingsBalance(
+        newBalance,
+        options = {}
+    ) {
+
+        const targetBalance =
+            this.toPositiveNumber(
+                newBalance
+            );
+
+
+        const currentBalance =
+            this.getSavingsBalance();
+
+
+        const difference =
+            targetBalance -
+            currentBalance;
+
+
+        if (
+            difference === 0
+        ) {
+
+            return {
+
+                balance:
+                    currentBalance,
+
+                changed:
+                    false
+
+            };
+
+        }
+
+
+        if (
+            difference > 0
+        ) {
+
+            const transfer =
+                this.depositToSavings(
+
+                    difference,
+
+                    {
+
+                        ...options,
+
+                        name:
+                            options.name ||
+                            "Savings Balance Adjustment",
+
+                        notes:
+                            options.notes ||
+                            "General Savings balance increased"
+
+                    }
+
+                );
+
+
+            return {
+
+                balance:
+                    this.getSavingsBalance(),
+
+                changed:
+                    true,
+
+                transfer
+
+            };
+
+        }
+
+
+        const transfer =
+            this.withdrawFromSavings(
+
+                Math.abs(
+                    difference
+                ),
+
+                {
+
+                    ...options,
+
+                    name:
+                        options.name ||
+                        "Savings Balance Adjustment",
+
+                    notes:
+                        options.notes ||
+                        "General Savings balance decreased"
+
+                }
+
+            );
+
+
+        return {
+
+            balance:
+                this.getSavingsBalance(),
+
+            changed:
+                true,
+
+            transfer
+
+        };
 
     },
 
@@ -4222,15 +5560,137 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
+        const data =
+            this.load();
+
+
         const month =
-            this.getMonth(
+            this.ensureMonthInData(
+                data,
                 monthKey
             );
 
 
-        const before =
-            month.savingsDeposits
-                .length;
+        const deposit =
+            month.savingsDeposits.find(
+                item =>
+                    item.id ===
+                    depositId
+            );
+
+
+        if (
+            !deposit
+        ) {
+
+            return false;
+
+        }
+
+
+        /*
+            Reverse the original financial effect.
+        */
+
+        if (
+            deposit.goalId
+        ) {
+
+            const goal =
+                data.savingsGoals.find(
+                    item =>
+                        item.id ===
+                        deposit.goalId
+                );
+
+
+            if (
+                goal
+            ) {
+
+                goal.currentAmount =
+                    Math.max(
+                        0,
+                        this.toPositiveNumber(
+                            goal.currentAmount
+                        )
+                        -
+                        this.toPositiveNumber(
+                            deposit.amount
+                        )
+                    );
+
+
+                goal.completed =
+                    goal.targetAmount > 0 &&
+                    goal.currentAmount >=
+                        goal.targetAmount;
+
+
+                goal.updatedAt =
+                    this.now();
+
+            }
+
+        }
+
+        else if (
+            this.toNumber(
+                deposit.amount
+            ) < 0
+        ) {
+
+            /*
+                Deleting a withdrawal puts the money
+                back into General Savings.
+            */
+
+            data.accounts
+                .savings
+                .balance +=
+                    this.toPositiveNumber(
+                        deposit.amount
+                    );
+
+        }
+
+        else {
+
+            /*
+                Deleting an old deposit removes that money
+                from General Savings.
+
+                If it has already been allocated to goals,
+                prevent General Savings from becoming
+                negative.
+            */
+
+            const amount =
+                this.toPositiveNumber(
+                    deposit.amount
+                );
+
+
+            if (
+                amount >
+                data.accounts
+                    .savings
+                    .balance
+            ) {
+
+                throw new Error(
+                    "This savings deposit cannot be deleted because some of that money is currently allocated to a savings goal."
+                );
+
+            }
+
+
+            data.accounts
+                .savings
+                .balance -=
+                    amount;
+
+        }
 
 
         month.savingsDeposits =
@@ -4245,16 +5705,352 @@ const BudgetStorage = {
             month.savingsDeposits;
 
 
-        this.saveMonth(
-            monthKey,
-            month
+        month.updatedAt =
+            this.now();
+
+
+        this.save(
+            data
         );
 
 
-        return (
-            month.savingsDeposits
-                .length !==
-            before
+        this.syncCheckingAccountBalance(
+            monthKey
+        );
+
+
+        return true;
+
+    },
+
+
+    /* =====================================================
+       15. SAVINGS GOAL ALLOCATIONS
+       ===================================================== */
+
+    allocateSavingsToGoal(
+        goalId,
+        amount,
+        options = {}
+    ) {
+
+        const allocationAmount =
+            this.toPositiveNumber(
+                amount
+            );
+
+
+        if (
+            allocationAmount <=
+            0
+        ) {
+
+            throw new Error(
+                "Enter an amount greater than zero."
+            );
+
+        }
+
+
+        const data =
+            this.load();
+
+
+        const goal =
+            data.savingsGoals.find(
+                item =>
+                    item.id ===
+                    goalId
+            );
+
+
+        if (
+            !goal
+        ) {
+
+            throw new Error(
+                "Savings goal was not found."
+            );
+
+        }
+
+
+        const availableSavings =
+            this.toPositiveNumber(
+                data.accounts
+                    .savings
+                    .balance
+            );
+
+
+        if (
+            allocationAmount >
+            availableSavings
+        ) {
+
+            throw new Error(
+                "You cannot allocate more than your General Savings balance."
+            );
+
+        }
+
+
+        data.accounts
+            .savings
+            .balance -=
+                allocationAmount;
+
+
+        goal.currentAmount =
+            this.toPositiveNumber(
+                goal.currentAmount
+            )
+            +
+            allocationAmount;
+
+
+        goal.completed =
+            goal.targetAmount > 0 &&
+            goal.currentAmount >=
+                goal.targetAmount;
+
+
+        goal.updatedAt =
+            this.now();
+
+
+        const transfer =
+            this.normalizeSavingsTransfer({
+
+                type:
+                    "savings-to-goal",
+
+                goalId:
+                    goal.id,
+
+                goalName:
+                    goal.name,
+
+                amount:
+                    allocationAmount,
+
+                date:
+                    options.date ||
+                    this.getTodayDate(),
+
+                notes:
+                    options.notes ||
+                    ""
+
+            });
+
+
+        data.savingsTransfers.push(
+            transfer
+        );
+
+
+        this.save(
+            data
+        );
+
+
+        return {
+
+            goal,
+
+            transfer,
+
+            savingsBalance:
+                data.accounts
+                    .savings
+                    .balance,
+
+            totalSavings:
+                data.accounts
+                    .savings
+                    .balance
+                +
+                data.savingsGoals.reduce(
+                    (
+                        total,
+                        item
+                    ) =>
+
+                        total +
+                        this.toPositiveNumber(
+                            item.currentAmount
+                        ),
+
+                    0
+                )
+
+        };
+
+    },
+
+
+    releaseSavingsFromGoal(
+        goalId,
+        amount,
+        options = {}
+    ) {
+
+        const releaseAmount =
+            this.toPositiveNumber(
+                amount
+            );
+
+
+        if (
+            releaseAmount <=
+            0
+        ) {
+
+            throw new Error(
+                "Enter an amount greater than zero."
+            );
+
+        }
+
+
+        const data =
+            this.load();
+
+
+        const goal =
+            data.savingsGoals.find(
+                item =>
+                    item.id ===
+                    goalId
+            );
+
+
+        if (
+            !goal
+        ) {
+
+            throw new Error(
+                "Savings goal was not found."
+            );
+
+        }
+
+
+        const currentGoalAmount =
+            this.toPositiveNumber(
+                goal.currentAmount
+            );
+
+
+        if (
+            releaseAmount >
+            currentGoalAmount
+        ) {
+
+            throw new Error(
+                "You cannot remove more than this savings goal currently contains."
+            );
+
+        }
+
+
+        goal.currentAmount -=
+            releaseAmount;
+
+
+        goal.completed =
+            goal.targetAmount > 0 &&
+            goal.currentAmount >=
+                goal.targetAmount;
+
+
+        goal.updatedAt =
+            this.now();
+
+
+        data.accounts
+            .savings
+            .balance +=
+                releaseAmount;
+
+
+        const transfer =
+            this.normalizeSavingsTransfer({
+
+                type:
+                    "goal-to-savings",
+
+                goalId:
+                    goal.id,
+
+                goalName:
+                    goal.name,
+
+                amount:
+                    releaseAmount,
+
+                date:
+                    options.date ||
+                    this.getTodayDate(),
+
+                notes:
+                    options.notes ||
+                    ""
+
+            });
+
+
+        data.savingsTransfers.push(
+            transfer
+        );
+
+
+        this.save(
+            data
+        );
+
+
+        return {
+
+            goal,
+
+            transfer,
+
+            savingsBalance:
+                data.accounts
+                    .savings
+                    .balance
+
+        };
+
+    },
+
+
+    getSavingsTransfers(
+        monthKey = null
+    ) {
+
+        const transfers =
+            this.load()
+                .savingsTransfers;
+
+
+        if (
+            !monthKey
+        ) {
+
+            return [
+                ...transfers
+            ];
+
+        }
+
+
+        return transfers.filter(
+            transfer =>
+                transfer.monthKey ===
+                monthKey
         );
 
     },
@@ -4265,6 +6061,13 @@ const BudgetStorage = {
         monthKey =
             this.getSelectedMonthKey()
     ) {
+
+        /*
+            Compatibility with older code.
+
+            An older "savings transfer" means money moving
+            from Checking into Savings.
+        */
 
         return this
             .addSavingsDeposit(
@@ -4291,7 +6094,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       13. MONEY.JS SAVE ROUTER
+       16. MONEY.JS SAVE ROUTER
        ===================================================== */
 
     saveMoneyEntry(
@@ -4372,6 +6175,72 @@ const BudgetStorage = {
                 );
 
 
+            case "savings-withdrawal":
+
+                return this.withdrawFromSavings(
+
+                    record.amount,
+
+                    {
+
+                        date:
+                            record.date,
+
+                        monthKey,
+
+                        name:
+                            record.name,
+
+                        notes:
+                            record.notes
+
+                    }
+
+                );
+
+
+            case "savings-allocation":
+
+                return this.allocateSavingsToGoal(
+
+                    record.goalId,
+
+                    record.amount,
+
+                    {
+
+                        date:
+                            record.date,
+
+                        notes:
+                            record.notes
+
+                    }
+
+                );
+
+
+            case "savings-release":
+
+                return this.releaseSavingsFromGoal(
+
+                    record.goalId,
+
+                    record.amount,
+
+                    {
+
+                        date:
+                            record.date,
+
+                        notes:
+                            record.notes
+
+                    }
+
+                );
+
+
             case "starting-balance":
 
                 return this.setStartingBalance(
@@ -4392,7 +6261,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       14. TOTALS
+       17. TOTALS
        ===================================================== */
 
     getTotalIncome(
@@ -4464,6 +6333,16 @@ const BudgetStorage = {
 
     },
 
+
+    /*
+        Signed savings movement:
+
+        +100 = Checking → Savings
+        -100 = Savings → Checking
+
+        Goal allocations are NOT included because they stay
+        inside Savings and do not affect Checking.
+    */
 
     getTotalSavingsDeposits(
         monthKey =
@@ -4647,7 +6526,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       15. COMBINED ACTIVITY
+       18. COMBINED ACTIVITY
        ===================================================== */
 
     getTransactions(
@@ -4665,7 +6544,9 @@ const BudgetStorage = {
             [];
 
 
-        /* INCOME */
+        /* -------------------------------------------------
+           INCOME
+           ------------------------------------------------- */
 
         this.getIncomeForMonth(
             monthKey
@@ -4719,7 +6600,9 @@ const BudgetStorage = {
         );
 
 
-        /* BILLS */
+        /* -------------------------------------------------
+           BILLS
+           ------------------------------------------------- */
 
         month.bills.forEach(
             bill => {
@@ -4769,7 +6652,9 @@ const BudgetStorage = {
         );
 
 
-        /* EXPENSES */
+        /* -------------------------------------------------
+           EXPENSES
+           ------------------------------------------------- */
 
         this.getExpensesForMonth(
             monthKey
@@ -4830,7 +6715,9 @@ const BudgetStorage = {
         );
 
 
-        /* MANUAL TRANSACTIONS */
+        /* -------------------------------------------------
+           MANUAL TRANSACTIONS
+           ------------------------------------------------- */
 
         month.transactions.forEach(
             transaction => {
@@ -4874,10 +6761,26 @@ const BudgetStorage = {
         );
 
 
-        /* SAVINGS */
+        /* -------------------------------------------------
+           CHECKING ↔ SAVINGS
+           ------------------------------------------------- */
 
         month.savingsDeposits.forEach(
             deposit => {
+
+                const savingsMovement =
+                    this.toNumber(
+                        deposit.amount
+                    );
+
+
+                const checkingMovement =
+                    -savingsMovement;
+
+
+                const isWithdrawal =
+                    savingsMovement < 0;
+
 
                 transactions.push({
 
@@ -4888,7 +6791,18 @@ const BudgetStorage = {
                         "savings-deposit",
 
                     type:
-                        "savings",
+                        isWithdrawal
+                            ? "income"
+                            : "savings",
+
+                    transferType:
+                        deposit.transferType,
+
+                    direction:
+                        deposit.direction,
+
+                    goalId:
+                        deposit.goalId,
 
                     name:
                         deposit.name,
@@ -4900,12 +6814,16 @@ const BudgetStorage = {
                         deposit.date,
 
                     amount:
-                        -this.toPositiveNumber(
-                            deposit.amount
-                        ),
+                        checkingMovement,
+
+                    savingsAmount:
+                        savingsMovement,
 
                     category:
-                        "Savings"
+                        "Savings",
+
+                    notes:
+                        deposit.notes
 
                 });
 
@@ -4995,7 +6913,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       16. MONTH SNAPSHOT
+       19. MONTH SNAPSHOT
        ===================================================== */
 
     getMonthSnapshot(
@@ -5056,8 +6974,26 @@ const BudgetStorage = {
                 ),
 
 
+            savingsTransfers:
+                this.getSavingsTransfers(
+                    monthKey
+                ),
+
+
             savingsGoals:
                 this.getSavingsGoals(),
+
+
+            generalSavingsBalance:
+                this.getSavingsBalance(),
+
+
+            allocatedSavings:
+                this.getAllocatedSavingsTotal(),
+
+
+            totalSavingsBalance:
+                this.getTotalSavingsBalance(),
 
 
             transactions:
@@ -5077,7 +7013,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       17. MONTH ROLLOVER
+       20. MONTH ROLLOVER
        ===================================================== */
 
     rolloverMonth(
@@ -5125,10 +7061,11 @@ const BudgetStorage = {
 
 
         /*
-            Income and expenses now recur dynamically,
-            so they are NOT copied month-to-month.
+            Income and expenses recur dynamically.
 
-            Bills still use the original rollover system.
+            Savings balances persist globally.
+
+            Bills still use the existing monthly rollover.
         */
 
         newMonth.bills =
@@ -5226,7 +7163,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       18. MONTH UTILITIES
+       21. MONTH UTILITIES
        ===================================================== */
 
     monthExists(
@@ -5253,7 +7190,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       19. EXPORT / IMPORT / RESET
+       22. EXPORT / IMPORT / RESET
        ===================================================== */
 
     exportData() {
@@ -5376,7 +7313,7 @@ const BudgetStorage = {
 
 
 /* =========================================================
-   20. GLOBAL CONNECTIONS
+   23. GLOBAL CONNECTIONS
    ========================================================= */
 
 window.BudgetStorage =
@@ -5386,13 +7323,14 @@ window.BudgetStorage =
 window.MWalletStorage =
     BudgetStorage;
 
+
 /* =========================================================
-   21. INITIALIZE STORAGE
+   24. INITIALIZE STORAGE
    ========================================================= */
 
 BudgetStorage.load();
 
 
 console.log(
-    "M-Wallet storage v4 loaded - P2.2 Expense Management ready."
+    "M-Wallet storage v5 loaded - Savings Account + Goal Allocation System ready."
 );

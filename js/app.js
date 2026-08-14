@@ -2,36 +2,31 @@
    M-WALLET
    Main Application / Rendering
    app.js
-   Phase 2.2 - Expense Management
-   ========================================================= */
 
-
-/* =========================================================
-   1. MAIN APP OBJECT
+   Reports + Savings Upgrade
    ========================================================= */
 
 const BudgetApp = {
 
     initialized: false,
+    reportsInitialized: false,
 
 
     /* =====================================================
-       2. GET STORAGE SYSTEM
+       1. STORAGE
        ===================================================== */
 
     getStorage() {
-
         return (
             window.MWalletStorage ||
             window.BudgetStorage ||
             null
         );
-
     },
 
 
     /* =====================================================
-       3. INITIALIZE APP
+       2. INITIALIZE
        ===================================================== */
 
     init() {
@@ -40,84 +35,55 @@ const BudgetApp = {
             return;
         }
 
-
-        this.initialized = true;
-
-
-        const storage =
-            this.getStorage();
-
+        const storage = this.getStorage();
 
         if (!storage) {
-
             console.error(
                 "M-Wallet storage is not available. Make sure storage.js loads before app.js."
             );
-
             return;
-
         }
 
+        this.initialized = true;
 
         this.bindEvents();
-
+        this.initializeReports();
         this.refresh();
 
-
         console.log(
-            "M-Wallet app loaded - P2.2 Expense Management."
+            "M-Wallet app loaded - Reports + Savings system ready."
         );
-
     },
 
 
     /* =====================================================
-       4. BIND APP EVENTS
+       3. EVENTS
        ===================================================== */
 
     bindEvents() {
 
-        const storage =
-            this.getStorage();
-
+        const storage = this.getStorage();
 
         const monthSelect =
-            document.getElementById(
-                "month-select"
-            );
-
+            document.getElementById("month-select");
 
         const yearSelect =
-            document.getElementById(
-                "year-select"
-            );
+            document.getElementById("year-select");
 
 
         if (monthSelect) {
-
             monthSelect.addEventListener(
                 "change",
-                () => {
-
-                    this.refresh();
-
-                }
+                () => this.refresh()
             );
-
         }
 
 
         if (yearSelect) {
-
             yearSelect.addEventListener(
                 "change",
-                () => {
-
-                    this.refresh();
-
-                }
+                () => this.refresh()
             );
-
         }
 
 
@@ -128,111 +94,82 @@ const BudgetApp = {
         ].forEach(buttonId => {
 
             const button =
-                document.getElementById(
-                    buttonId
-                );
-
+                document.getElementById(buttonId);
 
             if (!button) {
                 return;
             }
 
-
             button.addEventListener(
                 "click",
                 () => {
-
                     window.setTimeout(
-                        () => {
-
-                            this.refresh();
-
-                        },
+                        () => this.refresh(),
                         0
                     );
-
                 }
             );
+        });
 
+
+        [
+            "budget:money-saved",
+            "mwallet:money-saved",
+            "mwallet:income-updated",
+            "mwallet:income-deleted",
+            "mwallet:expense-updated",
+            "mwallet:expense-deleted",
+            "mwallet:savings-updated",
+            "mwallet:savings-goal-updated",
+            "mwallet:savings-goal-deleted",
+            "budget:month-changed",
+            "mwallet:month-changed"
+        ].forEach(eventName => {
+
+            document.addEventListener(
+                eventName,
+                () => this.refresh()
+            );
         });
 
 
         document.addEventListener(
-            "budget:money-saved",
-            () => {
+            "mwallet:page-changed",
+            event => {
 
-                this.refresh();
+                if (
+                    event.detail?.page ===
+                    "reports"
+                ) {
+                    this.renderReports();
+                }
 
+                if (
+                    event.detail?.page ===
+                    "savings"
+                ) {
+                    const monthKey =
+                        storage.getSelectedMonthKey();
+
+                    const snapshot =
+                        storage.getMonthSnapshot(
+                            monthKey
+                        );
+
+                    this.renderSavings(
+                        snapshot
+                    );
+                }
             }
         );
 
 
         document.addEventListener(
-            "mwallet:money-saved",
+            "mwallet:report-type-changed",
             () => {
 
-                this.refresh();
-
-            }
-        );
-
-
-        document.addEventListener(
-            "mwallet:income-updated",
-            () => {
-
-                this.refresh();
-
-            }
-        );
-
-
-        document.addEventListener(
-            "mwallet:income-deleted",
-            () => {
-
-                this.refresh();
-
-            }
-        );
-
-
-        document.addEventListener(
-            "mwallet:expense-updated",
-            () => {
-
-                this.refresh();
-
-            }
-        );
-
-
-        document.addEventListener(
-            "mwallet:expense-deleted",
-            () => {
-
-                this.refresh();
-
-            }
-        );
-
-
-        document.addEventListener(
-            "budget:month-changed",
-            () => {
-
-                this.refresh();
-
-            }
-        );
-
-
-        document.addEventListener(
-            "mwallet:month-changed",
-            () => {
-
-                this.refresh();
-
+                this.updateReportControlVisibility();
+                this.renderReports();
             }
         );
 
@@ -244,49 +181,39 @@ const BudgetApp = {
                 if (
                     storage &&
                     event.key ===
-                        storage.storageKey
+                    storage.storageKey
                 ) {
-
                     this.refresh();
-
                 }
-
             }
         );
 
 
         this.bindSettingsActions();
-
     },
 
 
     /* =====================================================
-       5. REFRESH ENTIRE APP
+       4. REFRESH APP
        ===================================================== */
 
     refresh() {
 
-        const storage =
-            this.getStorage();
-
+        const storage = this.getStorage();
 
         if (!storage) {
             return;
         }
 
-
         try {
 
             const monthKey =
-                storage
-                    .getSelectedMonthKey();
-
+                storage.getSelectedMonthKey();
 
             const snapshot =
-                storage
-                    .getMonthSnapshot(
-                        monthKey
-                    );
+                storage.getMonthSnapshot(
+                    monthKey
+                );
 
 
             this.updateCurrentMonthTitle();
@@ -307,24 +234,19 @@ const BudgetApp = {
                 snapshot
             );
 
+            this.renderReports();
+
 
             document.dispatchEvent(
-
                 new CustomEvent(
                     "mwallet:app-refreshed",
                     {
-
                         detail: {
-
                             monthKey,
-
                             snapshot
-
                         }
-
                     }
                 )
-
             );
 
         }
@@ -335,14 +257,12 @@ const BudgetApp = {
                 "M-Wallet could not refresh:",
                 error
             );
-
         }
-
     },
 
 
     /* =====================================================
-       6. UPDATE CURRENT MONTH TITLE
+       5. CURRENT MONTH TITLE
        ===================================================== */
 
     updateCurrentMonthTitle() {
@@ -352,12 +272,10 @@ const BudgetApp = {
                 "month-select"
             );
 
-
         const yearSelect =
             document.getElementById(
                 "year-select"
             );
-
 
         const title =
             document.getElementById(
@@ -370,9 +288,7 @@ const BudgetApp = {
             !yearSelect ||
             !title
         ) {
-
             return;
-
         }
 
 
@@ -390,18 +306,17 @@ const BudgetApp = {
 
         title.textContent =
             `${monthName} ${yearSelect.value}`;
-
     },
 
 
     /* =====================================================
-       7. RENDER DASHBOARD
+       6. DASHBOARD
        ===================================================== */
 
     renderDashboard(snapshot) {
 
         const summary =
-            snapshot.summary;
+            snapshot.summary || {};
 
 
         this.setMoneyText(
@@ -409,36 +324,30 @@ const BudgetApp = {
             summary.endingBalance
         );
 
-
         this.setMoneyText(
             "monthly-remaining",
             summary.remaining
         );
-
 
         this.setMoneyText(
             "monthly-savings",
             summary.savings
         );
 
-
         this.setMoneyText(
             "total-income",
             summary.income
         );
-
 
         this.setMoneyText(
             "total-bills",
             summary.bills
         );
 
-
         this.setMoneyText(
             "total-expenses",
             summary.expenses
         );
-
 
         this.setMoneyText(
             "total-savings",
@@ -450,28 +359,24 @@ const BudgetApp = {
             snapshot
         );
 
-
         this.renderNextIncome(
             snapshot
         );
 
-
         this.renderDashboardSavings(
             snapshot
         );
-
     },
 
 
     /* =====================================================
-       8. UPCOMING BILLS
+       7. UPCOMING BILLS
        ===================================================== */
 
     renderUpcomingBills(snapshot) {
 
         const storage =
             this.getStorage();
-
 
         const container =
             document.getElementById(
@@ -483,33 +388,26 @@ const BudgetApp = {
             !container ||
             !storage
         ) {
-
             return;
-
         }
 
 
         const monthKey =
             snapshot.monthKey;
 
-
         const currentMonthKey =
-            storage
-                .getCurrentMonthKey();
-
+            storage.getCurrentMonthKey();
 
         const today =
             this.getTodayKey();
 
 
         const bills =
-            [...snapshot.bills]
-
+            [...(snapshot.bills || [])]
                 .filter(
                     bill =>
                         !bill.paid
                 )
-
                 .sort(
                     (a, b) =>
                         this.compareDates(
@@ -517,7 +415,6 @@ const BudgetApp = {
                             b.dueDate
                         )
                 )
-
                 .slice(
                     0,
                     5
@@ -529,16 +426,12 @@ const BudgetApp = {
         ) {
 
             container.innerHTML = `
-
                 <p class="empty-message">
                     No upcoming bills.
                 </p>
-
             `;
 
-
             return;
-
         }
 
 
@@ -548,11 +441,8 @@ const BudgetApp = {
                 const overdue =
                     monthKey ===
                         currentMonthKey &&
-
                     bill.dueDate &&
-
-                    bill.dueDate <
-                        today;
+                    bill.dueDate < today;
 
 
                 const status =
@@ -564,7 +454,6 @@ const BudgetApp = {
 
 
                 return `
-
                     <article class="transaction-item">
 
                         <div class="transaction-icon">
@@ -580,24 +469,19 @@ const BudgetApp = {
                             </strong>
 
                             <span>
-
                                 ${this.escapeHTML(
                                     bill.category ||
                                     "Bill"
                                 )}
-
                                 ·
-
                                 ${this.escapeHTML(
                                     status
                                 )}
-
                             </span>
 
                         </div>
 
                         <div class="transaction-amount expense">
-
                             ${this.formatCurrency(
                                 -Math.abs(
                                     Number(
@@ -605,20 +489,16 @@ const BudgetApp = {
                                     ) || 0
                                 )
                             )}
-
                         </div>
 
                     </article>
-
                 `;
-
             }).join("");
-
     },
 
 
     /* =====================================================
-       9. NEXT INCOME
+       8. NEXT INCOME
        ===================================================== */
 
     renderNextIncome(snapshot) {
@@ -626,12 +506,10 @@ const BudgetApp = {
         const storage =
             this.getStorage();
 
-
         const dateElement =
             document.getElementById(
                 "next-pay-date"
             );
-
 
         const amountElement =
             document.getElementById(
@@ -644,9 +522,7 @@ const BudgetApp = {
             !amountElement ||
             !storage
         ) {
-
             return;
-
         }
 
 
@@ -660,12 +536,9 @@ const BudgetApp = {
 
         income =
             income
-
                 .filter(
-                    item =>
-                        item.date
+                    item => item.date
                 )
-
                 .sort(
                     (a, b) =>
                         this.compareDates(
@@ -683,14 +556,11 @@ const BudgetApp = {
             const today =
                 this.getTodayKey();
 
-
             income =
                 income.filter(
                     item =>
-                        item.date >=
-                        today
+                        item.date >= today
                 );
-
         }
 
 
@@ -703,15 +573,10 @@ const BudgetApp = {
             dateElement.textContent =
                 "—";
 
-
             amountElement.textContent =
-                this.formatCurrency(
-                    0
-                );
-
+                this.formatCurrency(0);
 
             return;
-
         }
 
 
@@ -720,17 +585,15 @@ const BudgetApp = {
                 nextIncome.date
             );
 
-
         amountElement.textContent =
             this.formatCurrency(
                 nextIncome.amount
             );
-
     },
 
 
     /* =====================================================
-       10. DASHBOARD SAVINGS
+       9. DASHBOARD SAVINGS
        ===================================================== */
 
     renderDashboardSavings(snapshot) {
@@ -746,14 +609,30 @@ const BudgetApp = {
         }
 
 
+        const storage =
+            this.getStorage();
+
+
+        const generalSavings =
+            typeof storage?.getSavingsBalance ===
+                "function"
+                ? storage.getSavingsBalance()
+                : (
+                    Number(
+                        snapshot.generalSavingsBalance
+                    ) || 0
+                );
+
+
         const goals =
             Array.isArray(
                 snapshot.savingsGoals
             )
-                ? snapshot.savingsGoals.slice(
-                    0,
-                    3
-                )
+                ? snapshot.savingsGoals
+                    .slice(
+                        0,
+                        3
+                    )
                 : [];
 
 
@@ -762,49 +641,40 @@ const BudgetApp = {
         ) {
 
             if (
-                snapshot.summary.savings >
-                0
+                generalSavings > 0
             ) {
 
                 container.innerHTML = `
-
                     <article class="savings-goal-card">
 
                         <div class="savings-goal-header">
 
                             <span>
-                                Saved this month
+                                General Savings
                             </span>
 
                             <strong>
                                 ${this.formatCurrency(
-                                    snapshot.summary.savings
+                                    generalSavings
                                 )}
                             </strong>
 
                         </div>
 
                     </article>
-
                 `;
 
-
                 return;
-
             }
 
 
             container.innerHTML = `
-
                 <p class="empty-message">
                     No savings goals yet.
                 </p>
-
             `;
 
-
             return;
-
         }
 
 
@@ -812,15 +682,15 @@ const BudgetApp = {
             goals.map(
                 goal =>
                     this.createSavingsGoalHTML(
-                        goal
+                        goal,
+                        false
                     )
             ).join("");
-
     },
 
 
     /* =====================================================
-       11. RENDER MONTHLY BUDGET
+       10. MONTHLY BUDGET
        ===================================================== */
 
     renderBudget(snapshot) {
@@ -850,12 +720,9 @@ const BudgetApp = {
             typeof storage
                 .getMonthlyIncomeTotal ===
                 "function"
-
-                ? storage
-                    .getMonthlyIncomeTotal(
-                        snapshot.monthKey
-                    )
-
+                ? storage.getMonthlyIncomeTotal(
+                    snapshot.monthKey
+                )
                 : 0;
 
 
@@ -863,12 +730,29 @@ const BudgetApp = {
             typeof storage
                 .getYearlyIncomeTotal ===
                 "function"
+                ? storage.getYearlyIncomeTotal(
+                    selectedYear
+                )
+                : 0;
 
-                ? storage
-                    .getYearlyIncomeTotal(
-                        selectedYear
-                    )
 
+        const monthlyExpenses =
+            typeof storage
+                .getMonthlyExpenseTotal ===
+                "function"
+                ? storage.getMonthlyExpenseTotal(
+                    snapshot.monthKey
+                )
+                : 0;
+
+
+        const yearlyExpenses =
+            typeof storage
+                .getYearlyExpenseTotal ===
+                "function"
+                ? storage.getYearlyExpenseTotal(
+                    selectedYear
+                )
                 : 0;
 
 
@@ -877,44 +761,15 @@ const BudgetApp = {
             monthlyIncome
         );
 
-
         this.setMoneyText(
             "yearly-income-total",
             yearlyIncome
         );
 
-
-        const monthlyExpenses =
-            typeof storage
-                .getMonthlyExpenseTotal ===
-                "function"
-
-                ? storage
-                    .getMonthlyExpenseTotal(
-                        snapshot.monthKey
-                    )
-
-                : 0;
-
-
-        const yearlyExpenses =
-            typeof storage
-                .getYearlyExpenseTotal ===
-                "function"
-
-                ? storage
-                    .getYearlyExpenseTotal(
-                        selectedYear
-                    )
-
-                : 0;
-
-
         this.setMoneyText(
             "monthly-expense-total",
             monthlyExpenses
         );
-
 
         this.setMoneyText(
             "yearly-expense-total",
@@ -926,21 +781,18 @@ const BudgetApp = {
             snapshot.income || []
         );
 
-
         this.renderBillTable(
             snapshot.bills || []
         );
 
-
         this.renderExpenseTable(
             snapshot.expenses || []
         );
-
     },
 
 
     /* =====================================================
-       12. INCOME TABLE
+       11. INCOME TABLE
        ===================================================== */
 
     renderIncomeTable(income) {
@@ -962,16 +814,12 @@ const BudgetApp = {
         ) {
 
             container.innerHTML = `
-
                 <p class="empty-message">
                     No income added.
                 </p>
-
             `;
 
-
             return;
-
         }
 
 
@@ -986,24 +834,18 @@ const BudgetApp = {
 
 
         container.innerHTML = `
-
             <table>
 
                 <thead>
-
                     <tr>
-
                         <th>Income</th>
                         <th>Date</th>
                         <th>Type</th>
                         <th>Frequency</th>
                         <th>Amount</th>
                         <th>Actions</th>
-
                     </tr>
-
                 </thead>
-
 
                 <tbody>
 
@@ -1016,11 +858,9 @@ const BudgetApp = {
 
 
                         return `
-
                             <tr>
 
                                 <td>
-
                                     <strong>
                                         ${this.escapeHTML(
                                             item.source ||
@@ -1028,48 +868,34 @@ const BudgetApp = {
                                             "Income"
                                         )}
                                     </strong>
-
                                 </td>
 
-
                                 <td>
-
                                     ${this.formatDate(
                                         item.date
                                     )}
-
                                 </td>
 
-
                                 <td>
-
                                     ${this.escapeHTML(
                                         item.category ||
                                         "Other Income"
                                     )}
-
                                 </td>
 
-
                                 <td>
-
                                     ${this.escapeHTML(
                                         this.formatIncomeFrequency(
                                             item
                                         )
                                     )}
-
                                 </td>
 
-
                                 <td class="money-positive">
-
                                     ${this.formatCurrency(
                                         item.amount
                                     )}
-
                                 </td>
-
 
                                 <td>
 
@@ -1084,7 +910,6 @@ const BudgetApp = {
                                         >
                                             Edit
                                         </button>
-
 
                                         <button
                                             type="button"
@@ -1101,7 +926,6 @@ const BudgetApp = {
                                 </td>
 
                             </tr>
-
                         `;
 
                     }).join("")}
@@ -1109,70 +933,48 @@ const BudgetApp = {
                 </tbody>
 
             </table>
-
         `;
-
     },
 
 
     /* =====================================================
-       13. FORMAT INCOME FREQUENCY
+       12. INCOME FREQUENCY
        ===================================================== */
 
     formatIncomeFrequency(income) {
 
-        if (
-            !income.recurring
-        ) {
-
+        if (!income.recurring) {
             return "One-time";
-
         }
 
 
-        switch (
-            income.frequency
-        ) {
+        switch (income.frequency) {
 
             case "weekly":
-
                 return "Weekly";
 
-
             case "biweekly":
-
                 return "Biweekly";
 
-
             case "twice-monthly":
-
                 return "Twice Monthly";
 
-
             case "monthly":
-
                 return "Monthly";
 
-
             case "custom":
-
-                return this
-                    .formatCustomFrequency(
-                        income
-                    );
-
+                return this.formatCustomFrequency(
+                    income
+                );
 
             default:
-
                 return "Recurring";
-
         }
-
     },
 
 
     /* =====================================================
-       14. EXPENSE TABLE - P2.2
+       13. EXPENSE TABLE
        ===================================================== */
 
     renderExpenseTable(expenses) {
@@ -1194,16 +996,12 @@ const BudgetApp = {
         ) {
 
             container.innerHTML = `
-
                 <p class="empty-message">
                     No expenses added.
                 </p>
-
             `;
 
-
             return;
-
         }
 
 
@@ -1218,13 +1016,10 @@ const BudgetApp = {
 
 
         container.innerHTML = `
-
             <table>
 
                 <thead>
-
                     <tr>
-
                         <th>Expense</th>
                         <th>Date</th>
                         <th>Merchant</th>
@@ -1233,11 +1028,8 @@ const BudgetApp = {
                         <th>Frequency</th>
                         <th>Amount</th>
                         <th>Actions</th>
-
                     </tr>
-
                 </thead>
-
 
                 <tbody>
 
@@ -1250,7 +1042,6 @@ const BudgetApp = {
 
 
                         return `
-
                             <tr>
 
                                 <td>
@@ -1266,11 +1057,9 @@ const BudgetApp = {
                                         expense.notes
                                             ? `
                                                 <div class="table-note">
-
                                                     ${this.escapeHTML(
                                                         expense.notes
                                                     )}
-
                                                 </div>
                                             `
                                             : ""
@@ -1278,65 +1067,46 @@ const BudgetApp = {
 
                                 </td>
 
-
                                 <td>
-
                                     ${this.formatDate(
                                         expense.date
                                     )}
-
                                 </td>
 
-
                                 <td>
-
                                     ${this.escapeHTML(
                                         expense.merchant ||
                                         "—"
                                     )}
-
                                 </td>
 
-
                                 <td>
-
                                     ${this.escapeHTML(
                                         expense.category ||
                                         "Other"
                                     )}
-
                                 </td>
 
-
                                 <td>
-
                                     ${this.escapeHTML(
                                         expense.subcategory ||
                                         "—"
                                     )}
-
                                 </td>
 
-
                                 <td>
-
                                     ${this.escapeHTML(
                                         this.formatExpenseFrequency(
                                             expense
                                         )
                                     )}
-
                                 </td>
 
-
                                 <td class="money-negative">
-
                                     ${this.formatCurrency(
                                         expense.amount
                                     )}
-
                                 </td>
-
 
                                 <td>
 
@@ -1348,24 +1118,15 @@ const BudgetApp = {
                                             data-expense-edit="${this.escapeHTML(
                                                 expenseId
                                             )}"
-                                            aria-label="Edit ${this.escapeHTML(
-                                                expense.name ||
-                                                "expense"
-                                            )}"
                                         >
                                             Edit
                                         </button>
-
 
                                         <button
                                             type="button"
                                             class="text-button money-negative"
                                             data-expense-delete="${this.escapeHTML(
                                                 expenseId
-                                            )}"
-                                            aria-label="Delete ${this.escapeHTML(
-                                                expense.name ||
-                                                "expense"
                                             )}"
                                         >
                                             Delete
@@ -1376,7 +1137,6 @@ const BudgetApp = {
                                 </td>
 
                             </tr>
-
                         `;
 
                     }).join("")}
@@ -1384,70 +1144,48 @@ const BudgetApp = {
                 </tbody>
 
             </table>
-
         `;
-
     },
 
 
     /* =====================================================
-       15. FORMAT EXPENSE FREQUENCY
+       14. EXPENSE FREQUENCY
        ===================================================== */
 
     formatExpenseFrequency(expense) {
 
-        if (
-            !expense.recurring
-        ) {
-
+        if (!expense.recurring) {
             return "One-time";
-
         }
 
 
-        switch (
-            expense.frequency
-        ) {
+        switch (expense.frequency) {
 
             case "weekly":
-
                 return "Weekly";
 
-
             case "biweekly":
-
                 return "Biweekly";
 
-
             case "monthly":
-
                 return "Monthly";
 
-
             case "yearly":
-
                 return "Yearly";
 
-
             case "custom":
-
-                return this
-                    .formatCustomFrequency(
-                        expense
-                    );
-
+                return this.formatCustomFrequency(
+                    expense
+                );
 
             default:
-
                 return "Recurring";
-
         }
-
     },
 
 
     /* =====================================================
-       16. FORMAT CUSTOM FREQUENCY
+       15. CUSTOM FREQUENCY
        ===================================================== */
 
     formatCustomFrequency(item) {
@@ -1477,7 +1215,6 @@ const BudgetApp = {
                     0,
                     -1
                 );
-
         }
 
 
@@ -1490,12 +1227,11 @@ const BudgetApp = {
         return (
             `Every ${interval} ${label}`
         );
-
     },
 
 
     /* =====================================================
-       17. BILL TABLE
+       16. BILL TABLE
        ===================================================== */
 
     renderBillTable(bills) {
@@ -1517,16 +1253,12 @@ const BudgetApp = {
         ) {
 
             container.innerHTML = `
-
                 <p class="empty-message">
                     No bills added.
                 </p>
-
             `;
 
-
             return;
-
         }
 
 
@@ -1541,28 +1273,21 @@ const BudgetApp = {
 
 
         container.innerHTML = `
-
             <table>
 
                 <thead>
-
                     <tr>
-
                         <th>Bill</th>
                         <th>Due</th>
                         <th>Category</th>
                         <th>Amount</th>
                         <th>Repeats</th>
-
                     </tr>
-
                 </thead>
-
 
                 <tbody>
 
                     ${sorted.map(bill => `
-
                         <tr>
 
                             <td>
@@ -1571,13 +1296,11 @@ const BudgetApp = {
                                 )}
                             </td>
 
-
                             <td>
                                 ${this.formatDate(
                                     bill.dueDate
                                 )}
                             </td>
-
 
                             <td>
                                 ${this.escapeHTML(
@@ -1586,35 +1309,32 @@ const BudgetApp = {
                                 )}
                             </td>
 
-
                             <td class="money-negative">
                                 ${this.formatCurrency(
                                     bill.amount
                                 )}
                             </td>
 
-
                             <td>
-                                ${bill.recurring
-                                    ? "Yes"
-                                    : "No"}
+                                ${
+                                    bill.recurring
+                                        ? "Yes"
+                                        : "No"
+                                }
                             </td>
 
                         </tr>
-
                     `).join("")}
 
                 </tbody>
 
             </table>
-
         `;
-
     },
 
 
     /* =====================================================
-       18. TRANSACTION / ACTIVITY PAGE
+       17. TRANSACTIONS / ACTIVITY
        ===================================================== */
 
     renderTransactions(snapshot) {
@@ -1643,16 +1363,12 @@ const BudgetApp = {
         ) {
 
             container.innerHTML = `
-
                 <p class="empty-message">
                     No transactions yet.
                 </p>
-
             `;
 
-
             return;
-
         }
 
 
@@ -1683,13 +1399,11 @@ const BudgetApp = {
 
 
                     return `
-
                         <article class="transaction-item">
 
                             <div class="transaction-icon">
                                 ${icon}
                             </div>
-
 
                             <div class="transaction-info">
 
@@ -1701,50 +1415,46 @@ const BudgetApp = {
                                     )}
                                 </strong>
 
-
                                 <span>
 
                                     ${this.escapeHTML(
                                         subtitle
                                     )}
 
-                                    ${transaction.date
-                                        ? ` · ${this.formatDate(
-                                            transaction.date
-                                        )}`
-                                        : ""
+                                    ${
+                                        transaction.date
+                                            ? ` · ${this.formatDate(
+                                                transaction.date
+                                            )}`
+                                            : ""
                                     }
 
                                 </span>
 
                             </div>
 
-
                             <div class="
                                 transaction-amount
-                                ${isIncome
-                                    ? "income"
-                                    : "expense"}
+                                ${
+                                    isIncome
+                                        ? "income"
+                                        : "expense"
+                                }
                             ">
-
                                 ${this.formatSignedCurrency(
                                     amount
                                 )}
-
                             </div>
 
                         </article>
-
                     `;
-
                 }
             ).join("");
-
     },
 
 
     /* =====================================================
-       19. TRANSACTION ICON
+       18. TRANSACTION ICON
        ===================================================== */
 
     getTransactionIcon(transaction) {
@@ -1754,29 +1464,25 @@ const BudgetApp = {
         ) {
 
             case "income":
-
-                return "💵";
-
-
             case "paycheck":
-
                 return "💵";
-
 
             case "bill":
-
                 return "🧾";
 
-
             case "expense":
-
                 return "🛒";
-
 
             case "savings-deposit":
 
-                return "🏦";
+                if (
+                    transaction.direction ===
+                    "savings-to-checking"
+                ) {
+                    return "↩";
+                }
 
+                return "🏦";
 
             case "transaction":
 
@@ -1788,18 +1494,14 @@ const BudgetApp = {
                         : "−"
                 );
 
-
             default:
-
                 return "$";
-
         }
-
     },
 
 
     /* =====================================================
-       20. TRANSACTION SUBTITLE
+       19. TRANSACTION SUBTITLE
        ===================================================== */
 
     getTransactionSubtitle(
@@ -1812,15 +1514,12 @@ const BudgetApp = {
         ) {
 
             return transaction.paid
-
                 ? (
                     `${transaction.category || "Bill"} · Paid`
                 )
-
                 : (
                     `${transaction.category || "Bill"} · Planned Bill`
                 );
-
         }
 
 
@@ -1829,9 +1528,7 @@ const BudgetApp = {
             "income"
         ) {
 
-            const parts =
-                [];
-
+            const parts = [];
 
             parts.push(
                 transaction.category ||
@@ -1848,14 +1545,12 @@ const BudgetApp = {
                         transaction
                     )
                 );
-
             }
 
 
             return parts.join(
                 " · "
             );
-
         }
 
 
@@ -1864,8 +1559,31 @@ const BudgetApp = {
             "savings-deposit"
         ) {
 
-            return "Savings";
+            if (
+                transaction.direction ===
+                "savings-to-checking"
+            ) {
 
+                return (
+                    "General Savings → Checking"
+                );
+            }
+
+
+            if (
+                transaction.direction ===
+                "checking-to-goal"
+            ) {
+
+                return (
+                    "Checking → Savings Fund"
+                );
+            }
+
+
+            return (
+                "Checking → General Savings"
+            );
         }
 
 
@@ -1874,40 +1592,33 @@ const BudgetApp = {
             "expense"
         ) {
 
-            const parts =
-                [];
+            const parts = [];
 
 
             if (
                 transaction.merchant
             ) {
-
                 parts.push(
                     transaction.merchant
                 );
-
             }
 
 
             if (
                 transaction.category
             ) {
-
                 parts.push(
                     transaction.category
                 );
-
             }
 
 
             if (
                 transaction.subcategory
             ) {
-
                 parts.push(
                     transaction.subcategory
                 );
-
             }
 
 
@@ -1920,7 +1631,6 @@ const BudgetApp = {
                         transaction
                     )
                 );
-
             }
 
 
@@ -1931,7 +1641,6 @@ const BudgetApp = {
                 ||
                 "Expense"
             );
-
         }
 
 
@@ -1939,23 +1648,101 @@ const BudgetApp = {
             transaction.category ||
             "Transaction"
         );
-
     },
 
 
     /* =====================================================
-       21. SAVINGS PAGE
+       20. SAVINGS PAGE
        ===================================================== */
 
     renderSavings(snapshot) {
 
-        const balance =
-            this.calculateOverallSavings();
+        const storage =
+            this.getStorage();
 
+
+        if (!storage) {
+            return;
+        }
+
+
+        const goals =
+            Array.isArray(
+                snapshot.savingsGoals
+            )
+                ? snapshot.savingsGoals
+                : [];
+
+
+        const generalSavings =
+            typeof storage
+                .getSavingsBalance ===
+                "function"
+                ? storage.getSavingsBalance()
+                : (
+                    Number(
+                        snapshot.generalSavingsBalance
+                    ) || 0
+                );
+
+
+        const allocatedSavings =
+            typeof storage
+                .getAllocatedSavingsTotal ===
+                "function"
+                ? storage.getAllocatedSavingsTotal()
+                : goals.reduce(
+                    (total, goal) =>
+                        total +
+                        (
+                            Number(
+                                goal.currentAmount
+                            ) || 0
+                        ),
+                    0
+                );
+
+
+        const totalSavings =
+            typeof storage
+                .getTotalSavingsBalance ===
+                "function"
+                ? storage.getTotalSavingsBalance()
+                : (
+                    generalSavings +
+                    allocatedSavings
+                );
+
+
+        /*
+            Main savings balance now means
+            GENERAL SAVINGS only.
+        */
 
         this.setMoneyText(
             "savings-balance",
-            balance
+            generalSavings
+        );
+
+
+        /*
+            These IDs are used by the upgraded
+            Savings HTML when present.
+        */
+
+        this.setMoneyText(
+            "savings-general-balance",
+            generalSavings
+        );
+
+        this.setMoneyText(
+            "savings-allocated-balance",
+            allocatedSavings
+        );
+
+        this.setMoneyText(
+            "savings-total-balance",
+            totalSavings
         );
 
 
@@ -1970,29 +1757,29 @@ const BudgetApp = {
         }
 
 
-        const goals =
-            Array.isArray(
-                snapshot.savingsGoals
-            )
-                ? snapshot.savingsGoals
-                : [];
-
-
         if (
             goals.length === 0
         ) {
 
             container.innerHTML = `
+                <div class="savings-empty-state">
 
-                <p class="empty-message">
-                    No savings goals created.
-                </p>
+                    <p class="empty-message">
+                        No savings goals created.
+                    </p>
 
+                    <button
+                        type="button"
+                        class="primary-button"
+                        data-money-action="savings-goal"
+                    >
+                        + Create Savings Goal
+                    </button>
+
+                </div>
             `;
 
-
             return;
-
         }
 
 
@@ -2000,18 +1787,21 @@ const BudgetApp = {
             goals.map(
                 goal =>
                     this.createSavingsGoalHTML(
-                        goal
+                        goal,
+                        true
                     )
             ).join("");
-
     },
 
 
     /* =====================================================
-       22. SAVINGS GOAL CARD
+       21. SAVINGS GOAL CARD
        ===================================================== */
 
-    createSavingsGoalHTML(goal) {
+    createSavingsGoalHTML(
+        goal,
+        showActions = true
+    ) {
 
         const target =
             Number(
@@ -2025,8 +1815,14 @@ const BudgetApp = {
             ) || 0;
 
 
-        let percent =
-            0;
+        const remaining =
+            Math.max(
+                target - current,
+                0
+            );
+
+
+        let percent = 0;
 
 
         if (
@@ -2038,7 +1834,6 @@ const BudgetApp = {
                     current /
                     target
                 ) * 100;
-
         }
 
 
@@ -2052,36 +1847,74 @@ const BudgetApp = {
             );
 
 
-        return `
+        const goalId =
+            this.escapeHTML(
+                goal.id ||
+                ""
+            );
 
-            <article class="savings-goal-card">
+
+        const completed =
+            target > 0 &&
+            current >= target;
+
+
+        return `
+            <article class="
+                savings-goal-card
+                ${
+                    completed
+                        ? "completed"
+                        : ""
+                }
+            ">
 
                 <div class="savings-goal-header">
 
-                    <div>
+                    <div class="savings-goal-title">
 
                         <strong>
                             ${this.escapeHTML(
-                                goal.name
+                                goal.name ||
+                                "Savings Goal"
                             )}
                         </strong>
 
+                        ${
+                            completed
+                                ? `
+                                    <span class="savings-goal-complete">
+                                        ✓ Goal Complete
+                                    </span>
+                                `
+                                : `
+                                    <span>
+                                        ${this.formatCurrency(
+                                            remaining
+                                        )}
+                                        still needed
+                                    </span>
+                                `
+                        }
+
                     </div>
 
+                    <div class="savings-goal-amount">
 
-                    <strong>
+                        <strong>
+                            ${this.formatCurrency(
+                                current
+                            )}
+                        </strong>
 
-                        ${this.formatCurrency(
-                            current
-                        )}
+                        <span>
+                            of
+                            ${this.formatCurrency(
+                                target
+                            )}
+                        </span>
 
-                        /
-
-                        ${this.formatCurrency(
-                            target
-                        )}
-
-                    </strong>
+                    </div>
 
                 </div>
 
@@ -2101,15 +1934,104 @@ const BudgetApp = {
 
                 </div>
 
+
+                <div class="savings-goal-progress-details">
+
+                    <span>
+                        ${percent.toFixed(0)}% funded
+                    </span>
+
+                    <span>
+                        ${this.formatCurrency(
+                            remaining
+                        )}
+                        remaining
+                    </span>
+
+                </div>
+
+
+                ${
+                    goal.targetDate
+                        ? `
+                            <div class="savings-goal-target-date">
+                                Target:
+                                ${this.formatDate(
+                                    goal.targetDate
+                                )}
+                            </div>
+                        `
+                        : ""
+                }
+
+
+                ${
+                    goal.notes
+                        ? `
+                            <p class="savings-goal-notes">
+                                ${this.escapeHTML(
+                                    goal.notes
+                                )}
+                            </p>
+                        `
+                        : ""
+                }
+
+
+                ${
+                    showActions
+                        ? `
+                            <div class="savings-goal-actions">
+
+                                <button
+                                    type="button"
+                                    class="savings-action-button allocate"
+                                    data-savings-allocate="${goalId}"
+                                >
+                                    + Allocate
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="savings-action-button release"
+                                    data-savings-release="${goalId}"
+                                    ${
+                                        current <= 0
+                                            ? "disabled"
+                                            : ""
+                                    }
+                                >
+                                    ↩ Return
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="savings-action-button edit"
+                                    data-savings-goal-edit="${goalId}"
+                                >
+                                    Edit
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="savings-action-button delete"
+                                    data-savings-goal-delete="${goalId}"
+                                >
+                                    Delete
+                                </button>
+
+                            </div>
+                        `
+                        : ""
+                }
+
             </article>
-
         `;
-
     },
 
 
     /* =====================================================
-       23. CALCULATE OVERALL SAVINGS
+       22. CALCULATE OVERALL SAVINGS
        ===================================================== */
 
     calculateOverallSavings() {
@@ -2123,11 +2045,25 @@ const BudgetApp = {
         }
 
 
+        if (
+            typeof storage
+                .getTotalSavingsBalance ===
+                "function"
+        ) {
+
+            return (
+                Number(
+                    storage.getTotalSavingsBalance()
+                ) || 0
+            );
+        }
+
+
         const data =
             storage.load();
 
 
-        const savingsGoals =
+        const goals =
             Array.isArray(
                 data.savingsGoals
             )
@@ -2136,70 +2072,1582 @@ const BudgetApp = {
 
 
         const goalTotal =
-            savingsGoals.reduce(
-                (
-                    total,
-                    goal
-                ) =>
-
+            goals.reduce(
+                (total, goal) =>
                     total +
                     (
                         Number(
                             goal.currentAmount
                         ) || 0
                     ),
-
                 0
             );
 
 
-        let generalSavings =
-            0;
-
-
-        Object.values(
-            data.months ||
-            {}
-        ).forEach(month => {
-
-            const deposits =
-                Array.isArray(
-                    month.savingsDeposits
-                )
-                    ? month.savingsDeposits
-                    : [];
-
-
-            deposits.forEach(
-                deposit => {
-
-                    if (
-                        !deposit.goalId
-                    ) {
-
-                        generalSavings +=
-                            Number(
-                                deposit.amount
-                            ) || 0;
-
-                    }
-
-                }
-            );
-
-        });
+        const generalSavings =
+            Number(
+                data.accounts
+                    ?.savings
+                    ?.balance
+            ) || 0;
 
 
         return (
-            goalTotal +
-            generalSavings
+            generalSavings +
+            goalTotal
         );
-
     },
 
 
     /* =====================================================
-       24. FORMAT CURRENCY
+       23. REPORTS INITIALIZATION
+       ===================================================== */
+
+    initializeReports() {
+
+        if (
+            this.reportsInitialized
+        ) {
+            return;
+        }
+
+
+        const reportTypeSelect =
+            document.getElementById(
+                "report-type-select"
+            );
+
+
+        if (!reportTypeSelect) {
+            return;
+        }
+
+
+        this.reportsInitialized =
+            true;
+
+
+        this.populateReportYearSelectors();
+
+
+        const today =
+            new Date();
+
+
+        const currentYear =
+            String(
+                today.getFullYear()
+            );
+
+
+        const currentMonth =
+            String(
+                today.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        const monthlyMonth =
+            document.getElementById(
+                "report-month-select"
+            );
+
+        const monthlyYear =
+            document.getElementById(
+                "report-month-year-select"
+            );
+
+        const yearlyYear =
+            document.getElementById(
+                "report-year-select"
+            );
+
+        const startMonth =
+            document.getElementById(
+                "report-start-month-select"
+            );
+
+        const startYear =
+            document.getElementById(
+                "report-start-year-select"
+            );
+
+        const endMonth =
+            document.getElementById(
+                "report-end-month-select"
+            );
+
+        const endYear =
+            document.getElementById(
+                "report-end-year-select"
+            );
+
+
+        reportTypeSelect.value =
+            reportTypeSelect.value ||
+            "monthly";
+
+
+        if (monthlyMonth) {
+            monthlyMonth.value =
+                currentMonth;
+        }
+
+
+        if (monthlyYear) {
+            monthlyYear.value =
+                currentYear;
+        }
+
+
+        if (yearlyYear) {
+            yearlyYear.value =
+                currentYear;
+        }
+
+
+        if (startMonth) {
+            startMonth.value =
+                "01";
+        }
+
+
+        if (startYear) {
+            startYear.value =
+                currentYear;
+        }
+
+
+        if (endMonth) {
+            endMonth.value =
+                currentMonth;
+        }
+
+
+        if (endYear) {
+            endYear.value =
+                currentYear;
+        }
+
+
+        [
+            monthlyMonth,
+            monthlyYear,
+            yearlyYear,
+            startMonth,
+            startYear,
+            endMonth,
+            endYear
+        ].forEach(control => {
+
+            if (!control) {
+                return;
+            }
+
+
+            control.addEventListener(
+                "change",
+                () => this.renderReports()
+            );
+        });
+
+
+        this.updateReportControlVisibility();
+    },
+
+
+    /* =====================================================
+       24. REPORT YEARS
+       ===================================================== */
+
+    getAvailableReportYears() {
+
+        const storage =
+            this.getStorage();
+
+
+        const currentYear =
+            new Date()
+                .getFullYear();
+
+
+        const years =
+            new Set();
+
+
+        for (
+            let year =
+                currentYear - 10;
+
+            year <=
+                currentYear + 10;
+
+            year++
+        ) {
+            years.add(year);
+        }
+
+
+        if (!storage) {
+            return Array.from(
+                years
+            ).sort(
+                (a, b) =>
+                    a - b
+            );
+        }
+
+
+        try {
+
+            const data =
+                storage.load();
+
+
+            Object.keys(
+                data.months || {}
+            ).forEach(monthKey => {
+
+                const year =
+                    Number(
+                        monthKey
+                            .split("-")[0]
+                    );
+
+
+                if (
+                    Number.isFinite(
+                        year
+                    )
+                ) {
+                    years.add(year);
+                }
+            });
+
+
+            [
+                ...(data.income || []),
+                ...(data.expenses || [])
+            ].forEach(item => {
+
+                if (!item.date) {
+                    return;
+                }
+
+
+                const year =
+                    Number(
+                        String(
+                            item.date
+                        ).slice(
+                            0,
+                            4
+                        )
+                    );
+
+
+                if (
+                    Number.isFinite(
+                        year
+                    )
+                ) {
+                    years.add(year);
+                }
+            });
+
+        }
+
+        catch (error) {
+
+            console.warn(
+                "M-Wallet could not read years for Reports:",
+                error
+            );
+        }
+
+
+        return Array.from(
+            years
+        ).sort(
+            (a, b) =>
+                a - b
+        );
+    },
+
+
+    /* =====================================================
+       25. REPORT YEAR SELECTORS
+       ===================================================== */
+
+    populateReportYearSelectors() {
+
+        const selectors = [
+
+            document.getElementById(
+                "report-month-year-select"
+            ),
+
+            document.getElementById(
+                "report-year-select"
+            ),
+
+            document.getElementById(
+                "report-start-year-select"
+            ),
+
+            document.getElementById(
+                "report-end-year-select"
+            )
+        ];
+
+
+        const years =
+            this.getAvailableReportYears();
+
+
+        selectors.forEach(
+            selector => {
+
+                if (!selector) {
+                    return;
+                }
+
+
+                const existingValue =
+                    selector.value;
+
+
+                selector.innerHTML =
+                    "";
+
+
+                years.forEach(year => {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+
+                    option.value =
+                        String(year);
+
+                    option.textContent =
+                        String(year);
+
+
+                    selector.appendChild(
+                        option
+                    );
+                });
+
+
+                if (
+                    existingValue &&
+                    years.includes(
+                        Number(
+                            existingValue
+                        )
+                    )
+                ) {
+                    selector.value =
+                        existingValue;
+                }
+            }
+        );
+    },
+
+
+    /* =====================================================
+       26. REPORT CONTROL VISIBILITY
+       ===================================================== */
+
+    updateReportControlVisibility() {
+
+        const reportTypeSelect =
+            document.getElementById(
+                "report-type-select"
+            );
+
+
+        const monthlyControls =
+            document.getElementById(
+                "report-monthly-controls"
+            );
+
+
+        const yearlyControls =
+            document.getElementById(
+                "report-yearly-controls"
+            );
+
+
+        const rangeControls =
+            document.getElementById(
+                "report-range-controls"
+            );
+
+
+        const description =
+            document.getElementById(
+                "report-control-description"
+            );
+
+
+        if (!reportTypeSelect) {
+            return;
+        }
+
+
+        const reportType =
+            reportTypeSelect.value ||
+            "monthly";
+
+
+        if (monthlyControls) {
+            monthlyControls.hidden =
+                reportType !==
+                "monthly";
+        }
+
+
+        if (yearlyControls) {
+            yearlyControls.hidden =
+                reportType !==
+                "yearly";
+        }
+
+
+        if (rangeControls) {
+            rangeControls.hidden =
+                reportType !==
+                "range";
+        }
+
+
+        if (!description) {
+            return;
+        }
+
+
+        switch (reportType) {
+
+            case "yearly":
+
+                description.textContent =
+                    "Choose the year you want to review.";
+
+                break;
+
+
+            case "range":
+
+                description.textContent =
+                    "Choose a starting month and ending month for your report.";
+
+                break;
+
+
+            default:
+
+                description.textContent =
+                    "Choose the month and year you want to review.";
+
+                break;
+        }
+    },
+
+
+    /* =====================================================
+       27. REPORT SELECTION
+       ===================================================== */
+
+    getReportSelection() {
+
+        const reportTypeSelect =
+            document.getElementById(
+                "report-type-select"
+            );
+
+
+        if (!reportTypeSelect) {
+            return null;
+        }
+
+
+        const reportType =
+            reportTypeSelect.value ||
+            "monthly";
+
+
+        if (
+            reportType ===
+            "yearly"
+        ) {
+
+            const year =
+                document.getElementById(
+                    "report-year-select"
+                )?.value;
+
+
+            if (!year) {
+                return null;
+            }
+
+
+            return {
+                type:
+                    "yearly",
+                year
+            };
+        }
+
+
+        if (
+            reportType ===
+            "range"
+        ) {
+
+            const startMonth =
+                document.getElementById(
+                    "report-start-month-select"
+                )?.value;
+
+            const startYear =
+                document.getElementById(
+                    "report-start-year-select"
+                )?.value;
+
+            const endMonth =
+                document.getElementById(
+                    "report-end-month-select"
+                )?.value;
+
+            const endYear =
+                document.getElementById(
+                    "report-end-year-select"
+                )?.value;
+
+
+            if (
+                !startMonth ||
+                !startYear ||
+                !endMonth ||
+                !endYear
+            ) {
+                return null;
+            }
+
+
+            let startKey =
+                `${startYear}-${startMonth}`;
+
+            let endKey =
+                `${endYear}-${endMonth}`;
+
+
+            if (
+                startKey > endKey
+            ) {
+
+                const temp =
+                    startKey;
+
+                startKey =
+                    endKey;
+
+                endKey =
+                    temp;
+            }
+
+
+            return {
+                type:
+                    "range",
+                startKey,
+                endKey
+            };
+        }
+
+
+        const month =
+            document.getElementById(
+                "report-month-select"
+            )?.value;
+
+        const year =
+            document.getElementById(
+                "report-month-year-select"
+            )?.value;
+
+
+        if (
+            !month ||
+            !year
+        ) {
+            return null;
+        }
+
+
+        return {
+            type:
+                "monthly",
+            month,
+            year,
+            monthKey:
+                `${year}-${month}`
+        };
+    },
+
+
+    /* =====================================================
+       28. REPORT MONTH KEYS
+       ===================================================== */
+
+    getReportMonthKeys(selection) {
+
+        if (!selection) {
+            return [];
+        }
+
+
+        if (
+            selection.type ===
+            "monthly"
+        ) {
+
+            return [
+                selection.monthKey
+            ];
+        }
+
+
+        if (
+            selection.type ===
+            "yearly"
+        ) {
+
+            const keys = [];
+
+
+            for (
+                let month = 1;
+                month <= 12;
+                month++
+            ) {
+
+                keys.push(
+                    `${selection.year}-${String(
+                        month
+                    ).padStart(
+                        2,
+                        "0"
+                    )}`
+                );
+            }
+
+
+            return keys;
+        }
+
+
+        if (
+            selection.type ===
+            "range"
+        ) {
+
+            return this.buildMonthRange(
+                selection.startKey,
+                selection.endKey
+            );
+        }
+
+
+        return [];
+    },
+
+
+    /* =====================================================
+       29. BUILD MONTH RANGE
+       ===================================================== */
+
+    buildMonthRange(
+        startKey,
+        endKey
+    ) {
+
+        const results = [];
+
+
+        const [
+            startYearValue,
+            startMonthValue
+        ] =
+            String(
+                startKey
+            ).split("-");
+
+
+        const [
+            endYearValue,
+            endMonthValue
+        ] =
+            String(
+                endKey
+            ).split("-");
+
+
+        let year =
+            Number(
+                startYearValue
+            );
+
+        let month =
+            Number(
+                startMonthValue
+            );
+
+
+        const endYear =
+            Number(
+                endYearValue
+            );
+
+        const endMonth =
+            Number(
+                endMonthValue
+            );
+
+
+        let safety = 0;
+
+
+        while (
+            (
+                year < endYear ||
+                (
+                    year === endYear &&
+                    month <= endMonth
+                )
+            )
+            &&
+            safety < 600
+        ) {
+
+            results.push(
+                `${year}-${String(
+                    month
+                ).padStart(
+                    2,
+                    "0"
+                )}`
+            );
+
+
+            month += 1;
+
+
+            if (
+                month > 12
+            ) {
+
+                month = 1;
+                year += 1;
+            }
+
+
+            safety += 1;
+        }
+
+
+        return results;
+    },
+
+
+    /* =====================================================
+       30. RENDER REPORTS
+       ===================================================== */
+
+    renderReports() {
+
+        const storage =
+            this.getStorage();
+
+        const reportsPage =
+            document.getElementById(
+                "reports-page"
+            );
+
+
+        if (
+            !storage ||
+            !reportsPage
+        ) {
+            return;
+        }
+
+
+        if (
+            !this.reportsInitialized
+        ) {
+            this.initializeReports();
+        }
+
+
+        this.updateReportControlVisibility();
+
+
+        const selection =
+            this.getReportSelection();
+
+
+        if (!selection) {
+            return;
+        }
+
+
+        const monthKeys =
+            this.getReportMonthKeys(
+                selection
+            );
+
+
+        const reportData =
+            this.collectReportData(
+                monthKeys
+            );
+
+
+        this.renderReportPeriodLabel(
+            selection
+        );
+
+
+        this.setMoneyText(
+            "report-total-income",
+            reportData.income
+        );
+
+        this.setMoneyText(
+            "report-total-bills",
+            reportData.bills
+        );
+
+        this.setMoneyText(
+            "report-total-expenses",
+            reportData.expenses
+        );
+
+        this.setMoneyText(
+            "report-total-savings",
+            reportData.savings
+        );
+
+        this.setMoneyText(
+            "report-net-remaining",
+            reportData.net
+        );
+
+
+        this.renderReportOverview(
+            reportData
+        );
+
+
+        this.renderReportBreakdown(
+            "report-category-breakdown",
+            reportData.categories,
+            "No categorized expenses in this report."
+        );
+
+
+        this.renderReportBreakdown(
+            "report-merchant-breakdown",
+            reportData.merchants,
+            "No merchant spending in this report."
+        );
+    },
+
+
+    /* =====================================================
+       31. COLLECT REPORT DATA
+       ===================================================== */
+
+    collectReportData(monthKeys) {
+
+        const storage =
+            this.getStorage();
+
+
+        const reportData = {
+
+            income:
+                0,
+
+            bills:
+                0,
+
+            expenses:
+                0,
+
+            /*
+                Signed savings flow:
+
+                positive = net money moved
+                           Checking → Savings
+
+                negative = net money moved
+                           Savings → Checking
+            */
+
+            savings:
+                0,
+
+            savingsDeposited:
+                0,
+
+            savingsWithdrawn:
+                0,
+
+            net:
+                0,
+
+            categories:
+                {},
+
+            merchants:
+                {}
+        };
+
+
+        if (
+            !storage ||
+            !Array.isArray(
+                monthKeys
+            )
+        ) {
+            return reportData;
+        }
+
+
+        monthKeys.forEach(
+            monthKey => {
+
+                try {
+
+                    const snapshot =
+                        storage.getMonthSnapshot(
+                            monthKey
+                        );
+
+
+                    const summary =
+                        snapshot.summary ||
+                        {};
+
+
+                    reportData.income +=
+                        Number(
+                            summary.income
+                        ) || 0;
+
+
+                    reportData.bills +=
+                        Math.abs(
+                            Number(
+                                summary.bills
+                            ) || 0
+                        );
+
+
+                    reportData.expenses +=
+                        Math.abs(
+                            Number(
+                                summary.expenses
+                            ) || 0
+                        );
+
+
+                    /*
+                        IMPORTANT:
+                        Do NOT use Math.abs(summary.savings).
+
+                        A withdrawal is negative savings flow
+                        and must increase Checking rather than
+                        pretending that more money was saved.
+                    */
+
+                    const savingsFlow =
+                        Number(
+                            summary.savings
+                        ) || 0;
+
+
+                    reportData.savings +=
+                        savingsFlow;
+
+
+                    const savingsDeposits =
+                        Array.isArray(
+                            snapshot.savingsDeposits
+                        )
+                            ? snapshot.savingsDeposits
+                            : [];
+
+
+                    savingsDeposits.forEach(
+                        transfer => {
+
+                            const amount =
+                                Number(
+                                    transfer.amount
+                                ) || 0;
+
+
+                            if (
+                                amount > 0
+                            ) {
+
+                                reportData
+                                    .savingsDeposited +=
+                                    amount;
+                            }
+
+
+                            if (
+                                amount < 0
+                            ) {
+
+                                reportData
+                                    .savingsWithdrawn +=
+                                    Math.abs(
+                                        amount
+                                    );
+                            }
+                        }
+                    );
+
+
+                    const expenses =
+                        Array.isArray(
+                            snapshot.expenses
+                        )
+                            ? snapshot.expenses
+                            : [];
+
+
+                    expenses.forEach(
+                        expense => {
+
+                            const amount =
+                                Math.abs(
+                                    Number(
+                                        expense.amount
+                                    ) || 0
+                                );
+
+
+                            if (
+                                amount <= 0
+                            ) {
+                                return;
+                            }
+
+
+                            const category =
+                                String(
+                                    expense.category ||
+                                    "Other"
+                                ).trim()
+                                ||
+                                "Other";
+
+
+                            const merchant =
+                                String(
+                                    expense.merchant ||
+                                    "Unassigned"
+                                ).trim()
+                                ||
+                                "Unassigned";
+
+
+                            reportData.categories[
+                                category
+                            ] =
+                                (
+                                    reportData.categories[
+                                        category
+                                    ] || 0
+                                )
+                                +
+                                amount;
+
+
+                            reportData.merchants[
+                                merchant
+                            ] =
+                                (
+                                    reportData.merchants[
+                                        merchant
+                                    ] || 0
+                                )
+                                +
+                                amount;
+                        }
+                    );
+
+                }
+
+                catch (error) {
+
+                    console.warn(
+                        `Could not include ${monthKey} in report:`,
+                        error
+                    );
+                }
+            }
+        );
+
+
+        reportData.net =
+            reportData.income
+            -
+            reportData.bills
+            -
+            reportData.expenses
+            -
+            reportData.savings;
+
+
+        return reportData;
+    },
+
+
+    /* =====================================================
+       32. REPORT PERIOD LABEL
+       ===================================================== */
+
+    renderReportPeriodLabel(
+        selection
+    ) {
+
+        const label =
+            document.getElementById(
+                "report-period-label"
+            );
+
+
+        if (
+            !label ||
+            !selection
+        ) {
+            return;
+        }
+
+
+        if (
+            selection.type ===
+            "yearly"
+        ) {
+
+            label.textContent =
+                selection.year;
+
+            return;
+        }
+
+
+        if (
+            selection.type ===
+            "range"
+        ) {
+
+            label.textContent =
+                (
+                    `${this.formatMonthKey(
+                        selection.startKey
+                    )} – ` +
+                    `${this.formatMonthKey(
+                        selection.endKey
+                    )}`
+                );
+
+            return;
+        }
+
+
+        label.textContent =
+            this.formatMonthKey(
+                selection.monthKey
+            );
+    },
+
+
+    /* =====================================================
+       33. FORMAT MONTH KEY
+       ===================================================== */
+
+    formatMonthKey(monthKey) {
+
+        if (!monthKey) {
+            return "—";
+        }
+
+
+        const [
+            yearValue,
+            monthValue
+        ] =
+            String(
+                monthKey
+            ).split("-");
+
+
+        const year =
+            Number(
+                yearValue
+            );
+
+        const month =
+            Number(
+                monthValue
+            );
+
+
+        if (
+            !Number.isFinite(year) ||
+            !Number.isFinite(month)
+        ) {
+
+            return String(
+                monthKey
+            );
+        }
+
+
+        const date =
+            new Date(
+                year,
+                month - 1,
+                1
+            );
+
+
+        return new Intl.DateTimeFormat(
+            "en-US",
+            {
+                month:
+                    "long",
+                year:
+                    "numeric"
+            }
+        ).format(
+            date
+        );
+    },
+
+
+    /* =====================================================
+       34. REPORT OVERVIEW
+       ===================================================== */
+
+    renderReportOverview(reportData) {
+
+        const container =
+            document.getElementById(
+                "report-overview-chart"
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        const values = [
+
+            {
+                label:
+                    "Income",
+                value:
+                    reportData.income,
+                className:
+                    "income"
+            },
+
+            {
+                label:
+                    "Bills",
+                value:
+                    reportData.bills,
+                className:
+                    "bills"
+            },
+
+            {
+                label:
+                    "Expenses",
+                value:
+                    reportData.expenses,
+                className:
+                    "expenses"
+            },
+
+            {
+                label:
+                    reportData.savings < 0
+                        ? "Net Savings Withdrawal"
+                        : "Net Savings",
+
+                value:
+                    reportData.savings,
+
+                className:
+                    "savings"
+            }
+        ];
+
+
+        const maximum =
+            Math.max(
+                ...values.map(
+                    item =>
+                        Math.abs(
+                            Number(
+                                item.value
+                            ) || 0
+                        )
+                ),
+                1
+            );
+
+
+        container.innerHTML = `
+            <div class="report-overview-bars">
+
+                ${values.map(item => {
+
+                    const amount =
+                        Number(
+                            item.value
+                        ) || 0;
+
+
+                    const absoluteAmount =
+                        Math.abs(
+                            amount
+                        );
+
+
+                    const percent =
+                        Math.min(
+                            (
+                                absoluteAmount /
+                                maximum
+                            ) * 100,
+                            100
+                        );
+
+
+                    return `
+                        <article class="report-overview-row">
+
+                            <div class="report-overview-row-header">
+
+                                <span>
+                                    ${this.escapeHTML(
+                                        item.label
+                                    )}
+                                </span>
+
+                                <strong>
+                                    ${this.formatCurrency(
+                                        amount
+                                    )}
+                                </strong>
+
+                            </div>
+
+                            <div class="report-overview-track">
+
+                                <div
+                                    class="
+                                        report-overview-fill
+                                        ${this.escapeHTML(
+                                            item.className
+                                        )}
+                                    "
+                                    style="width: ${percent}%"
+                                ></div>
+
+                            </div>
+
+                        </article>
+                    `;
+
+                }).join("")}
+
+            </div>
+        `;
+    },
+
+
+    /* =====================================================
+       35. REPORT BREAKDOWN
+       ===================================================== */
+
+    renderReportBreakdown(
+        containerId,
+        breakdown,
+        emptyMessage
+    ) {
+
+        const container =
+            document.getElementById(
+                containerId
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        const entries =
+            Object.entries(
+                breakdown || {}
+            )
+                .filter(
+                    ([
+                        ,
+                        amount
+                    ]) =>
+                        Number(amount) > 0
+                )
+                .sort(
+                    (first, second) =>
+                        Number(
+                            second[1]
+                        )
+                        -
+                        Number(
+                            first[1]
+                        )
+                );
+
+
+        if (
+            entries.length === 0
+        ) {
+
+            container.innerHTML = `
+                <p class="empty-message">
+                    ${this.escapeHTML(
+                        emptyMessage
+                    )}
+                </p>
+            `;
+
+            return;
+        }
+
+
+        const total =
+            entries.reduce(
+                (
+                    sum,
+                    [
+                        ,
+                        amount
+                    ]
+                ) =>
+                    sum +
+                    (
+                        Number(amount) || 0
+                    ),
+                0
+            );
+
+
+        container.innerHTML = `
+            <div class="report-breakdown-items">
+
+                ${entries.map(
+                    ([
+                        name,
+                        amount
+                    ]) => {
+
+                        const numericAmount =
+                            Number(
+                                amount
+                            ) || 0;
+
+
+                        const percent =
+                            total > 0
+                                ? (
+                                    numericAmount /
+                                    total
+                                ) * 100
+                                : 0;
+
+
+                        return `
+                            <article class="report-breakdown-item">
+
+                                <div class="report-breakdown-header">
+
+                                    <div>
+
+                                        <strong>
+                                            ${this.escapeHTML(
+                                                name
+                                            )}
+                                        </strong>
+
+                                        <span>
+                                            ${percent.toFixed(1)}%
+                                        </span>
+
+                                    </div>
+
+                                    <strong>
+                                        ${this.formatCurrency(
+                                            numericAmount
+                                        )}
+                                    </strong>
+
+                                </div>
+
+                                <div class="report-breakdown-track">
+
+                                    <div
+                                        class="report-breakdown-fill"
+                                        style="width: ${Math.min(
+                                            percent,
+                                            100
+                                        )}%"
+                                    ></div>
+
+                                </div>
+
+                            </article>
+                        `;
+                    }
+                ).join("")}
+
+            </div>
+        `;
+    },
+
+
+    /* =====================================================
+       36. CURRENCY
        ===================================================== */
 
     formatCurrency(value) {
@@ -2218,9 +3666,7 @@ const BudgetApp = {
             "USD";
 
 
-        if (
-            storage
-        ) {
+        if (storage) {
 
             try {
 
@@ -2229,7 +3675,9 @@ const BudgetApp = {
 
 
                 currency =
-                    data.settings?.currency ||
+                    data.settings
+                        ?.currency
+                    ||
                     "USD";
 
             }
@@ -2238,31 +3686,25 @@ const BudgetApp = {
 
                 currency =
                     "USD";
-
             }
-
         }
 
 
         return new Intl.NumberFormat(
             "en-US",
             {
-
                 style:
                     "currency",
-
                 currency
-
             }
         ).format(
             amount
         );
-
     },
 
 
     /* =====================================================
-       25. FORMAT SIGNED CURRENCY
+       37. SIGNED CURRENCY
        ===================================================== */
 
     formatSignedCurrency(value) {
@@ -2283,29 +3725,23 @@ const BudgetApp = {
                     amount
                 )
             );
-
         }
 
 
         return this.formatCurrency(
             amount
         );
-
     },
 
 
     /* =====================================================
-       26. FORMAT DATE
+       38. DATE FORMAT
        ===================================================== */
 
     formatDate(dateValue) {
 
-        if (
-            !dateValue
-        ) {
-
+        if (!dateValue) {
             return "—";
-
         }
 
 
@@ -2344,35 +3780,28 @@ const BudgetApp = {
                 return new Intl.DateTimeFormat(
                     "en-US",
                     {
-
                         month:
                             "short",
-
                         day:
                             "numeric",
-
                         year:
                             "numeric"
-
                     }
                 ).format(
                     date
                 );
-
             }
-
         }
 
 
         return String(
             dateValue
         );
-
     },
 
 
     /* =====================================================
-       27. DATE COMPARISON
+       39. DATE COMPARISON
        ===================================================== */
 
     compareDates(
@@ -2384,23 +3813,17 @@ const BudgetApp = {
             !first &&
             !second
         ) {
-
             return 0;
-
         }
 
 
         if (!first) {
-
             return 1;
-
         }
 
 
         if (!second) {
-
             return -1;
-
         }
 
 
@@ -2411,12 +3834,11 @@ const BudgetApp = {
                 second
             )
         );
-
     },
 
 
     /* =====================================================
-       28. TODAY KEY
+       40. TODAY KEY
        ===================================================== */
 
     getTodayKey() {
@@ -2452,12 +3874,11 @@ const BudgetApp = {
             `${month}-` +
             `${day}`
         );
-
     },
 
 
     /* =====================================================
-       29. SET MONEY ELEMENT
+       41. SET MONEY TEXT
        ===================================================== */
 
     setMoneyText(
@@ -2480,12 +3901,11 @@ const BudgetApp = {
             this.formatCurrency(
                 value
             );
-
     },
 
 
     /* =====================================================
-       30. ESCAPE HTML
+       42. ESCAPE HTML
        ===================================================== */
 
     escapeHTML(value) {
@@ -2493,37 +3913,31 @@ const BudgetApp = {
         return String(
             value ?? ""
         )
-
             .replaceAll(
                 "&",
                 "&amp;"
             )
-
             .replaceAll(
                 "<",
                 "&lt;"
             )
-
             .replaceAll(
                 ">",
                 "&gt;"
             )
-
             .replaceAll(
                 '"',
                 "&quot;"
             )
-
             .replaceAll(
                 "'",
                 "&#039;"
             );
-
     },
 
 
     /* =====================================================
-       31. SETTINGS ACTIONS
+       43. SETTINGS
        ===================================================== */
 
     bindSettingsActions() {
@@ -2540,42 +3954,29 @@ const BudgetApp = {
             );
 
 
-        if (
-            exportButton
-        ) {
+        if (exportButton) {
 
             exportButton.addEventListener(
                 "click",
-                () => {
-
-                    this.exportBudgetData();
-
-                }
+                () =>
+                    this.exportBudgetData()
             );
-
         }
 
 
-        if (
-            clearButton
-        ) {
+        if (clearButton) {
 
             clearButton.addEventListener(
                 "click",
-                () => {
-
-                    this.resetBudgetData();
-
-                }
+                () =>
+                    this.resetBudgetData()
             );
-
         }
-
     },
 
 
     /* =====================================================
-       32. EXPORT M-WALLET DATA
+       44. EXPORT DATA
        ===================================================== */
 
     exportBudgetData() {
@@ -2595,9 +3996,7 @@ const BudgetApp = {
 
         const blob =
             new Blob(
-                [
-                    json
-                ],
+                [json],
                 {
                     type:
                         "application/json"
@@ -2639,12 +4038,11 @@ const BudgetApp = {
         URL.revokeObjectURL(
             url
         );
-
     },
 
 
     /* =====================================================
-       33. RESET M-WALLET DATA
+       45. RESET DATA
        ===================================================== */
 
     resetBudgetData() {
@@ -2664,39 +4062,32 @@ const BudgetApp = {
             );
 
 
-        if (
-            !confirmed
-        ) {
-
+        if (!confirmed) {
             return;
-
         }
 
 
         storage.clearAllData();
 
-
         this.refresh();
-
     }
 
 };
 
 
 /* =========================================================
-   34. EXPOSE APP GLOBALLY
+   46. EXPOSE APP
    ========================================================= */
 
 window.BudgetApp =
     BudgetApp;
-
 
 window.MWalletApp =
     BudgetApp;
 
 
 /* =========================================================
-   35. START APP
+   47. START APP
    ========================================================= */
 
 if (
@@ -2707,9 +4098,7 @@ if (
     document.addEventListener(
         "DOMContentLoaded",
         () => {
-
             BudgetApp.init();
-
         }
     );
 
@@ -2718,7 +4107,6 @@ if (
 else {
 
     BudgetApp.init();
-
 }
 
 

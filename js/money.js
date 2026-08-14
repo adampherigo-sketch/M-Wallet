@@ -2,19 +2,167 @@
    M-WALLET
    Money Management + Universal Popup
    money.js
-   Phase 2.2 - Expense Edit + Delete
+
+   Savings System Upgrade
+   Checking ↔ General Savings ↔ Savings Goals
    ========================================================= */
 
 
 /* =========================================================
-   1. MONEY FORM DEFINITIONS
+   1. SAVINGS HELPERS
+   ========================================================= */
+
+function getMoneyStorage() {
+
+    return (
+        window.MWalletStorage ||
+        window.BudgetStorage ||
+        null
+    );
+
+}
+
+
+function formatMoneyCurrency(
+    value
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    let currency =
+        "USD";
+
+
+    try {
+
+        currency =
+            storage
+                ?.load()
+                ?.settings
+                ?.currency ||
+            "USD";
+
+    }
+
+    catch (error) {
+
+        currency =
+            "USD";
+
+    }
+
+
+    return new Intl.NumberFormat(
+        "en-US",
+        {
+            style:
+                "currency",
+
+            currency
+        }
+    ).format(
+        Number(
+            value
+        ) || 0
+    );
+
+}
+
+
+function getGeneralSavingsBalance() {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        storage &&
+        typeof storage.getSavingsBalance ===
+            "function"
+    ) {
+
+        return Number(
+            storage.getSavingsBalance()
+        ) || 0;
+
+    }
+
+
+    return 0;
+
+}
+
+
+function getSavingsGoalOptions() {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getSavingsGoals !==
+            "function"
+    ) {
+
+        return [];
+
+    }
+
+
+    return storage
+        .getSavingsGoals()
+        .map(
+            goal => {
+
+                const current =
+                    Number(
+                        goal.currentAmount
+                    ) || 0;
+
+
+                const target =
+                    Number(
+                        goal.targetAmount
+                    ) || 0;
+
+
+                return {
+
+                    value:
+                        goal.id,
+
+                    label:
+                        (
+                            `${goal.name} — ` +
+                            `${formatMoneyCurrency(
+                                current
+                            )} / ` +
+                            `${formatMoneyCurrency(
+                                target
+                            )}`
+                        )
+
+                };
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   2. MONEY FORM DEFINITIONS
    ========================================================= */
 
 const MONEY_FORMS = {
 
     income: {
 
-        title: "Add Income",
+        title:
+            "Add Income",
 
         fields: [
 
@@ -233,7 +381,8 @@ const MONEY_FORMS = {
 
     bill: {
 
-        title: "Add Bill",
+        title:
+            "Add Bill",
 
         fields: [
 
@@ -297,13 +446,10 @@ const MONEY_FORMS = {
     },
 
 
-    /* =====================================================
-       P2.2 EXPENSE MANAGEMENT
-       ===================================================== */
-
     expense: {
 
-        title: "Add Expense",
+        title:
+            "Add Expense",
 
         fields: [
 
@@ -433,7 +579,8 @@ const MONEY_FORMS = {
 
     transaction: {
 
-        title: "Add Transaction",
+        title:
+            "Add Transaction",
 
         fields: [
 
@@ -494,26 +641,31 @@ const MONEY_FORMS = {
     },
 
 
+    /* =====================================================
+       SAVINGS GOAL
+       ===================================================== */
+
     "savings-goal": {
 
-        title: "Add Savings Goal",
+        title:
+            "Add Savings Goal",
 
         fields: [
 
             {
                 type: "text",
                 name: "name",
-                label: "Goal Name",
-                placeholder: "Example: Emergency Fund",
+                label: "Fund / Goal Name",
+                placeholder: "Example: Fun Fund",
                 required: true
             },
 
             {
                 type: "number",
                 name: "targetAmount",
-                label: "Target Amount",
-                placeholder: "0.00",
-                min: "0",
+                label: "Goal Amount",
+                placeholder: "1000.00",
+                min: "0.01",
                 step: "0.01",
                 money: true,
                 required: true
@@ -522,13 +674,33 @@ const MONEY_FORMS = {
             {
                 type: "number",
                 name: "currentAmount",
-                label: "Current Amount",
+                label: "Allocated Amount",
                 placeholder: "0.00",
                 min: "0",
                 step: "0.01",
                 money: true,
                 value: "0",
-                required: true
+                required: true,
+
+                help:
+                    "Money assigned here comes from General Savings. Lowering this amount returns the difference to General Savings."
+            },
+
+            {
+                type: "date",
+                name: "targetDate",
+                label: "Target Date",
+
+                help:
+                    "Optional."
+            },
+
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about this savings goal"
             }
 
         ]
@@ -536,21 +708,191 @@ const MONEY_FORMS = {
     },
 
 
+    /* =====================================================
+       CHECKING → GENERAL SAVINGS
+       ===================================================== */
+
     "savings-deposit": {
 
-        title: "Add Money to Savings",
+        title:
+            "Add Money to Savings",
 
         fields: [
 
             {
                 type: "number",
                 name: "amount",
-                label: "Amount to Add",
+                label: "Amount to Move to Savings",
                 placeholder: "0.00",
                 min: "0.01",
                 step: "0.01",
                 money: true,
                 required: true
+            },
+
+            {
+                type: "date",
+                name: "date",
+                label: "Transfer Date",
+                required: true,
+                useSelectedMonth: true
+            },
+
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about this transfer"
+            }
+
+        ]
+
+    },
+
+
+    /* =====================================================
+       GENERAL SAVINGS → CHECKING
+       ===================================================== */
+
+    "savings-withdrawal": {
+
+        title:
+            "Move Savings to Checking",
+
+        fields: [
+
+            {
+                type: "number",
+                name: "amount",
+                label: "Amount to Return to Checking",
+                placeholder: "0.00",
+                min: "0.01",
+                step: "0.01",
+                money: true,
+                required: true
+            },
+
+            {
+                type: "date",
+                name: "date",
+                label: "Transfer Date",
+                required: true,
+                useSelectedMonth: true
+            },
+
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about this transfer"
+            }
+
+        ]
+
+    },
+
+
+    /* =====================================================
+       GENERAL SAVINGS → FUND
+       ===================================================== */
+
+    "savings-allocation": {
+
+        title:
+            "Allocate Savings to Fund",
+
+        fields: [
+
+            {
+                type: "select",
+                name: "goalId",
+                label: "Savings Fund",
+                placeholder: "Select a fund",
+                required: true,
+                dynamicOptions:
+                    getSavingsGoalOptions
+            },
+
+            {
+                type: "number",
+                name: "amount",
+                label: "Amount to Allocate",
+                placeholder: "0.00",
+                min: "0.01",
+                step: "0.01",
+                money: true,
+                required: true
+            },
+
+            {
+                type: "date",
+                name: "date",
+                label: "Allocation Date",
+                required: true,
+                useSelectedMonth: true
+            },
+
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about this allocation"
+            }
+
+        ]
+
+    },
+
+
+    /* =====================================================
+       FUND → GENERAL SAVINGS
+       ===================================================== */
+
+    "savings-release": {
+
+        title:
+            "Return Fund Money to Savings",
+
+        fields: [
+
+            {
+                type: "select",
+                name: "goalId",
+                label: "Savings Fund",
+                placeholder: "Select a fund",
+                required: true,
+                dynamicOptions:
+                    getSavingsGoalOptions
+            },
+
+            {
+                type: "number",
+                name: "amount",
+                label: "Amount to Return",
+                placeholder: "0.00",
+                min: "0.01",
+                step: "0.01",
+                money: true,
+                required: true
+            },
+
+            {
+                type: "date",
+                name: "date",
+                label: "Transfer Date",
+                required: true,
+                useSelectedMonth: true
+            },
+
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about returning this money"
             }
 
         ]
@@ -560,7 +902,8 @@ const MONEY_FORMS = {
 
     "starting-balance": {
 
-        title: "Change Starting Balance",
+        title:
+            "Change Starting Balance",
 
         fields: [
 
@@ -585,27 +928,35 @@ const MONEY_FORMS = {
 
 
 /* =========================================================
-   2. MODAL STATE
+   3. MODAL STATE
    ========================================================= */
 
 let currentMoneyAction =
     null;
 
+
 let currentEditingIncomeId =
     null;
+
 
 let currentEditingExpenseId =
     null;
 
+
+let currentEditingSavingsGoalId =
+    null;
+
+
 let originalFormState =
     null;
+
 
 let lastFocusedElement =
     null;
 
 
 /* =========================================================
-   3. DOM REFERENCES
+   4. DOM REFERENCES
    ========================================================= */
 
 const moneyModal =
@@ -613,50 +964,41 @@ const moneyModal =
         "money-modal"
     );
 
+
 const moneyModalTitle =
     document.getElementById(
         "money-modal-title"
     );
+
 
 const moneyModalBody =
     document.getElementById(
         "money-modal-body"
     );
 
+
 const moneyModalForm =
     document.getElementById(
         "money-modal-form"
     );
+
 
 const moneyModalUndo =
     document.getElementById(
         "money-modal-undo"
     );
 
+
 const moneyModalSave =
     document.getElementById(
         "money-modal-save"
     );
 
+
 const moneyModalStatus =
     document.getElementById(
         "money-modal-status"
     );
-
-
-/* =========================================================
-   4. STORAGE
-   ========================================================= */
-
-function getMoneyStorage() {
-
-    return (
-        window.MWalletStorage ||
-        window.BudgetStorage ||
-        null
-    );
-
-}
 
 
 /* =========================================================
@@ -692,6 +1034,7 @@ function getSelectedBudgetPeriod() {
         document.getElementById(
             "month-select"
         );
+
 
     const yearSelect =
         document.getElementById(
@@ -799,14 +1142,19 @@ function getDefaultDateForSelectedMonth() {
     return (
         `${year}-` +
         `${month}-` +
-        `${String(day).padStart(2, "0")}`
+        `${String(
+            day
+        ).padStart(
+            2,
+            "0"
+        )}`
     );
 
 }
 
 
 /* =========================================================
-   8. CREATE FIELD WRAPPER
+   8. FIELD WRAPPER
    ========================================================= */
 
 function createFieldWrapper(
@@ -842,7 +1190,7 @@ function createFieldWrapper(
 
 
 /* =========================================================
-   9. CREATE MONEY FIELD
+   9. CREATE FORM FIELD
    ========================================================= */
 
 function createMoneyField(
@@ -869,11 +1217,14 @@ function createMoneyField(
         input.type =
             "checkbox";
 
+
         input.id =
             `money-${field.name}`;
 
+
         input.name =
             field.name;
+
 
         input.checked =
             Boolean(
@@ -889,6 +1240,7 @@ function createMoneyField(
 
         label.htmlFor =
             input.id;
+
 
         label.textContent =
             field.label;
@@ -913,6 +1265,7 @@ function createMoneyField(
 
     label.htmlFor =
         `money-${field.name}`;
+
 
     label.textContent =
         field.label;
@@ -974,6 +1327,7 @@ function createMoneyField(
             symbol.className =
                 "money-input-symbol";
 
+
             symbol.textContent =
                 "$";
 
@@ -1018,8 +1372,14 @@ function createMoneyField(
         help.className =
             "form-help";
 
+
         help.textContent =
-            field.help;
+            typeof field.help ===
+                "function"
+
+                ? field.help()
+
+                : field.help;
 
 
         wrapper.appendChild(
@@ -1051,8 +1411,10 @@ function buildInput(
     input.type =
         field.type;
 
+
     input.id =
         `money-${field.name}`;
+
 
     input.name =
         field.name;
@@ -1079,7 +1441,8 @@ function buildInput(
 
 
     if (
-        field.min !== undefined
+        field.min !==
+        undefined
     ) {
 
         input.min =
@@ -1089,7 +1452,8 @@ function buildInput(
 
 
     if (
-        field.max !== undefined
+        field.max !==
+        undefined
     ) {
 
         input.max =
@@ -1099,7 +1463,8 @@ function buildInput(
 
 
     if (
-        field.step !== undefined
+        field.step !==
+        undefined
     ) {
 
         input.step =
@@ -1109,7 +1474,8 @@ function buildInput(
 
 
     if (
-        field.value !== undefined
+        field.value !==
+        undefined
     ) {
 
         input.value =
@@ -1152,6 +1518,7 @@ function buildSelect(
     select.id =
         `money-${field.name}`;
 
+
     select.name =
         field.name;
 
@@ -1175,12 +1542,15 @@ function buildSelect(
     placeholderOption.value =
         "";
 
+
     placeholderOption.textContent =
         field.placeholder ||
         "Select an option";
 
+
     placeholderOption.disabled =
         true;
+
 
     placeholderOption.selected =
         true;
@@ -1191,7 +1561,19 @@ function buildSelect(
     );
 
 
-    field.options.forEach(
+    const options =
+        typeof field.dynamicOptions ===
+            "function"
+
+            ? field.dynamicOptions()
+
+            : (
+                field.options ||
+                []
+            );
+
+
+    options.forEach(
         optionDefinition => {
 
             const option =
@@ -1208,6 +1590,7 @@ function buildSelect(
                 option.value =
                     optionDefinition.value;
 
+
                 option.textContent =
                     optionDefinition.label;
 
@@ -1218,6 +1601,7 @@ function buildSelect(
                 option.value =
                     optionDefinition;
 
+
                 option.textContent =
                     optionDefinition;
 
@@ -1225,7 +1609,8 @@ function buildSelect(
 
 
             if (
-                field.value !== undefined &&
+                field.value !==
+                    undefined &&
                 String(
                     field.value
                 ) ===
@@ -1236,6 +1621,7 @@ function buildSelect(
 
                 option.selected =
                     true;
+
 
                 placeholderOption.selected =
                     false;
@@ -1273,6 +1659,7 @@ function buildTextarea(
     textarea.id =
         `money-${field.name}`;
 
+
     textarea.name =
         field.name;
 
@@ -1298,7 +1685,8 @@ function buildTextarea(
 
 
     if (
-        field.value !== undefined
+        field.value !==
+        undefined
     ) {
 
         textarea.value =
@@ -1313,7 +1701,140 @@ function buildTextarea(
 
 
 /* =========================================================
-   13. GET FIELD VALUE
+   13. SAVINGS CONTEXT BOX
+   ========================================================= */
+
+function createSavingsContextBox(
+    action
+) {
+
+    const savingsBalance =
+        getGeneralSavingsBalance();
+
+
+    let title =
+        "";
+
+
+    let message =
+        "";
+
+
+    switch (
+        action
+    ) {
+
+        case "savings-deposit":
+
+            title =
+                `General Savings: ${formatMoneyCurrency(
+                    savingsBalance
+                )}`;
+
+
+            message =
+                "Money added here moves out of your Checking balance and into General Savings.";
+
+            break;
+
+
+        case "savings-withdrawal":
+
+            title =
+                `Available Savings: ${formatMoneyCurrency(
+                    savingsBalance
+                )}`;
+
+
+            message =
+                "Money withdrawn here leaves General Savings and is added back to your Checking balance.";
+
+            break;
+
+
+        case "savings-allocation":
+
+            title =
+                `Available to Allocate: ${formatMoneyCurrency(
+                    savingsBalance
+                )}`;
+
+
+            message =
+                "This moves money from General Savings into one of your savings funds. Your total savings does not change.";
+
+            break;
+
+
+        case "savings-release":
+
+            title =
+                `General Savings: ${formatMoneyCurrency(
+                    savingsBalance
+                )}`;
+
+
+            message =
+                "This returns money from a savings fund back into General Savings.";
+
+            break;
+
+
+        case "savings-goal":
+
+            title =
+                `General Savings: ${formatMoneyCurrency(
+                    savingsBalance
+                )}`;
+
+
+            message =
+                "Fund balances are allocated from General Savings. Editing the allocated amount moves only the difference.";
+
+            break;
+
+
+        default:
+
+            return null;
+
+    }
+
+
+    const box =
+        document.createElement(
+            "div"
+        );
+
+
+    box.className =
+        "savings-form-context";
+
+
+    box.innerHTML = `
+
+        <strong>
+            ${escapeMoneyHTML(
+                title
+            )}
+        </strong>
+
+        <span>
+            ${escapeMoneyHTML(
+                message
+            )}
+        </span>
+
+    `;
+
+
+    return box;
+
+}
+
+
+/* =========================================================
+   14. GET FIELD VALUE
    ========================================================= */
 
 function getMoneyFieldValue(
@@ -1349,7 +1870,7 @@ function getMoneyFieldValue(
 
 
 /* =========================================================
-   14. CONDITIONAL FIELDS
+   15. CONDITIONAL FIELDS
    ========================================================= */
 
 function shouldShowMoneyField(
@@ -1439,7 +1960,151 @@ function updateConditionalMoneyFields() {
 
 
 /* =========================================================
-   15. RENDER MONEY FORM
+   16. UPDATE SAVINGS FORM INFORMATION
+   ========================================================= */
+
+function updateSavingsFormInformation() {
+
+    if (
+        currentMoneyAction !==
+            "savings-allocation" &&
+        currentMoneyAction !==
+            "savings-release"
+    ) {
+
+        return;
+
+    }
+
+
+    const goalId =
+        getMoneyFieldValue(
+            "goalId"
+        );
+
+
+    if (!goalId) {
+
+        return;
+
+    }
+
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getSavingsGoalById !==
+            "function"
+    ) {
+
+        return;
+
+    }
+
+
+    const goal =
+        storage.getSavingsGoalById(
+            goalId
+        );
+
+
+    if (!goal) {
+
+        return;
+
+    }
+
+
+    const amountField =
+        moneyModalBody.querySelector(
+            '[data-money-field="amount"]'
+        );
+
+
+    if (!amountField) {
+
+        return;
+
+    }
+
+
+    let helper =
+        amountField.querySelector(
+            ".savings-dynamic-help"
+        );
+
+
+    if (!helper) {
+
+        helper =
+            document.createElement(
+                "small"
+            );
+
+
+        helper.className =
+            "form-help savings-dynamic-help";
+
+
+        amountField.appendChild(
+            helper
+        );
+
+    }
+
+
+    if (
+        currentMoneyAction ===
+        "savings-release"
+    ) {
+
+        helper.textContent =
+            (
+                `${goal.name} currently contains ` +
+                `${formatMoneyCurrency(
+                    goal.currentAmount
+                )}.`
+            );
+
+    }
+
+    else {
+
+        const remaining =
+            Math.max(
+                (
+                    Number(
+                        goal.targetAmount
+                    ) || 0
+                )
+                -
+                (
+                    Number(
+                        goal.currentAmount
+                    ) || 0
+                ),
+                0
+            );
+
+
+        helper.textContent =
+            (
+                `${goal.name} needs ` +
+                `${formatMoneyCurrency(
+                    remaining
+                )} more to reach its goal.`
+            );
+
+    }
+
+}
+
+
+/* =========================================================
+   17. RENDER MONEY FORM
    ========================================================= */
 
 function renderMoneyForm(
@@ -1458,6 +2123,7 @@ function renderMoneyForm(
             `Unknown money action: ${action}`
         );
 
+
         return false;
 
     }
@@ -1469,6 +2135,23 @@ function renderMoneyForm(
 
     moneyModalTitle.textContent =
         config.title;
+
+
+    const savingsContext =
+        createSavingsContextBox(
+            action
+        );
+
+
+    if (
+        savingsContext
+    ) {
+
+        moneyModalBody.appendChild(
+            savingsContext
+        );
+
+    }
 
 
     config.fields.forEach(
@@ -1493,7 +2176,7 @@ function renderMoneyForm(
 
 
 /* =========================================================
-   16. POPULATE FORM
+   18. POPULATE FORM
    ========================================================= */
 
 function populateMoneyForm(
@@ -1579,7 +2262,8 @@ function populateMoneyForm(
                 else {
 
                     field.value =
-                        value ?? "";
+                        value ??
+                        "";
 
                 }
 
@@ -1589,11 +2273,14 @@ function populateMoneyForm(
 
     updateConditionalMoneyFields();
 
+
+    updateSavingsFormInformation();
+
 }
 
 
 /* =========================================================
-   17. OPEN MONEY MODAL
+   19. OPEN MONEY MODAL
    ========================================================= */
 
 function openMoneyModal(
@@ -1618,6 +2305,7 @@ function openMoneyModal(
         console.error(
             `Cannot open unknown money form: ${action}`
         );
+
 
         return;
 
@@ -1648,6 +2336,16 @@ function openMoneyModal(
             : null;
 
 
+    currentEditingSavingsGoalId =
+        (
+            normalizedAction ===
+                "savings-goal" &&
+            options.editingId
+        )
+            ? options.editingId
+            : null;
+
+
     lastFocusedElement =
         document.activeElement;
 
@@ -1664,52 +2362,59 @@ function openMoneyModal(
 
 
     if (
-        options.record &&
-        (
-            currentEditingIncomeId ||
-            currentEditingExpenseId
-        )
+        options.record
     ) {
 
         populateMoneyForm(
             options.record
         );
 
-
-        if (
-            currentEditingIncomeId
-        ) {
-
-            moneyModalTitle.textContent =
-                "Edit Income";
-
-        }
+    }
 
 
-        if (
-            currentEditingExpenseId
-        ) {
+    if (
+        currentEditingIncomeId
+    ) {
 
-            moneyModalTitle.textContent =
-                "Edit Expense";
-
-        }
+        moneyModalTitle.textContent =
+            "Edit Income";
 
 
-        if (
-            moneyModalSave
-        ) {
+        moneyModalSave.textContent =
+            "💾 Save Changes";
 
-            moneyModalSave.textContent =
-                "💾 Save Changes";
+    }
 
-        }
+    else if (
+        currentEditingExpenseId
+    ) {
+
+        moneyModalTitle.textContent =
+            "Edit Expense";
+
+
+        moneyModalSave.textContent =
+            "💾 Save Changes";
+
+    }
+
+    else if (
+        currentEditingSavingsGoalId
+    ) {
+
+        moneyModalTitle.textContent =
+            "Edit Savings Fund";
+
+
+        moneyModalSave.textContent =
+            "💾 Save Changes";
 
     }
 
     else {
 
         moneyModalTitle.textContent =
+            options.title ||
             config.title;
 
 
@@ -1772,7 +2477,7 @@ function openMoneyModal(
 
 
 /* =========================================================
-   18. OPEN INCOME EDITOR
+   20. INCOME EDITOR
    ========================================================= */
 
 function openIncomeEditor(
@@ -1793,6 +2498,7 @@ function openIncomeEditor(
             "Income editing is not available."
         );
 
+
         return;
 
     }
@@ -1810,6 +2516,7 @@ function openIncomeEditor(
             `Income record not found: ${incomeId}`
         );
 
+
         return;
 
     }
@@ -1818,13 +2525,11 @@ function openIncomeEditor(
     openMoneyModal(
         "income",
         {
-
             editingId:
                 income.id,
 
             record:
                 income
-
         }
     );
 
@@ -1832,7 +2537,7 @@ function openIncomeEditor(
 
 
 /* =========================================================
-   19. OPEN EXPENSE EDITOR
+   21. EXPENSE EDITOR
    ========================================================= */
 
 function openExpenseEditor(
@@ -1853,6 +2558,7 @@ function openExpenseEditor(
             "Expense editing is not available."
         );
 
+
         return;
 
     }
@@ -1870,6 +2576,7 @@ function openExpenseEditor(
             `Expense record not found: ${expenseId}`
         );
 
+
         return;
 
     }
@@ -1878,12 +2585,95 @@ function openExpenseEditor(
     openMoneyModal(
         "expense",
         {
-
             editingId:
                 expense.id,
 
             record:
                 expense
+        }
+    );
+
+}
+
+
+/* =========================================================
+   22. SAVINGS GOAL EDITOR
+   ========================================================= */
+
+function openSavingsGoalEditor(
+    goalId
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getSavingsGoalById !==
+            "function"
+    ) {
+
+        console.error(
+            "Savings goal editing is not available."
+        );
+
+
+        return;
+
+    }
+
+
+    const goal =
+        storage.getSavingsGoalById(
+            goalId
+        );
+
+
+    if (!goal) {
+
+        console.warn(
+            `Savings goal not found: ${goalId}`
+        );
+
+
+        return;
+
+    }
+
+
+    openMoneyModal(
+        "savings-goal",
+        {
+            editingId:
+                goal.id,
+
+            record:
+                goal
+        }
+    );
+
+}
+
+
+/* =========================================================
+   23. OPEN SAVINGS ALLOCATION
+   ========================================================= */
+
+function openSavingsAllocation(
+    goalId = null
+) {
+
+    openMoneyModal(
+        "savings-allocation",
+        {
+
+            record:
+                goalId
+                    ? {
+                        goalId
+                    }
+                    : null
 
         }
     );
@@ -1892,7 +2682,32 @@ function openExpenseEditor(
 
 
 /* =========================================================
-   20. CLOSE MONEY MODAL
+   24. OPEN SAVINGS RELEASE
+   ========================================================= */
+
+function openSavingsRelease(
+    goalId = null
+) {
+
+    openMoneyModal(
+        "savings-release",
+        {
+
+            record:
+                goalId
+                    ? {
+                        goalId
+                    }
+                    : null
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   25. CLOSE MONEY MODAL
    ========================================================= */
 
 function closeMoneyModal() {
@@ -1935,6 +2750,10 @@ function closeMoneyModal() {
         null;
 
 
+    currentEditingSavingsGoalId =
+        null;
+
+
     originalFormState =
         null;
 
@@ -1967,7 +2786,7 @@ function closeMoneyModal() {
 
 
 /* =========================================================
-   21. CAPTURE FORM STATE
+   26. CAPTURE FORM STATE
    ========================================================= */
 
 function captureMoneyFormState() {
@@ -2011,7 +2830,7 @@ function captureMoneyFormState() {
 
 
 /* =========================================================
-   22. UNDO FORM CHANGES
+   27. UNDO FORM CHANGES
    ========================================================= */
 
 function undoMoneyForm() {
@@ -2065,6 +2884,9 @@ function undoMoneyForm() {
     updateConditionalMoneyFields();
 
 
+    updateSavingsFormInformation();
+
+
     showMoneyStatus(
         "Changes undone.",
         "success"
@@ -2074,7 +2896,7 @@ function undoMoneyForm() {
 
 
 /* =========================================================
-   23. GET FORM DATA
+   28. GET FORM DATA
    ========================================================= */
 
 function getMoneyFormData() {
@@ -2095,7 +2917,9 @@ function getMoneyFormData() {
             key
         ) => {
 
-            data[key] =
+            data[
+                key
+            ] =
                 value;
 
         }
@@ -2158,7 +2982,7 @@ function getMoneyFormData() {
 
 
 /* =========================================================
-   24. CREATE MONEY RECORD
+   29. CREATE MONEY RECORD
    ========================================================= */
 
 function createMoneyRecord() {
@@ -2172,8 +2996,12 @@ function createMoneyRecord() {
 
 
     const editingId =
+
         currentEditingIncomeId ||
-        currentEditingExpenseId;
+
+        currentEditingExpenseId ||
+
+        currentEditingSavingsGoalId;
 
 
     const record = {
@@ -2204,7 +3032,7 @@ function createMoneyRecord() {
 
 
     /* -----------------------------------------------------
-       INCOME CLEANUP
+       INCOME
        ----------------------------------------------------- */
 
     if (
@@ -2216,6 +3044,14 @@ function createMoneyRecord() {
             "income";
 
 
+        record.amount =
+            Math.abs(
+                Number(
+                    record.amount
+                ) || 0
+            );
+
+
         if (
             !record.recurring
         ) {
@@ -2223,14 +3059,18 @@ function createMoneyRecord() {
             record.frequency =
                 "";
 
+
             record.endDate =
                 "";
+
 
             record.customInterval =
                 1;
 
+
             record.customUnit =
                 "months";
+
 
             record.twiceMonthlyDays =
                 [
@@ -2281,6 +3121,7 @@ function createMoneyRecord() {
                 record.customInterval =
                     1;
 
+
                 record.customUnit =
                     "months";
 
@@ -2291,13 +3132,14 @@ function createMoneyRecord() {
 
         delete record.twiceMonthlyDay1;
 
+
         delete record.twiceMonthlyDay2;
 
     }
 
 
     /* -----------------------------------------------------
-       EXPENSE CLEANUP
+       EXPENSE
        ----------------------------------------------------- */
 
     if (
@@ -2353,13 +3195,86 @@ function createMoneyRecord() {
     }
 
 
+    /* -----------------------------------------------------
+       SAVINGS GOAL
+       ----------------------------------------------------- */
+
+    if (
+        currentMoneyAction ===
+        "savings-goal"
+    ) {
+
+        record.name =
+            String(
+                record.name ||
+                "Savings Goal"
+            ).trim();
+
+
+        record.targetAmount =
+            Math.abs(
+                Number(
+                    record.targetAmount
+                ) || 0
+            );
+
+
+        record.currentAmount =
+            Math.abs(
+                Number(
+                    record.currentAmount
+                ) || 0
+            );
+
+
+        record.notes =
+            String(
+                record.notes ||
+                ""
+            ).trim();
+
+    }
+
+
+    /* -----------------------------------------------------
+       SAVINGS MONEY MOVEMENTS
+       ----------------------------------------------------- */
+
+    if (
+        [
+            "savings-deposit",
+            "savings-withdrawal",
+            "savings-allocation",
+            "savings-release"
+        ].includes(
+            currentMoneyAction
+        )
+    ) {
+
+        record.amount =
+            Math.abs(
+                Number(
+                    record.amount
+                ) || 0
+            );
+
+
+        record.notes =
+            String(
+                record.notes ||
+                ""
+            ).trim();
+
+    }
+
+
     return record;
 
 }
 
 
 /* =========================================================
-   25. CREATE UNIQUE ID
+   30. CREATE UNIQUE ID
    ========================================================= */
 
 function createMoneyId() {
@@ -2394,7 +3309,137 @@ function createMoneyId() {
 
 
 /* =========================================================
-   26. SAVE MONEY FORM
+   31. VALIDATE SAVINGS ACTION
+   ========================================================= */
+
+function validateSavingsRecord(
+    record
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        record.type ===
+        "savings-withdrawal"
+    ) {
+
+        const available =
+            typeof storage.getSavingsBalance ===
+                "function"
+
+                ? storage.getSavingsBalance()
+
+                : 0;
+
+
+        if (
+            record.amount >
+            available
+        ) {
+
+            throw new Error(
+                `You only have ${formatMoneyCurrency(
+                    available
+                )} available in General Savings.`
+            );
+
+        }
+
+    }
+
+
+    if (
+        record.type ===
+        "savings-allocation"
+    ) {
+
+        const available =
+            typeof storage.getSavingsBalance ===
+                "function"
+
+                ? storage.getSavingsBalance()
+
+                : 0;
+
+
+        if (
+            record.amount >
+            available
+        ) {
+
+            throw new Error(
+                `You only have ${formatMoneyCurrency(
+                    available
+                )} available to allocate.`
+            );
+
+        }
+
+    }
+
+
+    if (
+        record.type ===
+        "savings-release"
+    ) {
+
+        const goal =
+            typeof storage.getSavingsGoalById ===
+                "function"
+
+                ? storage.getSavingsGoalById(
+                    record.goalId
+                )
+
+                : null;
+
+
+        if (!goal) {
+
+            throw new Error(
+                "Please select a valid savings fund."
+            );
+
+        }
+
+
+        const available =
+            Number(
+                goal.currentAmount
+            ) || 0;
+
+
+        if (
+            record.amount >
+            available
+        ) {
+
+            throw new Error(
+                `${goal.name} only contains ${formatMoneyCurrency(
+                    available
+                )}.`
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   32. SAVE MONEY FORM
    ========================================================= */
 
 function saveMoneyForm(
@@ -2417,6 +3462,7 @@ function saveMoneyForm(
             "error"
         );
 
+
         return;
 
     }
@@ -2430,6 +3476,7 @@ function saveMoneyForm(
             "Unable to determine what you are saving.",
             "error"
         );
+
 
         return;
 
@@ -2448,11 +3495,26 @@ function saveMoneyForm(
         );
 
 
+    const wasEditingSavingsGoal =
+        Boolean(
+            currentEditingSavingsGoalId
+        );
+
+
+    const actionBeforeSave =
+        currentMoneyAction;
+
+
     const record =
         createMoneyRecord();
 
 
     try {
+
+        validateSavingsRecord(
+            record
+        );
+
 
         const savedRecord =
             saveMoneyRecord(
@@ -2460,32 +3522,24 @@ function saveMoneyForm(
             );
 
 
-        const detail =
-            savedRecord ||
-            record;
+        const detail = {
+
+            action:
+                actionBeforeSave,
+
+            record:
+                savedRecord ||
+                record,
+
+            savedRecord:
+                savedRecord ||
+                record
+
+        };
 
 
-        document.dispatchEvent(
-
-            new CustomEvent(
-                "budget:money-saved",
-                {
-                    detail
-                }
-            )
-
-        );
-
-
-        document.dispatchEvent(
-
-            new CustomEvent(
-                "mwallet:money-saved",
-                {
-                    detail
-                }
-            )
-
+        dispatchMoneyChangeEvents(
+            detail
         );
 
 
@@ -2525,19 +3579,54 @@ function saveMoneyForm(
         }
 
 
-        showMoneyStatus(
+        if (
+            wasEditingSavingsGoal
+        ) {
 
-            (
-                wasEditingIncome ||
-                wasEditingExpense
+            document.dispatchEvent(
+
+                new CustomEvent(
+                    "mwallet:savings-goal-updated",
+                    {
+                        detail
+                    }
+                )
+
+            );
+
+        }
+
+
+        if (
+            actionBeforeSave.startsWith(
+                "savings"
             )
+        ) {
 
-                ? "✓ Changes Saved"
+            document.dispatchEvent(
 
-                : "✓ Saved",
+                new CustomEvent(
+                    "mwallet:savings-updated",
+                    {
+                        detail
+                    }
+                )
 
+            );
+
+        }
+
+
+        showMoneyStatus(
+            getMoneySuccessMessage(
+                actionBeforeSave,
+                {
+                    wasEditingIncome,
+                    wasEditingExpense,
+                    wasEditingSavingsGoal
+                }
+            ),
             "success"
-
         );
 
 
@@ -2561,6 +3650,7 @@ function saveMoneyForm(
 
 
         showMoneyStatus(
+            error?.message ||
             "Unable to save. Please try again.",
             "error"
         );
@@ -2571,7 +3661,73 @@ function saveMoneyForm(
 
 
 /* =========================================================
-   27. SAVE MONEY RECORD
+   33. SUCCESS MESSAGE
+   ========================================================= */
+
+function getMoneySuccessMessage(
+    action,
+    state = {}
+) {
+
+    if (
+        state.wasEditingIncome ||
+        state.wasEditingExpense
+    ) {
+
+        return "✓ Changes Saved";
+
+    }
+
+
+    if (
+        state.wasEditingSavingsGoal
+    ) {
+
+        return "✓ Savings Fund Updated";
+
+    }
+
+
+    switch (
+        action
+    ) {
+
+        case "savings-deposit":
+
+            return "✓ Added to General Savings";
+
+
+        case "savings-withdrawal":
+
+            return "✓ Money Returned to Checking";
+
+
+        case "savings-allocation":
+
+            return "✓ Savings Allocated to Fund";
+
+
+        case "savings-release":
+
+            return "✓ Money Returned to General Savings";
+
+
+        case "savings-goal":
+
+            return "✓ Savings Fund Created";
+
+
+        default:
+
+            return "✓ Saved";
+
+    }
+
+}
+
+
+/* =========================================================
+   34. SAVE MONEY RECORD
    ========================================================= */
 
 function saveMoneyRecord(
@@ -2581,10 +3737,6 @@ function saveMoneyRecord(
     const storage =
         getMoneyStorage();
 
-
-    /* -----------------------------------------------------
-       EDIT EXISTING INCOME
-       ----------------------------------------------------- */
 
     if (
         currentMoneyAction ===
@@ -2613,10 +3765,6 @@ function saveMoneyRecord(
     }
 
 
-    /* -----------------------------------------------------
-       EDIT EXISTING EXPENSE
-       ----------------------------------------------------- */
-
     if (
         currentMoneyAction ===
             "expense" &&
@@ -2644,9 +3792,32 @@ function saveMoneyRecord(
     }
 
 
-    /* -----------------------------------------------------
-       CREATE NEW RECORD
-       ----------------------------------------------------- */
+    if (
+        currentMoneyAction ===
+            "savings-goal" &&
+        currentEditingSavingsGoalId
+    ) {
+
+        if (
+            !storage ||
+            typeof storage.updateSavingsGoal !==
+                "function"
+        ) {
+
+            throw new Error(
+                "Savings goal editing is not available in storage.js."
+            );
+
+        }
+
+
+        return storage.updateSavingsGoal(
+            currentEditingSavingsGoalId,
+            record
+        );
+
+    }
+
 
     if (
         storage &&
@@ -2669,7 +3840,7 @@ function saveMoneyRecord(
 
 
 /* =========================================================
-   28. DELETE INCOME
+   35. DELETE INCOME
    ========================================================= */
 
 function deleteIncomeRecord(
@@ -2690,6 +3861,7 @@ function deleteIncomeRecord(
             "Income deletion is not available."
         );
 
+
         return false;
 
     }
@@ -2702,10 +3874,6 @@ function deleteIncomeRecord(
 
 
     if (!income) {
-
-        console.warn(
-            `Income record not found: ${incomeId}`
-        );
 
         return false;
 
@@ -2817,7 +3985,7 @@ function deleteIncomeRecord(
 
 
 /* =========================================================
-   29. DELETE EXPENSE
+   36. DELETE EXPENSE
    ========================================================= */
 
 function deleteExpenseRecord(
@@ -2838,6 +4006,7 @@ function deleteExpenseRecord(
             "Expense deletion is not available."
         );
 
+
         return false;
 
     }
@@ -2850,10 +4019,6 @@ function deleteExpenseRecord(
 
 
     if (!expense) {
-
-        console.warn(
-            `Expense record not found: ${expenseId}`
-        );
 
         return false;
 
@@ -2881,20 +4046,6 @@ function deleteExpenseRecord(
 
 
     if (!confirmed) {
-
-        return false;
-
-    }
-
-
-    if (
-        typeof storage.deleteExpense !==
-            "function"
-    ) {
-
-        console.error(
-            "Expense deletion is not available in storage.js."
-        );
 
         return false;
 
@@ -2956,7 +4107,155 @@ function deleteExpenseRecord(
 
 
 /* =========================================================
-   30. DISPATCH SHARED MONEY EVENTS
+   37. DELETE SAVINGS GOAL
+   ========================================================= */
+
+function deleteSavingsGoalRecord(
+    goalId
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getSavingsGoalById !==
+            "function" ||
+        typeof storage.deleteSavingsGoal !==
+            "function"
+    ) {
+
+        console.error(
+            "Savings goal deletion is not available."
+        );
+
+
+        return false;
+
+    }
+
+
+    const goal =
+        storage.getSavingsGoalById(
+            goalId
+        );
+
+
+    if (!goal) {
+
+        return false;
+
+    }
+
+
+    const currentAmount =
+        Number(
+            goal.currentAmount
+        ) || 0;
+
+
+    let message =
+        `Delete "${goal.name}"?`;
+
+
+    if (
+        currentAmount >
+        0
+    ) {
+
+        message =
+            (
+                `Delete "${goal.name}"? ` +
+                `${formatMoneyCurrency(
+                    currentAmount
+                )} will be returned to General Savings.`
+            );
+
+    }
+
+
+    const confirmed =
+        window.confirm(
+            message
+        );
+
+
+    if (!confirmed) {
+
+        return false;
+
+    }
+
+
+    const deleted =
+        Boolean(
+            storage.deleteSavingsGoal(
+                goalId
+            )
+        );
+
+
+    if (!deleted) {
+
+        return false;
+
+    }
+
+
+    const detail = {
+
+        type:
+            "savings-goal",
+
+        action:
+            "delete",
+
+        id:
+            goalId,
+
+        record:
+            goal
+
+    };
+
+
+    dispatchMoneyChangeEvents(
+        detail
+    );
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+            "mwallet:savings-updated",
+            {
+                detail
+            }
+        )
+
+    );
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+            "mwallet:savings-goal-deleted",
+            {
+                detail
+            }
+        )
+
+    );
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   38. SHARED MONEY EVENTS
    ========================================================= */
 
 function dispatchMoneyChangeEvents(
@@ -2990,7 +4289,7 @@ function dispatchMoneyChangeEvents(
 
 
 /* =========================================================
-   31. LOCAL STORAGE FALLBACK
+   39. FALLBACK STORAGE
    ========================================================= */
 
 const MONEY_FALLBACK_STORAGE_KEY =
@@ -3027,12 +4326,6 @@ function saveMoneyRecordFallback(
     }
 
     catch (error) {
-
-        console.warn(
-            "Could not read existing M-Wallet money records.",
-            error
-        );
-
 
         records =
             [];
@@ -3101,7 +4394,7 @@ function saveMoneyRecordFallback(
 
 
 /* =========================================================
-   32. STATUS MESSAGE
+   40. STATUS MESSAGE
    ========================================================= */
 
 function showMoneyStatus(
@@ -3136,7 +4429,7 @@ function showMoneyStatus(
 
 
 /* =========================================================
-   33. CLEAR STATUS
+   41. CLEAR STATUS
    ========================================================= */
 
 function clearMoneyStatus() {
@@ -3163,7 +4456,48 @@ function clearMoneyStatus() {
 
 
 /* =========================================================
-   34. INCOME EDIT / DELETE BUTTONS
+   42. ESCAPE HTML
+   ========================================================= */
+
+function escapeMoneyHTML(
+    value
+) {
+
+    return String(
+        value ??
+        ""
+    )
+
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
+
+
+/* =========================================================
+   43. INCOME EDIT / DELETE BUTTONS
    ========================================================= */
 
 document.addEventListener(
@@ -3242,7 +4576,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   35. EXPENSE EDIT / DELETE BUTTONS
+   44. EXPENSE EDIT / DELETE BUTTONS
    ========================================================= */
 
 document.addEventListener(
@@ -3321,7 +4655,111 @@ document.addEventListener(
 
 
 /* =========================================================
-   36. MONEY ACTION BUTTONS
+   45. SAVINGS GOAL ACTION BUTTONS
+   ========================================================= */
+
+document.addEventListener(
+    "click",
+    event => {
+
+        const editButton =
+            event.target.closest(
+                "[data-savings-goal-edit]"
+            );
+
+
+        if (
+            editButton
+        ) {
+
+            event.preventDefault();
+
+
+            openSavingsGoalEditor(
+                editButton.dataset
+                    .savingsGoalEdit
+            );
+
+
+            return;
+
+        }
+
+
+        const allocateButton =
+            event.target.closest(
+                "[data-savings-allocate]"
+            );
+
+
+        if (
+            allocateButton
+        ) {
+
+            event.preventDefault();
+
+
+            openSavingsAllocation(
+                allocateButton.dataset
+                    .savingsAllocate
+            );
+
+
+            return;
+
+        }
+
+
+        const releaseButton =
+            event.target.closest(
+                "[data-savings-release]"
+            );
+
+
+        if (
+            releaseButton
+        ) {
+
+            event.preventDefault();
+
+
+            openSavingsRelease(
+                releaseButton.dataset
+                    .savingsRelease
+            );
+
+
+            return;
+
+        }
+
+
+        const deleteButton =
+            event.target.closest(
+                "[data-savings-goal-delete]"
+            );
+
+
+        if (
+            deleteButton
+        ) {
+
+            event.preventDefault();
+
+
+            deleteSavingsGoalRecord(
+                deleteButton.dataset
+                    .savingsGoalDelete
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   46. MONEY ACTION BUTTONS
    ========================================================= */
 
 document.addEventListener(
@@ -3364,6 +4802,7 @@ document.addEventListener(
                 `No money form exists for: ${requestedAction}`
             );
 
+
             return;
 
         }
@@ -3378,7 +4817,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   37. CONDITIONAL FIELD CHANGES
+   47. CONDITIONAL / SAVINGS FIELD CHANGES
    ========================================================= */
 
 if (
@@ -3405,6 +4844,9 @@ if (
             updateConditionalMoneyFields();
 
 
+            updateSavingsFormInformation();
+
+
             clearMoneyStatus();
 
         }
@@ -3414,7 +4856,7 @@ if (
 
 
 /* =========================================================
-   38. CLOSE BUTTON / OVERLAY
+   48. CLOSE BUTTON / OVERLAY
    ========================================================= */
 
 document.addEventListener(
@@ -3443,7 +4885,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   39. ESCAPE KEY
+   49. ESCAPE KEY
    ========================================================= */
 
 document.addEventListener(
@@ -3481,7 +4923,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   40. UNDO BUTTON
+   50. UNDO
    ========================================================= */
 
 if (
@@ -3497,7 +4939,7 @@ if (
 
 
 /* =========================================================
-   41. SAVE / FORM SUBMIT
+   51. FORM SUBMIT
    ========================================================= */
 
 if (
@@ -3513,7 +4955,7 @@ if (
 
 
 /* =========================================================
-   42. CLEAR STATUS WHILE TYPING
+   52. CLEAR STATUS WHILE TYPING
    ========================================================= */
 
 if (
@@ -3533,7 +4975,7 @@ if (
 
 
 /* =========================================================
-   43. EXPOSE MONEY MANAGER
+   53. EXPOSE MONEY MANAGER
    ========================================================= */
 
 window.MoneyManager = {
@@ -3556,6 +4998,22 @@ window.MoneyManager = {
 
     deleteExpense:
         deleteExpenseRecord,
+
+
+    editSavingsGoal:
+        openSavingsGoalEditor,
+
+
+    deleteSavingsGoal:
+        deleteSavingsGoalRecord,
+
+
+    allocateSavings:
+        openSavingsAllocation,
+
+
+    releaseSavings:
+        openSavingsRelease,
 
 
     close:
@@ -3597,17 +5055,26 @@ window.MoneyManager = {
             currentEditingExpenseId
         );
 
+    },
+
+
+    isEditingSavingsGoal() {
+
+        return Boolean(
+            currentEditingSavingsGoalId
+        );
+
     }
 
 };
 
 
 /* =========================================================
-   44. DEVELOPMENT HELPER
+   54. DEVELOPMENT HELPER
    ========================================================= */
 
 console.log(
-    "M-Wallet money manager loaded - P2.2 Expense Edit/Delete ready."
+    "M-Wallet money manager loaded - Savings Transfer + Allocation System ready."
 );
 
 

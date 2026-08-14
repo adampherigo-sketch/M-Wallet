@@ -5,6 +5,7 @@
 
     <meta charset="UTF-8">
 
+
     <!-- =====================================================
          MOBILE DISPLAY
     ====================================================== -->
@@ -38,7 +39,7 @@
 
     <meta
         name="theme-color"
-        content="#0f1714"
+        content="#163b2b"
     >
 
     <meta
@@ -81,7 +82,7 @@
 
     <link
         rel="stylesheet"
-        href="./css/style.css?v=4"
+        href="./css/style.css?v=6"
     >
 
 </head>
@@ -109,6 +110,8 @@
                 <div class="header-month-area">
 
 
+                    <!-- M-Wallet Brand -->
+
                     <div class="header-brand">
 
                         <img
@@ -124,7 +127,15 @@
                     </div>
 
 
-                    <div class="month-navigation">
+
+                    <!-- =====================================
+                         NORMAL APP MONTH NAVIGATION
+                    ====================================== -->
+
+                    <div
+                        class="month-navigation"
+                        id="standard-month-navigation"
+                    >
 
                         <button
                             class="month-arrow"
@@ -185,6 +196,49 @@
                         </button>
 
                     </div>
+
+
+
+                    <!-- =====================================
+                         REPORTS HEADER SELECTOR
+                    ====================================== -->
+
+                    <div
+                        class="report-navigation"
+                        id="report-navigation"
+                        hidden
+                    >
+
+                        <label
+                            class="report-navigation-label"
+                            for="report-type-select"
+                        >
+                            Report Type
+                        </label>
+
+
+                        <select
+                            id="report-type-select"
+                            class="report-type-select"
+                            aria-label="Select report type"
+                        >
+
+                            <option value="monthly">
+                                Monthly
+                            </option>
+
+                            <option value="yearly">
+                                Yearly
+                            </option>
+
+                            <option value="range">
+                                Date Range
+                            </option>
+
+                        </select>
+
+                    </div>
+
 
 
                     <h1
@@ -389,9 +443,7 @@
 
                 <section class="dashboard-section">
 
-
                     <div class="section-header">
-
 
                         <h3>
                             Upcoming Bills
@@ -405,7 +457,6 @@
                         >
                             View All
                         </button>
-
 
                     </div>
 
@@ -421,7 +472,6 @@
 
                     </div>
 
-
                 </section>
 
 
@@ -429,7 +479,6 @@
                 <!-- Next Income -->
 
                 <section class="dashboard-section">
-
 
                     <div class="section-header">
 
@@ -441,7 +490,6 @@
 
 
                     <article class="info-card">
-
 
                         <div>
 
@@ -468,9 +516,7 @@
 
                         </div>
 
-
                     </article>
-
 
                 </section>
 
@@ -480,9 +526,7 @@
 
                 <section class="dashboard-section">
 
-
                     <div class="section-header">
-
 
                         <h3>
                             Savings
@@ -497,7 +541,6 @@
                             View Savings
                         </button>
 
-
                     </div>
 
 
@@ -511,7 +554,6 @@
                         </p>
 
                     </div>
-
 
                 </section>
 
@@ -553,9 +595,7 @@
 
                 <section class="money-management-section">
 
-
                     <div class="section-header">
-
 
                         <div>
 
@@ -569,19 +609,16 @@
 
                         </div>
 
-
                     </div>
 
 
                     <div class="money-action-grid">
-
 
                         <button
                             type="button"
                             class="money-action-card"
                             data-money-action="income"
                         >
-
 
                             <span class="money-action-icon">
                                 💵
@@ -590,16 +627,13 @@
 
                             <span class="money-action-content">
 
-
                                 <strong>
                                     Add Income
                                 </strong>
 
-
                                 <small>
                                     Add work income, freelance money, benefits, gifts, or other income.
                                 </small>
-
 
                             </span>
 
@@ -608,12 +642,9 @@
                                 ›
                             </span>
 
-
                         </button>
 
-
                     </div>
-
 
                 </section>
 
@@ -623,9 +654,7 @@
 
                 <section class="money-management-section">
 
-
                     <div class="section-header">
-
 
                         <div>
 
@@ -639,7 +668,6 @@
 
                         </div>
 
-
                     </div>
 
 
@@ -652,7 +680,6 @@
                             data-money-action="bill"
                         >
 
-
                             <span class="money-action-icon">
                                 🧾
                             </span>
@@ -660,16 +687,13 @@
 
                             <span class="money-action-content">
 
-
                                 <strong>
                                     Add Bill
                                 </strong>
 
-
                                 <small>
                                     Add a monthly or one-time bill.
                                 </small>
-
 
                             </span>
 
@@ -677,7 +701,6 @@
                             <span class="money-action-arrow">
                                 ›
                             </span>
-
 
                         </button>
 
@@ -688,7 +711,6 @@
                             data-money-action="expense"
                         >
 
-
                             <span class="money-action-icon">
                                 🛒
                             </span>
@@ -696,16 +718,13 @@
 
                             <span class="money-action-content">
 
-
                                 <strong>
                                     Add Expense
                                 </strong>
 
-
                                 <small>
                                     Record everyday spending, merchants, categories, and recurring expenses.
                                 </small>
-
 
                             </span>
 
@@ -713,7 +732,6 @@
                             <span class="money-action-arrow">
                                 ›
                             </span>
-
 
                         </button>
 
@@ -724,7 +742,6 @@
                             data-money-action="transaction"
                         >
 
-
                             <span class="money-action-icon">
                                 ⇄
                             </span>
@@ -732,16 +749,13 @@
 
                             <span class="money-action-content">
 
-
                                 <strong>
                                     Add Transaction
                                 </strong>
 
-
                                 <small>
                                     Manually record money in or out.
                                 </small>
-
 
                             </span>
 
@@ -750,12 +764,10 @@
                                 ›
                             </span>
 
-
                         </button>
 
 
                     </div>
-
 
                 </section>
 
@@ -765,9 +777,7 @@
 
                 <section class="money-management-section">
 
-
                     <div class="section-header">
-
 
                         <div>
 
@@ -776,11 +786,10 @@
                             </h3>
 
                             <p>
-                                Create goals and add money toward them.
+                                Move money into savings and organize it into funds.
                             </p>
 
                         </div>
-
 
                     </div>
 
@@ -791,9 +800,136 @@
                         <button
                             type="button"
                             class="money-action-card"
-                            data-money-action="savings-goal"
+                            data-money-action="savings-deposit"
                         >
 
+                            <span class="money-action-icon">
+                                ↓
+                            </span>
+
+
+                            <span class="money-action-content">
+
+                                <strong>
+                                    Add to Savings
+                                </strong>
+
+                                <small>
+                                    Move money from Checking into General Savings.
+                                </small>
+
+                            </span>
+
+
+                            <span class="money-action-arrow">
+                                ›
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            type="button"
+                            class="money-action-card"
+                            data-money-action="savings-withdrawal"
+                        >
+
+                            <span class="money-action-icon">
+                                ↑
+                            </span>
+
+
+                            <span class="money-action-content">
+
+                                <strong>
+                                    Withdraw to Checking
+                                </strong>
+
+                                <small>
+                                    Move money from General Savings back into Checking.
+                                </small>
+
+                            </span>
+
+
+                            <span class="money-action-arrow">
+                                ›
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            type="button"
+                            class="money-action-card"
+                            data-money-action="savings-allocation"
+                        >
+
+                            <span class="money-action-icon">
+                                ⇢
+                            </span>
+
+
+                            <span class="money-action-content">
+
+                                <strong>
+                                    Allocate to Fund
+                                </strong>
+
+                                <small>
+                                    Move General Savings into one of your savings goals.
+                                </small>
+
+                            </span>
+
+
+                            <span class="money-action-arrow">
+                                ›
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            type="button"
+                            class="money-action-card"
+                            data-money-action="savings-release"
+                        >
+
+                            <span class="money-action-icon">
+                                ↩
+                            </span>
+
+
+                            <span class="money-action-content">
+
+                                <strong>
+                                    Return from Fund
+                                </strong>
+
+                                <small>
+                                    Move money from a savings goal back into General Savings.
+                                </small>
+
+                            </span>
+
+
+                            <span class="money-action-arrow">
+                                ›
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            type="button"
+                            class="money-action-card"
+                            data-money-action="savings-goal"
+                        >
 
                             <span class="money-action-icon">
                                 🎯
@@ -802,16 +938,13 @@
 
                             <span class="money-action-content">
 
-
                                 <strong>
                                     Add Savings Goal
                                 </strong>
 
-
                                 <small>
-                                    Create a new savings target.
+                                    Create a new fund with a savings target.
                                 </small>
-
 
                             </span>
 
@@ -819,49 +952,11 @@
                             <span class="money-action-arrow">
                                 ›
                             </span>
-
-
-                        </button>
-
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="savings-deposit"
-                        >
-
-
-                            <span class="money-action-icon">
-                                🏦
-                            </span>
-
-
-                            <span class="money-action-content">
-
-
-                                <strong>
-                                    Add Money to Savings
-                                </strong>
-
-
-                                <small>
-                                    Move money toward a savings goal.
-                                </small>
-
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
 
                         </button>
 
 
                     </div>
-
 
                 </section>
 
@@ -871,9 +966,7 @@
 
                 <section class="money-management-section">
 
-
                     <div class="section-header">
-
 
                         <div>
 
@@ -887,19 +980,16 @@
 
                         </div>
 
-
                     </div>
 
 
                     <div class="money-action-grid">
-
 
                         <button
                             type="button"
                             class="money-action-card"
                             data-money-action="starting-balance"
                         >
-
 
                             <span class="money-action-icon">
                                 ⚙
@@ -908,16 +998,13 @@
 
                             <span class="money-action-content">
 
-
                                 <strong>
                                     Change Starting Balance
                                 </strong>
 
-
                                 <small>
                                     Update the balance this month starts with.
                                 </small>
-
 
                             </span>
 
@@ -926,12 +1013,9 @@
                                 ›
                             </span>
 
-
                         </button>
 
-
                     </div>
-
 
                 </section>
 
@@ -952,7 +1036,6 @@
 
 
                 <div class="page-heading">
-
 
                     <div>
 
@@ -975,7 +1058,6 @@
                         + Manage Money
                     </button>
 
-
                 </div>
 
 
@@ -984,9 +1066,7 @@
 
                 <section class="budget-block">
 
-
                     <div class="section-header">
-
 
                         <h3>
                             Starting Balance
@@ -1001,12 +1081,10 @@
                             Change
                         </button>
 
-
                     </div>
 
 
                     <div class="amount-display">
-
 
                         <span>
                             Checking Balance
@@ -1017,9 +1095,7 @@
                             $0.00
                         </strong>
 
-
                     </div>
-
 
                 </section>
 
@@ -1029,9 +1105,7 @@
 
                 <section class="budget-block">
 
-
                     <div class="section-header">
-
 
                         <div>
 
@@ -1054,7 +1128,6 @@
                         >
                             + Add
                         </button>
-
 
                     </div>
 
@@ -1102,7 +1175,6 @@
 
                     </div>
 
-
                 </section>
 
 
@@ -1111,9 +1183,7 @@
 
                 <section class="budget-block">
 
-
                     <div class="section-header">
-
 
                         <h3>
                             Monthly Bills
@@ -1129,7 +1199,6 @@
                             + Add
                         </button>
 
-
                     </div>
 
 
@@ -1144,20 +1213,15 @@
 
                     </div>
 
-
                 </section>
 
 
 
-                <!-- ====================================
-                     P2.2 EXPENSE MANAGEMENT
-                ===================================== -->
+                <!-- Expenses -->
 
                 <section class="budget-block">
 
-
                     <div class="section-header">
-
 
                         <div>
 
@@ -1181,12 +1245,8 @@
                             + Add
                         </button>
 
-
                     </div>
 
-
-
-                    <!-- Expense Totals -->
 
                     <div class="summary-grid">
 
@@ -1220,9 +1280,6 @@
                     </div>
 
 
-
-                    <!-- Expense List -->
-
                     <div
                         class="table-container"
                         id="expense-list"
@@ -1233,7 +1290,6 @@
                         </p>
 
                     </div>
-
 
                 </section>
 
@@ -1254,7 +1310,6 @@
 
 
                 <div class="page-heading">
-
 
                     <div>
 
@@ -1277,7 +1332,6 @@
                     >
                         + Transaction
                     </button>
-
 
                 </div>
 
@@ -1303,82 +1357,270 @@
             ===================================== -->
 
             <section
-                class="page"
+                class="page savings-page"
                 id="savings-page"
                 data-page-content="savings"
             >
 
 
-                <div class="page-heading">
+                <div class="page-heading savings-page-heading">
 
+                    <div class="savings-heading-content">
 
-                    <div>
+                        <p class="savings-eyebrow">
+                            M-Wallet Savings
+                        </p>
 
                         <h2>
                             Savings
                         </h2>
 
                         <p>
-                            Track your savings accounts and goals.
+                            Build your General Savings balance and organize money into individual funds.
                         </p>
 
                     </div>
-
-
-                    <div class="page-actions">
-
-
-                        <button
-                            class="secondary-button"
-                            type="button"
-                            data-money-action="savings-deposit"
-                        >
-                            + Add Money
-                        </button>
-
-
-                        <button
-                            class="primary-button"
-                            id="add-savings-button"
-                            type="button"
-                            data-money-action="savings-goal"
-                        >
-                            + Goal
-                        </button>
-
-
-                    </div>
-
 
                 </div>
 
 
 
-                <section class="balance-card">
+                <!-- ====================================
+                     SAVINGS BALANCE OVERVIEW
+                ===================================== -->
+
+                <section class="savings-balance-card">
 
 
-                    <p>
-                        Total Savings Balance
-                    </p>
+                    <div class="savings-balance-main">
+
+                        <p>
+                            General Savings
+                        </p>
+
+                        <h2 id="savings-balance">
+                            $0.00
+                        </h2>
+
+                        <span>
+                            Money available to allocate to your savings funds.
+                        </span>
+
+                    </div>
 
 
-                    <h2 id="savings-balance">
-                        $0.00
-                    </h2>
+                    <div class="savings-balance-summary">
+
+
+                        <article class="savings-balance-stat">
+
+                            <span>
+                                General Savings
+                            </span>
+
+                            <strong id="savings-general-balance">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                        <article class="savings-balance-stat">
+
+                            <span>
+                                Allocated to Funds
+                            </span>
+
+                            <strong id="savings-allocated-balance">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                        <article class="savings-balance-stat total">
+
+                            <span>
+                                Total Savings
+                            </span>
+
+                            <strong id="savings-total-balance">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                    </div>
 
 
                 </section>
 
 
 
-                <section class="dashboard-section">
+                <!-- ====================================
+                     SAVINGS QUICK ACTIONS
+                ===================================== -->
 
+                <section class="savings-actions-section">
 
                     <div class="section-header">
 
-                        <h3>
-                            Savings Goals
-                        </h3>
+                        <div>
+
+                            <h3>
+                                Savings Actions
+                            </h3>
+
+                            <p>
+                                Move money between Checking, General Savings, and your funds.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="savings-quick-actions">
+
+
+                        <button
+                            type="button"
+                            class="savings-quick-action deposit"
+                            data-money-action="savings-deposit"
+                        >
+
+                            <span class="savings-quick-action-icon">
+                                ↓
+                            </span>
+
+                            <span>
+
+                                <strong>
+                                    Add to Savings
+                                </strong>
+
+                                <small>
+                                    Checking → General Savings
+                                </small>
+
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            type="button"
+                            class="savings-quick-action withdraw"
+                            data-money-action="savings-withdrawal"
+                        >
+
+                            <span class="savings-quick-action-icon">
+                                ↑
+                            </span>
+
+                            <span>
+
+                                <strong>
+                                    Withdraw
+                                </strong>
+
+                                <small>
+                                    General Savings → Checking
+                                </small>
+
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            type="button"
+                            class="savings-quick-action allocate"
+                            data-money-action="savings-allocation"
+                        >
+
+                            <span class="savings-quick-action-icon">
+                                ⇢
+                            </span>
+
+                            <span>
+
+                                <strong>
+                                    Allocate
+                                </strong>
+
+                                <small>
+                                    General Savings → Fund
+                                </small>
+
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            type="button"
+                            class="savings-quick-action goal"
+                            data-money-action="savings-goal"
+                        >
+
+                            <span class="savings-quick-action-icon">
+                                🎯
+                            </span>
+
+                            <span>
+
+                                <strong>
+                                    New Goal
+                                </strong>
+
+                                <small>
+                                    Create a new savings fund
+                                </small>
+
+                            </span>
+
+                        </button>
+
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- ====================================
+                     SAVINGS GOALS
+                ===================================== -->
+
+                <section class="dashboard-section savings-goals-section">
+
+                    <div class="section-header">
+
+                        <div>
+
+                            <h3>
+                                Savings Funds
+                            </h3>
+
+                            <p>
+                                Allocate General Savings into individual goals without changing your total savings.
+                            </p>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            class="add-button"
+                            data-money-action="savings-goal"
+                        >
+                            + Goal
+                        </button>
 
                     </div>
 
@@ -1388,12 +1630,23 @@
                         id="savings-goals"
                     >
 
-                        <p class="empty-message">
-                            No savings goals created.
-                        </p>
+                        <div class="savings-empty-state">
+
+                            <p class="empty-message">
+                                No savings goals created.
+                            </p>
+
+                            <button
+                                type="button"
+                                class="primary-button"
+                                data-money-action="savings-goal"
+                            >
+                                + Create Savings Goal
+                            </button>
+
+                        </div>
 
                     </div>
-
 
                 </section>
 
@@ -1407,50 +1660,493 @@
             ===================================== -->
 
             <section
-                class="page"
+                class="page reports-page"
                 id="reports-page"
                 data-page-content="reports"
             >
 
 
-                <div class="page-heading">
-
+                <div class="page-heading reports-heading">
 
                     <div>
+
+                        <p class="reports-eyebrow">
+                            M-Wallet Analytics
+                        </p>
 
                         <h2>
                             Reports
                         </h2>
 
                         <p>
-                            See where your money is going.
+                            Review your money by month, year, or a custom month-to-month range.
                         </p>
 
                     </div>
 
-
                 </div>
 
 
-                <section class="dashboard-section">
 
+                <!-- ====================================
+                     REPORT PERIOD CONTROLS
+                ===================================== -->
+
+                <section class="report-control-card">
+
+                    <div class="report-control-heading">
+
+                        <div>
+
+                            <h3>
+                                Report Period
+                            </h3>
+
+                            <p id="report-control-description">
+                                Choose the month and year you want to review.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- Monthly -->
+
+                    <div
+                        class="report-period-panel"
+                        id="report-monthly-controls"
+                        data-report-controls="monthly"
+                    >
+
+
+                        <div class="report-field">
+
+                            <label for="report-month-select">
+                                Month
+                            </label>
+
+
+                            <select
+                                id="report-month-select"
+                                aria-label="Report month"
+                            >
+
+                                <option value="01">January</option>
+                                <option value="02">February</option>
+                                <option value="03">March</option>
+                                <option value="04">April</option>
+                                <option value="05">May</option>
+                                <option value="06">June</option>
+                                <option value="07">July</option>
+                                <option value="08">August</option>
+                                <option value="09">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+
+                            </select>
+
+                        </div>
+
+
+
+                        <div class="report-field">
+
+                            <label for="report-month-year-select">
+                                Year
+                            </label>
+
+
+                            <select
+                                id="report-month-year-select"
+                                aria-label="Report year"
+                            >
+                            </select>
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <!-- Yearly -->
+
+                    <div
+                        class="report-period-panel"
+                        id="report-yearly-controls"
+                        data-report-controls="yearly"
+                        hidden
+                    >
+
+                        <div class="report-field">
+
+                            <label for="report-year-select">
+                                Year
+                            </label>
+
+
+                            <select
+                                id="report-year-select"
+                                aria-label="Yearly report year"
+                            >
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- Date Range -->
+
+                    <div
+                        class="report-period-panel report-range-panel"
+                        id="report-range-controls"
+                        data-report-controls="range"
+                        hidden
+                    >
+
+
+                        <div class="report-range-group">
+
+                            <p class="report-range-label">
+                                Start
+                            </p>
+
+
+                            <div class="report-range-fields">
+
+
+                                <div class="report-field">
+
+                                    <label for="report-start-month-select">
+                                        Month
+                                    </label>
+
+
+                                    <select
+                                        id="report-start-month-select"
+                                        aria-label="Report start month"
+                                    >
+
+                                        <option value="01">January</option>
+                                        <option value="02">February</option>
+                                        <option value="03">March</option>
+                                        <option value="04">April</option>
+                                        <option value="05">May</option>
+                                        <option value="06">June</option>
+                                        <option value="07">July</option>
+                                        <option value="08">August</option>
+                                        <option value="09">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+
+                                    </select>
+
+                                </div>
+
+
+
+                                <div class="report-field">
+
+                                    <label for="report-start-year-select">
+                                        Year
+                                    </label>
+
+
+                                    <select
+                                        id="report-start-year-select"
+                                        aria-label="Report start year"
+                                    >
+                                    </select>
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+
+
+                        <div
+                            class="report-range-arrow"
+                            aria-hidden="true"
+                        >
+                            →
+                        </div>
+
+
+
+                        <div class="report-range-group">
+
+                            <p class="report-range-label">
+                                End
+                            </p>
+
+
+                            <div class="report-range-fields">
+
+
+                                <div class="report-field">
+
+                                    <label for="report-end-month-select">
+                                        Month
+                                    </label>
+
+
+                                    <select
+                                        id="report-end-month-select"
+                                        aria-label="Report end month"
+                                    >
+
+                                        <option value="01">January</option>
+                                        <option value="02">February</option>
+                                        <option value="03">March</option>
+                                        <option value="04">April</option>
+                                        <option value="05">May</option>
+                                        <option value="06">June</option>
+                                        <option value="07">July</option>
+                                        <option value="08">August</option>
+                                        <option value="09">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+
+                                    </select>
+
+                                </div>
+
+
+
+                                <div class="report-field">
+
+                                    <label for="report-end-year-select">
+                                        Year
+                                    </label>
+
+
+                                    <select
+                                        id="report-end-year-select"
+                                        aria-label="Report end year"
+                                    >
+                                    </select>
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- Report Period -->
+
+                <section class="report-period-summary">
+
+                    <span>
+                        Viewing
+                    </span>
+
+                    <strong id="report-period-label">
+                        August 2026
+                    </strong>
+
+                </section>
+
+
+
+                <!-- Report Summary -->
+
+                <section class="report-summary-section">
+
+                    <div class="report-summary-grid">
+
+
+                        <article class="report-summary-card income">
+
+                            <span>
+                                Income
+                            </span>
+
+                            <strong id="report-total-income">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                        <article class="report-summary-card bills">
+
+                            <span>
+                                Bills
+                            </span>
+
+                            <strong id="report-total-bills">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                        <article class="report-summary-card expenses">
+
+                            <span>
+                                Expenses
+                            </span>
+
+                            <strong id="report-total-expenses">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                        <article class="report-summary-card savings">
+
+                            <span>
+                                Savings
+                            </span>
+
+                            <strong id="report-total-savings">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                        <article class="report-summary-card net">
+
+                            <span>
+                                Net Remaining
+                            </span>
+
+                            <strong id="report-net-remaining">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- Money Overview -->
+
+                <section class="report-section">
 
                     <div class="section-header">
 
-                        <h3>
-                            Monthly Overview
-                        </h3>
+                        <div>
+
+                            <h3>
+                                Money Overview
+                            </h3>
+
+                            <p>
+                                Income compared with bills, expenses, and savings.
+                            </p>
+
+                        </div>
 
                     </div>
 
 
                     <div
-                        class="chart-placeholder"
-                        id="monthly-chart"
+                        class="report-chart-area"
+                        id="report-overview-chart"
                     >
-                        Reports will appear here.
+
+                        <p class="empty-message">
+                            Report overview will appear here.
+                        </p>
+
                     </div>
 
+                </section>
+
+
+
+                <!-- Category Breakdown -->
+
+                <section class="report-section">
+
+                    <div class="section-header">
+
+                        <div>
+
+                            <h3>
+                                Spending by Category
+                            </h3>
+
+                            <p>
+                                See which categories received the most money.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="report-breakdown-list"
+                        id="report-category-breakdown"
+                    >
+
+                        <p class="empty-message">
+                            Category data will appear here.
+                        </p>
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- Merchant Breakdown -->
+
+                <section class="report-section">
+
+                    <div class="section-header">
+
+                        <div>
+
+                            <h3>
+                                Spending by Merchant
+                            </h3>
+
+                            <p>
+                                See where you spent your money.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="report-breakdown-list"
+                        id="report-merchant-breakdown"
+                    >
+
+                        <p class="empty-message">
+                            Merchant data will appear here.
+                        </p>
+
+                    </div>
 
                 </section>
 
@@ -1472,7 +2168,6 @@
 
                 <div class="page-heading">
 
-
                     <div>
 
                         <h2>
@@ -1485,13 +2180,11 @@
 
                     </div>
 
-
                 </div>
 
 
 
                 <section class="settings-section">
-
 
                     <div class="settings-section-heading">
 
@@ -1525,6 +2218,7 @@
 
                         </span>
 
+
                         <span class="settings-item-arrow">
                             ›
                         </span>
@@ -1542,6 +2236,7 @@
                             ✓
                         </span>
 
+
                         <div>
 
                             <strong>
@@ -1556,13 +2251,11 @@
 
                     </div>
 
-
                 </section>
 
 
 
                 <section class="settings-section">
-
 
                     <div class="settings-section-heading">
 
@@ -1599,7 +2292,6 @@
                     >
                         Reset M-Wallet Data
                     </button>
-
 
                 </section>
 
@@ -1759,19 +2451,15 @@
 
             <div class="money-modal-header">
 
-
                 <div>
-
 
                     <p class="money-modal-label">
                         Money Management
                     </p>
 
-
                     <h3 id="money-modal-title">
                         Add Money
                     </h3>
-
 
                 </div>
 
@@ -1786,7 +2474,6 @@
                 >
                     ×
                 </button>
-
 
             </div>
 
@@ -1814,7 +2501,6 @@
 
                 <div class="money-modal-actions">
 
-
                     <button
                         type="button"
                         class="secondary-button money-undo-button"
@@ -1832,7 +2518,6 @@
                         💾 Save
                     </button>
 
-
                 </div>
 
 
@@ -1848,18 +2533,18 @@
 
     <!-- ========================================
          JAVASCRIPT
-         P2.2 CACHE VERSION
+         SAVINGS + REPORTS CACHE VERSION
     ========================================= -->
 
-    <script src="./js/storage.js?v=4"></script>
+    <script src="./js/storage.js?v=6"></script>
 
-    <script src="./js/nav.js?v=4"></script>
+    <script src="./js/nav.js?v=6"></script>
 
-    <script src="./js/app.js?v=4"></script>
+    <script src="./js/app.js?v=6"></script>
 
-    <script src="./js/money.js?v=4"></script>
+    <script src="./js/money.js?v=6"></script>
 
-    <script src="./js/pwa.js?v=4"></script>
+    <script src="./js/pwa.js?v=6"></script>
 
 
 </body>

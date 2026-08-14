@@ -1,6 +1,7 @@
 /* =========================================================
-   BUDGET TRACKER
+   M-WALLET
    Navigation + Month / Year Navigation
+   Reports Header Switching
    nav.js
    ========================================================= */
 
@@ -35,7 +36,15 @@ document.addEventListener(
             );
 
 
-        /* Month controls */
+        /* -------------------------------------------------
+           STANDARD MONTH CONTROLS
+           ------------------------------------------------- */
+
+        const standardMonthNavigation =
+            document.getElementById(
+                "standard-month-navigation"
+            );
+
 
         const monthSelect =
             document.getElementById(
@@ -73,13 +82,25 @@ document.addEventListener(
             );
 
 
+        /* -------------------------------------------------
+           REPORTS HEADER CONTROLS
+           ------------------------------------------------- */
+
+        const reportNavigation =
+            document.getElementById(
+                "report-navigation"
+            );
+
+
+        const reportTypeSelect =
+            document.getElementById(
+                "report-type-select"
+            );
+
+
         /* =================================================
            2. VALID APP PAGES
            ================================================= */
-
-        /*
-            Money Management is now an official app page.
-        */
 
         const validPages = [
 
@@ -101,7 +122,78 @@ document.addEventListener(
 
 
         /* =================================================
-           3. SHOW PAGE
+           3. HEADER MODE
+           ================================================= */
+
+        function updateHeaderForPage(
+            pageName
+        ) {
+
+            const isReports =
+                pageName ===
+                "reports";
+
+
+            /* ---------------------------------------------
+               Normal Month / Year Navigation
+               --------------------------------------------- */
+
+            if (
+                standardMonthNavigation
+            ) {
+
+                standardMonthNavigation.hidden =
+                    isReports;
+
+            }
+
+
+            /* ---------------------------------------------
+               Reports Type Selector
+               --------------------------------------------- */
+
+            if (
+                reportNavigation
+            ) {
+
+                reportNavigation.hidden =
+                    !isReports;
+
+            }
+
+
+            /* ---------------------------------------------
+               Notify the rest of M-Wallet
+               --------------------------------------------- */
+
+            document.dispatchEvent(
+
+                new CustomEvent(
+                    "mwallet:header-mode-changed",
+                    {
+
+                        detail: {
+
+                            page:
+                                pageName,
+
+                            mode:
+                                isReports
+                                    ? "reports"
+                                    : "standard"
+
+                        }
+
+                    }
+                )
+
+            );
+
+        }
+
+
+        /* =================================================
+           4. SHOW PAGE
            ================================================= */
 
         function showPage(
@@ -122,6 +214,7 @@ document.addEventListener(
                 );
 
                 return;
+
             }
 
 
@@ -150,7 +243,16 @@ document.addEventListener(
 
 
             /* ---------------------------------------------
-               Remove active state from nav
+               Update Header Mode
+               --------------------------------------------- */
+
+            updateHeaderForPage(
+                pageName
+            );
+
+
+            /* ---------------------------------------------
+               Remove Active State From Bottom Navigation
                --------------------------------------------- */
 
             bottomNavButtons.forEach(
@@ -165,9 +267,7 @@ document.addEventListener(
 
 
             /* ---------------------------------------------
-               Highlight correct nav button
-
-               Settings has no bottom nav tab.
+               Highlight Correct Bottom Navigation Button
                --------------------------------------------- */
 
             const activeNavButton =
@@ -176,7 +276,9 @@ document.addEventListener(
                 );
 
 
-            if (activeNavButton) {
+            if (
+                activeNavButton
+            ) {
 
                 activeNavButton.classList.add(
                     "active"
@@ -186,12 +288,17 @@ document.addEventListener(
 
 
             /* ---------------------------------------------
-               Scroll to top
+               Scroll To Top
                --------------------------------------------- */
 
             window.scrollTo({
-                top: 0,
-                behavior: "smooth"
+
+                top:
+                    0,
+
+                behavior:
+                    "smooth"
+
             });
 
 
@@ -199,11 +306,16 @@ document.addEventListener(
                Update URL
                --------------------------------------------- */
 
-            if (updateHistory) {
+            if (
+                updateHistory
+            ) {
 
                 history.pushState(
                     {
-                        page: pageName
+
+                        page:
+                            pageName
+
                     },
                     "",
                     `#${pageName}`
@@ -213,7 +325,7 @@ document.addEventListener(
 
 
             /* ---------------------------------------------
-               Tell the rest of the app the page changed
+               Notify Existing Budget Code
                --------------------------------------------- */
 
             document.dispatchEvent(
@@ -221,10 +333,37 @@ document.addEventListener(
                 new CustomEvent(
                     "budget:page-changed",
                     {
+
                         detail: {
+
                             page:
                                 pageName
+
                         }
+
+                    }
+                )
+
+            );
+
+
+            /* ---------------------------------------------
+               Notify M-Wallet Code
+               --------------------------------------------- */
+
+            document.dispatchEvent(
+
+                new CustomEvent(
+                    "mwallet:page-changed",
+                    {
+
+                        detail: {
+
+                            page:
+                                pageName
+
+                        }
+
                     }
                 )
 
@@ -234,7 +373,7 @@ document.addEventListener(
 
 
         /* =================================================
-           4. PAGE NAVIGATION BUTTONS
+           5. PAGE NAVIGATION BUTTONS
            ================================================= */
 
         navigationButtons.forEach(
@@ -259,14 +398,9 @@ document.addEventListener(
                             );
 
                             return;
+
                         }
 
-
-                        /*
-                            Don't create duplicate history
-                            entries when clicking the page
-                            you're already viewing.
-                        */
 
                         const currentPage =
                             document.querySelector(
@@ -275,9 +409,22 @@ document.addEventListener(
 
 
                         if (
-                            currentPage?.dataset.pageContent ===
+                            currentPage
+                                ?.dataset
+                                .pageContent ===
                             pageName
                         ) {
+
+                            /*
+                                Even if already on the page,
+                                make sure the correct header
+                                mode is active.
+                            */
+
+                            updateHeaderForPage(
+                                pageName
+                            );
+
 
                             return;
 
@@ -296,7 +443,7 @@ document.addEventListener(
 
 
         /* =================================================
-           5. LOAD STARTING PAGE
+           6. LOAD STARTING PAGE
            ================================================= */
 
         function loadStartingPage() {
@@ -319,16 +466,12 @@ document.addEventListener(
                     : "home";
 
 
-            /*
-                Use replaceState on initial page load.
-
-                This avoids adding an unnecessary first
-                history entry.
-            */
-
             history.replaceState(
                 {
-                    page: pageName
+
+                    page:
+                        pageName
+
                 },
                 "",
                 `#${pageName}`
@@ -344,7 +487,7 @@ document.addEventListener(
 
 
         /* =================================================
-           6. BROWSER BACK / FORWARD
+           7. BROWSER BACK / FORWARD
            ================================================= */
 
         window.addEventListener(
@@ -377,19 +520,19 @@ document.addEventListener(
 
 
         /* =================================================
-           7. YEAR SELECT OPTIONS
+           8. BUILD STANDARD YEAR OPTIONS
            ================================================= */
 
         function buildYearOptions() {
 
-            if (!yearSelect) {
+            if (
+                !yearSelect
+            ) {
+
                 return;
+
             }
 
-
-            /*
-                Clear existing options first.
-            */
 
             yearSelect.innerHTML =
                 "";
@@ -400,14 +543,6 @@ document.addEventListener(
                     .getFullYear();
 
 
-            /*
-                Give the app a useful range.
-
-                Example in 2026:
-
-                2021 → 2036
-            */
-
             const startYear =
                 currentYear - 5;
 
@@ -417,8 +552,12 @@ document.addEventListener(
 
 
             for (
-                let year = startYear;
-                year <= endYear;
+                let year =
+                    startYear;
+
+                year <=
+                    endYear;
+
                 year++
             ) {
 
@@ -429,11 +568,15 @@ document.addEventListener(
 
 
                 option.value =
-                    String(year);
+                    String(
+                        year
+                    );
 
 
                 option.textContent =
-                    String(year);
+                    String(
+                        year
+                    );
 
 
                 yearSelect.appendChild(
@@ -446,25 +589,26 @@ document.addEventListener(
 
 
         /* =================================================
-           8. CHECK / ADD YEAR OPTION
+           9. CHECK / ADD STANDARD YEAR OPTION
            ================================================= */
-
-        /*
-            This allows month navigation to move outside
-            the initial year range if needed.
-        */
 
         function ensureYearExists(
             year
         ) {
 
-            if (!yearSelect) {
+            if (
+                !yearSelect
+            ) {
+
                 return;
+
             }
 
 
             const yearString =
-                String(year);
+                String(
+                    year
+                );
 
 
             const existingOption =
@@ -477,8 +621,12 @@ document.addEventListener(
                 );
 
 
-            if (existingOption) {
+            if (
+                existingOption
+            ) {
+
                 return;
+
             }
 
 
@@ -501,10 +649,6 @@ document.addEventListener(
             );
 
 
-            /*
-                Keep years sorted.
-            */
-
             const options =
                 Array.from(
                     yearSelect.options
@@ -512,9 +656,18 @@ document.addEventListener(
 
 
             options.sort(
-                (a, b) =>
-                    Number(a.value) -
-                    Number(b.value)
+                (
+                    a,
+                    b
+                ) =>
+
+                    Number(
+                        a.value
+                    )
+                    -
+                    Number(
+                        b.value
+                    )
             );
 
 
@@ -536,7 +689,7 @@ document.addEventListener(
 
 
         /* =================================================
-           9. UPDATE MONTH TITLE
+           10. UPDATE MONTH TITLE
            ================================================= */
 
         function updateMonthTitle() {
@@ -571,7 +724,7 @@ document.addEventListener(
 
 
         /* =================================================
-           10. GET SELECTED PERIOD
+           11. GET SELECTED PERIOD
            ================================================= */
 
         function getSelectedPeriod() {
@@ -604,7 +757,7 @@ document.addEventListener(
 
 
         /* =================================================
-           11. SET SELECTED PERIOD
+           12. SET SELECTED PERIOD
            ================================================= */
 
         function setSelectedPeriod(
@@ -618,6 +771,7 @@ document.addEventListener(
             ) {
 
                 return;
+
             }
 
 
@@ -626,58 +780,59 @@ document.addEventListener(
             );
 
 
+            const monthString =
+                String(
+                    month
+                ).padStart(
+                    2,
+                    "0"
+                );
+
+
             monthSelect.value =
-                String(month)
-                    .padStart(
-                        2,
-                        "0"
-                    );
+                monthString;
 
 
             yearSelect.value =
-                String(year);
+                String(
+                    year
+                );
 
 
             updateMonthTitle();
 
 
-            /*
-                Tell app.js the month/year changed.
+            const detail = {
 
-                app.js listens for:
+                year,
 
-                    budget:month-changed
+                month:
+                    monthString,
 
-                and redraws all budget information.
-            */
+                monthKey:
+                    `${year}-${monthString}`
+
+            };
+
 
             document.dispatchEvent(
 
                 new CustomEvent(
                     "budget:month-changed",
                     {
-                        detail: {
+                        detail
+                    }
+                )
 
-                            year,
+            );
 
-                            month:
-                                String(month)
-                                    .padStart(
-                                        2,
-                                        "0"
-                                    ),
 
-                            monthKey:
-                                (
-                                    `${year}-` +
-                                    `${String(month)
-                                        .padStart(
-                                            2,
-                                            "0"
-                                        )}`
-                                )
+            document.dispatchEvent(
 
-                        }
+                new CustomEvent(
+                    "mwallet:month-changed",
+                    {
+                        detail
                     }
                 )
 
@@ -687,7 +842,7 @@ document.addEventListener(
 
 
         /* =================================================
-           12. INITIALIZE CURRENT MONTH
+           13. INITIALIZE CURRENT MONTH
            ================================================= */
 
         function initializeMonthNavigation() {
@@ -698,6 +853,7 @@ document.addEventListener(
             ) {
 
                 return;
+
             }
 
 
@@ -722,15 +878,18 @@ document.addEventListener(
 
 
             monthSelect.value =
-                String(month)
-                    .padStart(
-                        2,
-                        "0"
-                    );
+                String(
+                    month
+                ).padStart(
+                    2,
+                    "0"
+                );
 
 
             yearSelect.value =
-                String(year);
+                String(
+                    year
+                );
 
 
             updateMonthTitle();
@@ -739,10 +898,12 @@ document.addEventListener(
 
 
         /* =================================================
-           13. MONTH DROPDOWN CHANGED
+           14. MONTH DROPDOWN CHANGED
            ================================================= */
 
-        if (monthSelect) {
+        if (
+            monthSelect
+        ) {
 
             monthSelect.addEventListener(
                 "change",
@@ -752,8 +913,12 @@ document.addEventListener(
                         getSelectedPeriod();
 
 
-                    if (!period) {
+                    if (
+                        !period
+                    ) {
+
                         return;
+
                     }
 
 
@@ -769,10 +934,12 @@ document.addEventListener(
 
 
         /* =================================================
-           14. YEAR DROPDOWN CHANGED
+           15. YEAR DROPDOWN CHANGED
            ================================================= */
 
-        if (yearSelect) {
+        if (
+            yearSelect
+        ) {
 
             yearSelect.addEventListener(
                 "change",
@@ -782,8 +949,12 @@ document.addEventListener(
                         getSelectedPeriod();
 
 
-                    if (!period) {
+                    if (
+                        !period
+                    ) {
+
                         return;
+
                     }
 
 
@@ -799,10 +970,12 @@ document.addEventListener(
 
 
         /* =================================================
-           15. PREVIOUS MONTH
+           16. PREVIOUS MONTH
            ================================================= */
 
-        if (previousMonthButton) {
+        if (
+            previousMonthButton
+        ) {
 
             previousMonthButton.addEventListener(
                 "click",
@@ -812,8 +985,12 @@ document.addEventListener(
                         getSelectedPeriod();
 
 
-                    if (!period) {
+                    if (
+                        !period
+                    ) {
+
                         return;
+
                     }
 
 
@@ -825,11 +1002,9 @@ document.addEventListener(
                         period.month - 1;
 
 
-                    /*
-                        January → December previous year
-                    */
-
-                    if (month < 1) {
+                    if (
+                        month < 1
+                    ) {
 
                         month =
                             12;
@@ -853,10 +1028,12 @@ document.addEventListener(
 
 
         /* =================================================
-           16. NEXT MONTH
+           17. NEXT MONTH
            ================================================= */
 
-        if (nextMonthButton) {
+        if (
+            nextMonthButton
+        ) {
 
             nextMonthButton.addEventListener(
                 "click",
@@ -866,8 +1043,12 @@ document.addEventListener(
                         getSelectedPeriod();
 
 
-                    if (!period) {
+                    if (
+                        !period
+                    ) {
+
                         return;
+
                     }
 
 
@@ -879,11 +1060,9 @@ document.addEventListener(
                         period.month + 1;
 
 
-                    /*
-                        December → January next year
-                    */
-
-                    if (month > 12) {
+                    if (
+                        month > 12
+                    ) {
 
                         month =
                             1;
@@ -907,10 +1086,12 @@ document.addEventListener(
 
 
         /* =================================================
-           17. TODAY BUTTON
+           18. TODAY BUTTON
            ================================================= */
 
-        if (todayButton) {
+        if (
+            todayButton
+        ) {
 
             todayButton.addEventListener(
                 "click",
@@ -935,13 +1116,47 @@ document.addEventListener(
 
 
         /* =================================================
-           18. START NAVIGATION
+           19. REPORT TYPE CHANGE EVENT
            ================================================= */
 
-        /*
-            Month navigation needs to initialize BEFORE
-            app.js reads the selected month.
-        */
+        if (
+            reportTypeSelect
+        ) {
+
+            reportTypeSelect.addEventListener(
+                "change",
+                () => {
+
+                    const reportType =
+                        reportTypeSelect.value;
+
+
+                    document.dispatchEvent(
+
+                        new CustomEvent(
+                            "mwallet:report-type-changed",
+                            {
+
+                                detail: {
+
+                                    reportType
+
+                                }
+
+                            }
+                        )
+
+                    );
+
+                }
+            );
+
+        }
+
+
+        /* =================================================
+           20. START NAVIGATION
+           ================================================= */
 
         initializeMonthNavigation();
 
@@ -950,17 +1165,8 @@ document.addEventListener(
 
 
         /* =================================================
-           19. EXPOSE NAVIGATION
+           21. EXPOSE NAVIGATION
            ================================================= */
-
-        /*
-            Makes it possible for other JavaScript files
-            to change screens later.
-
-            Example:
-
-                BudgetNavigation.showPage("money");
-        */
 
         window.BudgetNavigation = {
 
@@ -968,13 +1174,45 @@ document.addEventListener(
 
             getSelectedPeriod,
 
-            setSelectedPeriod
+            setSelectedPeriod,
+
+            updateHeaderForPage,
+
+            getCurrentPage() {
+
+                const currentPage =
+                    document.querySelector(
+                        ".page.active"
+                    );
+
+
+                return (
+                    currentPage
+                        ?.dataset
+                        .pageContent ||
+                    "home"
+                );
+
+            },
+
+            isReportsPage() {
+
+                return (
+                    this.getCurrentPage() ===
+                    "reports"
+                );
+
+            }
 
         };
 
 
+        window.MWalletNavigation =
+            window.BudgetNavigation;
+
+
         console.log(
-            "Budget Tracker navigation loaded."
+            "M-Wallet navigation loaded - Reports header switching ready."
         );
 
     }

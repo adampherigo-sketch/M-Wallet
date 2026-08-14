@@ -1,7 +1,7 @@
 /* =========================================================
    M-WALLET
    Main Theme + Layout + PWA Support
-   Phase 2.2 - Expense Management
+   Reports + Savings Upgrade
    ========================================================= */
 
 
@@ -120,6 +120,10 @@ button:disabled {
 
 img {
     max-width: 100%;
+}
+
+[hidden] {
+    display: none !important;
 }
 
 
@@ -350,7 +354,60 @@ img {
 
 
 /* =========================================================
-   7. SETTINGS BUTTON
+   7. REPORT HEADER NAVIGATION
+   ========================================================= */
+
+.report-navigation {
+    width: min(340px, calc(100% - 110px));
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 10px;
+
+    margin: 8px auto 0;
+}
+
+.report-navigation[hidden] {
+    display: none !important;
+}
+
+.report-navigation-label {
+    flex-shrink: 0;
+
+    color: var(--muted);
+
+    font-size: 0.72rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.08em;
+}
+
+.report-type-select {
+    width: auto;
+    min-width: 155px;
+
+    padding: 8px 32px 8px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    background: var(--surface);
+
+    color: var(--green-dark);
+
+    font-size: 0.82rem;
+    font-weight: 750;
+
+    box-shadow: var(--shadow-sm);
+}
+
+
+/* =========================================================
+   8. SETTINGS BUTTON
    ========================================================= */
 
 .header-button {
@@ -394,7 +451,7 @@ img {
 
 
 /* =========================================================
-   8. MAIN CONTENT
+   9. MAIN CONTENT
    ========================================================= */
 
 .app-content {
@@ -413,7 +470,7 @@ img {
 
 
 /* =========================================================
-   9. PAGE SYSTEM
+   10. PAGE SYSTEM
    ========================================================= */
 
 .page {
@@ -442,7 +499,7 @@ img {
 
 
 /* =========================================================
-   10. PAGE HEADINGS
+   11. PAGE HEADINGS
    ========================================================= */
 
 .page-heading {
@@ -481,7 +538,7 @@ img {
 
 
 /* =========================================================
-   11. MAIN BALANCE CARD
+   12. MAIN BALANCE CARD
    ========================================================= */
 
 .balance-card {
@@ -588,7 +645,7 @@ img {
 
 
 /* =========================================================
-   12. GENERAL SECTIONS
+   13. GENERAL SECTIONS
    ========================================================= */
 
 .dashboard-section,
@@ -633,7 +690,7 @@ img {
 
 
 /* =========================================================
-   13. SUMMARY CARDS
+   14. SUMMARY CARDS
    ========================================================= */
 
 .summary-grid {
@@ -699,7 +756,7 @@ img {
 
 
 /* =========================================================
-   14. INFO CARDS
+   15. INFO CARDS
    ========================================================= */
 
 .info-card {
@@ -735,7 +792,7 @@ img {
 
 
 /* =========================================================
-   15. AMOUNT DISPLAY
+   16. AMOUNT DISPLAY
    ========================================================= */
 
 .amount-display {
@@ -764,7 +821,7 @@ img {
 
 
 /* =========================================================
-   16. LISTS
+   17. LISTS
    ========================================================= */
 
 .list-container,
@@ -786,7 +843,7 @@ img {
 
 
 /* =========================================================
-   17. BUTTONS
+   18. BUTTONS
    ========================================================= */
 
 .primary-button,
@@ -872,7 +929,7 @@ img {
 
 
 /* =========================================================
-   18. TABLES
+   19. TABLES
    ========================================================= */
 
 .table-container {
@@ -938,7 +995,7 @@ tbody tr:last-child td {
 
 
 /* =========================================================
-   19. P2.2 TABLE DETAILS
+   20. INCOME / EXPENSE TABLE DETAILS
    ========================================================= */
 
 #income-list table {
@@ -1030,7 +1087,7 @@ tbody tr:last-child td {
 
 
 /* =========================================================
-   20. TRANSACTION ITEMS
+   21. TRANSACTION ITEMS
    ========================================================= */
 
 .transaction-item {
@@ -1103,34 +1160,495 @@ tbody tr:last-child td {
 
 
 /* =========================================================
-   21. SAVINGS GOALS
+   22. SAVINGS SYSTEM
    ========================================================= */
 
+.savings-page {
+    max-width: 100%;
+}
+
+.savings-page-heading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    margin-bottom: 24px;
+
+    text-align: center;
+}
+
+.savings-heading-content {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    text-align: center;
+}
+
+.savings-heading-content h2 {
+    margin-bottom: 6px;
+}
+
+.savings-heading-content > p:last-child {
+    max-width: 620px;
+
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.savings-eyebrow {
+    margin-bottom: 5px !important;
+
+    color: var(--green) !important;
+
+    font-size: 0.7rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.12em;
+}
+
+/* ---------------------------------------------------------
+   Savings Balance Overview
+   --------------------------------------------------------- */
+
+.savings-balance-card {
+    position: relative;
+
+    overflow: hidden;
+
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.2fr)
+        minmax(0, 1fr);
+
+    gap: 26px;
+
+    margin-bottom: 22px;
+    padding: 28px;
+
+    border: 1px solid rgba(22, 59, 43, 0.12);
+    border-radius: var(--radius-lg);
+
+    background:
+        radial-gradient(
+            circle at 92% 8%,
+            rgba(195, 163, 90, 0.22),
+            transparent 30%
+        ),
+        linear-gradient(
+            135deg,
+            var(--green-dark),
+            #204d37 56%,
+            #183c2d
+        );
+
+    color: #ffffff;
+
+    box-shadow: var(--shadow-md);
+}
+
+.savings-balance-card::after {
+    content: "◇";
+
+    position: absolute;
+
+    right: 20px;
+    bottom: -56px;
+
+    color: rgba(255, 255, 255, 0.045);
+
+    font-size: 11rem;
+    font-weight: 900;
+
+    pointer-events: none;
+}
+
+.savings-balance-main,
+.savings-balance-summary {
+    position: relative;
+
+    z-index: 1;
+}
+
+.savings-balance-main {
+    align-self: center;
+}
+
+.savings-balance-main > p {
+    margin-bottom: 7px;
+
+    color: rgba(255, 255, 255, 0.7);
+
+    font-size: 0.76rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.09em;
+}
+
+.savings-balance-main h2 {
+    margin-bottom: 10px;
+
+    font-size: clamp(2.45rem, 7vw, 4rem);
+    font-weight: 800;
+
+    line-height: 1;
+
+    letter-spacing: -0.045em;
+}
+
+.savings-balance-main > span {
+    display: block;
+
+    max-width: 430px;
+
+    color: rgba(255, 255, 255, 0.7);
+
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.savings-balance-summary {
+    display: grid;
+
+    gap: 10px;
+}
+
+.savings-balance-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 16px;
+
+    padding: 14px 15px;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.savings-balance-stat span {
+    color: rgba(255, 255, 255, 0.66);
+
+    font-size: 0.74rem;
+    font-weight: 650;
+}
+
+.savings-balance-stat strong {
+    color: #ffffff;
+
+    font-size: 0.96rem;
+    font-weight: 780;
+
+    white-space: nowrap;
+}
+
+.savings-balance-stat.total {
+    border-color: rgba(195, 163, 90, 0.35);
+
+    background: rgba(195, 163, 90, 0.13);
+}
+
+.savings-balance-stat.total span {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.savings-balance-stat.total strong {
+    color: #f4dfaa;
+}
+
+
+/* ---------------------------------------------------------
+   Savings Quick Actions
+   --------------------------------------------------------- */
+
+.savings-actions-section {
+    margin-bottom: 22px;
+    padding: 22px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    background: var(--surface);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.savings-quick-actions {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+
+    gap: 12px;
+}
+
+.savings-quick-action {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    min-height: 86px;
+
+    padding: 15px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    background:
+        linear-gradient(
+            145deg,
+            var(--surface-soft),
+            #ffffff
+        );
+
+    color: var(--text);
+
+    text-align: left;
+
+    box-shadow:
+        0 3px 10px
+        rgba(20, 40, 30, 0.03);
+
+    transition:
+        transform var(--transition),
+        border-color var(--transition),
+        background var(--transition),
+        box-shadow var(--transition);
+}
+
+.savings-quick-action:hover {
+    transform: translateY(-2px);
+
+    border-color: rgba(36, 92, 66, 0.24);
+
+    background: var(--green-soft);
+
+    box-shadow:
+        0 9px 22px
+        rgba(22, 59, 43, 0.08);
+}
+
+.savings-quick-action:active {
+    transform: translateY(0);
+}
+
+.savings-quick-action-icon {
+    width: 42px;
+    height: 42px;
+
+    display: grid;
+    place-items: center;
+
+    flex: 0 0 42px;
+
+    border-radius: 13px;
+
+    background: var(--green-soft);
+
+    color: var(--green-dark);
+
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.savings-quick-action.withdraw .savings-quick-action-icon {
+    background: var(--gold-soft);
+
+    color: #765f2f;
+}
+
+.savings-quick-action.allocate .savings-quick-action-icon {
+    background: var(--purple-soft);
+
+    color: var(--purple);
+}
+
+.savings-quick-action.goal .savings-quick-action-icon {
+    background: var(--green-light);
+
+    color: var(--green-dark);
+}
+
+.savings-quick-action > span:last-child {
+    min-width: 0;
+}
+
+.savings-quick-action strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: var(--charcoal);
+
+    font-size: 0.86rem;
+    font-weight: 760;
+}
+
+.savings-quick-action small {
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 0.7rem;
+    line-height: 1.35;
+}
+
+
+/* ---------------------------------------------------------
+   Savings Goals / Funds
+   --------------------------------------------------------- */
+
+.savings-goals-section {
+    border-radius: var(--radius-lg);
+}
+
+.savings-goals {
+    display: grid;
+
+    gap: 13px;
+}
+
 .savings-goal-card {
-    margin-bottom: 12px;
+    position: relative;
+
+    overflow: hidden;
+
+    margin: 0;
     padding: 18px;
 
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
 
-    background: var(--surface);
+    background:
+        linear-gradient(
+            145deg,
+            #ffffff,
+            var(--surface-soft)
+        );
+
+    box-shadow:
+        0 3px 12px
+        rgba(20, 40, 30, 0.04);
+
+    transition:
+        transform var(--transition),
+        box-shadow var(--transition),
+        border-color var(--transition);
 }
 
-.savings-goal-card:last-child {
-    margin-bottom: 0;
+.savings-goal-card:hover {
+    transform: translateY(-2px);
+
+    border-color: rgba(36, 92, 66, 0.2);
+
+    box-shadow:
+        0 9px 24px
+        rgba(22, 59, 43, 0.07);
+}
+
+.savings-goal-card.completed {
+    border-color: rgba(45, 122, 82, 0.3);
+
+    background:
+        linear-gradient(
+            145deg,
+            var(--success-soft),
+            #ffffff
+        );
+}
+
+.savings-goal-card.completed::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 4px;
+    height: 100%;
+
+    background: var(--success);
 }
 
 .savings-goal-header {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
 
-    gap: 16px;
+    gap: 20px;
 
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
-.savings-goal-header strong {
+.savings-goal-title {
+    min-width: 0;
+}
+
+.savings-goal-title > strong {
+    display: block;
+
+    margin-bottom: 5px;
+
     color: var(--green-dark);
+
+    font-size: 1rem;
+    font-weight: 780;
+
+    overflow-wrap: anywhere;
+}
+
+.savings-goal-title > span {
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 0.73rem;
+    line-height: 1.4;
+}
+
+.savings-goal-complete {
+    color: var(--success) !important;
+
+    font-weight: 750;
+}
+
+.savings-goal-amount {
+    flex-shrink: 0;
+
+    text-align: right;
+}
+
+.savings-goal-amount strong {
+    display: block;
+
+    color: var(--charcoal);
+
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.savings-goal-amount span {
+    display: block;
+
+    margin-top: 3px;
+
+    color: var(--muted);
+
+    font-size: 0.7rem;
 }
 
 .savings-progress {
@@ -1155,11 +1673,217 @@ tbody tr:last-child td {
             var(--green),
             var(--gold)
         );
+
+    transition:
+        width 0.35s ease;
+}
+
+.savings-goal-card.completed .savings-progress-bar {
+    background:
+        linear-gradient(
+            90deg,
+            var(--success),
+            #62a87d
+        );
+}
+
+.savings-goal-progress-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 12px;
+
+    margin-top: 8px;
+
+    color: var(--muted);
+
+    font-size: 0.7rem;
+    font-weight: 650;
+}
+
+.savings-goal-target-date {
+    margin-top: 11px;
+
+    color: var(--muted);
+
+    font-size: 0.72rem;
+    font-weight: 650;
+}
+
+.savings-goal-notes {
+    margin-top: 10px;
+    padding: 10px 11px;
+
+    border-radius: var(--radius-sm);
+
+    background: var(--surface);
+
+    color: var(--muted);
+
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.savings-goal-actions {
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+
+    flex-wrap: wrap;
+
+    margin-top: 15px;
+    padding-top: 14px;
+
+    border-top: 1px solid var(--border);
+}
+
+.savings-action-button {
+    min-height: 34px;
+
+    padding: 7px 11px;
+
+    border: 1px solid transparent;
+    border-radius: 999px;
+
+    background: var(--green-soft);
+
+    color: var(--green-dark);
+
+    font-size: 0.74rem;
+    font-weight: 750;
+
+    transition:
+        transform var(--transition),
+        background var(--transition),
+        border-color var(--transition),
+        color var(--transition);
+}
+
+.savings-action-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.savings-action-button.allocate:hover:not(:disabled) {
+    border-color: var(--green-light);
+
+    background: var(--green-light);
+}
+
+.savings-action-button.release {
+    background: var(--gold-soft);
+
+    color: #765f2f;
+}
+
+.savings-action-button.release:hover:not(:disabled) {
+    border-color: rgba(195, 163, 90, 0.35);
+
+    background: #e6d6aa;
+}
+
+.savings-action-button.edit {
+    background: var(--purple-soft);
+
+    color: #6f5088;
+}
+
+.savings-action-button.edit:hover:not(:disabled) {
+    border-color: rgba(141, 108, 168, 0.25);
+
+    background: #e2d6ec;
+}
+
+.savings-action-button.delete {
+    background: var(--danger-soft);
+
+    color: var(--danger);
+}
+
+.savings-action-button.delete:hover:not(:disabled) {
+    border-color: rgba(179, 66, 66, 0.22);
+
+    background: #f2cccc;
+
+    color: var(--danger-dark);
+}
+
+.savings-action-button:disabled {
+    cursor: not-allowed;
+
+    opacity: 0.45;
+}
+
+
+/* ---------------------------------------------------------
+   Savings Empty State
+   --------------------------------------------------------- */
+
+.savings-empty-state {
+    display: grid;
+    justify-items: center;
+
+    gap: 4px;
+
+    padding: 14px 0 4px;
+
+    text-align: center;
+}
+
+.savings-empty-state .empty-message {
+    padding-bottom: 10px;
+}
+
+
+/* ---------------------------------------------------------
+   Savings Modal Context
+   --------------------------------------------------------- */
+
+.savings-form-context {
+    margin-bottom: 18px;
+    padding: 14px 15px;
+
+    border: 1px solid rgba(36, 92, 66, 0.15);
+    border-radius: var(--radius-sm);
+
+    background:
+        linear-gradient(
+            145deg,
+            var(--green-soft),
+            #f8fbf7
+        );
+}
+
+.savings-form-context strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: var(--green-dark);
+
+    font-size: 0.86rem;
+    font-weight: 780;
+}
+
+.savings-form-context span {
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 0.74rem;
+    line-height: 1.45;
+}
+
+.savings-dynamic-help {
+    color: var(--green) !important;
+
+    font-weight: 650;
 }
 
 
 /* =========================================================
-   22. MONEY MANAGEMENT
+   23. MONEY MANAGEMENT
    ========================================================= */
 
 .money-management-section {
@@ -1302,7 +2026,7 @@ tbody tr:last-child td {
 
 
 /* =========================================================
-   23. MONEY MODAL
+   24. MONEY MODAL
    ========================================================= */
 
 .money-modal {
@@ -1451,7 +2175,7 @@ tbody tr:last-child td {
 
 
 /* =========================================================
-   24. FORMS
+   25. FORMS
    ========================================================= */
 
 #money-modal-form {
@@ -1573,7 +2297,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   25. MONEY INPUT
+   26. MONEY INPUT
    ========================================================= */
 
 .money-input-wrapper {
@@ -1601,7 +2325,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   26. CHECKBOX
+   27. CHECKBOX
    ========================================================= */
 
 .form-group.checkbox,
@@ -1641,7 +2365,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   27. MODAL STATUS / ACTIONS
+   28. MODAL STATUS / ACTIONS
    ========================================================= */
 
 .money-modal-status {
@@ -1725,28 +2449,570 @@ input[type="date"] {
 
 
 /* =========================================================
-   28. REPORTS
+   29. REPORTS
    ========================================================= */
 
-.chart-placeholder {
-    min-height: 260px;
+.reports-page {
+    max-width: 100%;
+}
 
+
+/* ---------------------------------------------------------
+   Reports Heading
+   --------------------------------------------------------- */
+
+.reports-heading {
+    margin-bottom: 20px;
+}
+
+.reports-eyebrow {
+    margin-bottom: 5px !important;
+
+    color: var(--green) !important;
+
+    font-size: 0.7rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.12em;
+}
+
+
+/* ---------------------------------------------------------
+   Report Control Card
+   --------------------------------------------------------- */
+
+.report-control-card {
+    position: relative;
+
+    overflow: hidden;
+
+    margin-bottom: 18px;
+    padding: 22px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    background:
+        linear-gradient(
+            145deg,
+            #ffffff,
+            var(--surface-soft)
+        );
+
+    box-shadow: var(--shadow-sm);
+}
+
+.report-control-card::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 4px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--green),
+            var(--gold),
+            var(--purple)
+        );
+}
+
+.report-control-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 16px;
+
+    margin-bottom: 18px;
+}
+
+.report-control-heading h3 {
+    margin-bottom: 4px;
+
+    color: var(--charcoal);
+
+    font-size: 1.05rem;
+    font-weight: 760;
+}
+
+.report-control-heading p {
+    color: var(--muted);
+
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+
+/* ---------------------------------------------------------
+   Report Period Panels
+   --------------------------------------------------------- */
+
+.report-period-panel {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: 14px;
+}
+
+.report-period-panel[hidden] {
+    display: none !important;
+}
+
+#report-yearly-controls {
+    grid-template-columns:
+        minmax(
+            180px,
+            320px
+        );
+}
+
+.report-field {
+    min-width: 0;
+}
+
+.report-field label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: var(--charcoal);
+
+    font-size: 0.75rem;
+    font-weight: 750;
+}
+
+.report-field select {
+    background: var(--surface);
+
+    font-weight: 700;
+}
+
+
+/* ---------------------------------------------------------
+   Range Controls
+   --------------------------------------------------------- */
+
+.report-range-panel {
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr);
+
+    align-items: end;
+}
+
+.report-range-group {
+    min-width: 0;
+
+    padding: 15px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    background: var(--surface);
+}
+
+.report-range-label {
+    margin-bottom: 10px;
+
+    color: var(--green-dark);
+
+    font-size: 0.72rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.08em;
+}
+
+.report-range-fields {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.35fr)
+        minmax(0, 1fr);
+
+    gap: 10px;
+}
+
+.report-range-arrow {
     display: grid;
     place-items: center;
 
-    padding: 24px;
+    width: 42px;
+    height: 42px;
 
-    border: 2px dashed var(--border);
+    margin-bottom: 9px;
+
+    border-radius: 50%;
+
+    background: var(--green-soft);
+
+    color: var(--green-dark);
+
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+
+/* ---------------------------------------------------------
+   Viewing Period
+   --------------------------------------------------------- */
+
+.report-period-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 16px;
+
+    margin-bottom: 18px;
+    padding: 15px 18px;
+
+    border: 1px solid rgba(36, 92, 66, 0.14);
     border-radius: var(--radius-md);
 
-    background: var(--surface-soft);
+    background: var(--green-soft);
+}
+
+.report-period-summary span {
+    color: var(--muted);
+
+    font-size: 0.76rem;
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.07em;
+}
+
+.report-period-summary strong {
+    color: var(--green-dark);
+
+    font-size: 1rem;
+}
+
+
+/* ---------------------------------------------------------
+   Report Summary Cards
+   --------------------------------------------------------- */
+
+.report-summary-section {
+    margin-bottom: 22px;
+}
+
+.report-summary-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            5,
+            minmax(0, 1fr)
+        );
+
+    gap: 12px;
+}
+
+.report-summary-card {
+    min-width: 0;
+
+    padding: 17px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    background: var(--surface);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.report-summary-card span {
+    display: block;
+
+    margin-bottom: 8px;
 
     color: var(--muted);
+
+    font-size: 0.73rem;
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.05em;
+}
+
+.report-summary-card strong {
+    display: block;
+
+    overflow-wrap: anywhere;
+
+    color: var(--charcoal);
+
+    font-size: 1.12rem;
+    font-weight: 780;
+}
+
+.report-summary-card.income {
+    border-top: 3px solid var(--success);
+}
+
+.report-summary-card.income strong {
+    color: var(--success);
+}
+
+.report-summary-card.bills {
+    border-top: 3px solid var(--gold);
+}
+
+.report-summary-card.expenses {
+    border-top: 3px solid var(--danger);
+}
+
+.report-summary-card.expenses strong {
+    color: var(--danger);
+}
+
+.report-summary-card.savings {
+    border-top: 3px solid var(--purple);
+}
+
+.report-summary-card.savings strong {
+    color: var(--purple);
+}
+
+.report-summary-card.net {
+    border-top: 3px solid var(--green-dark);
+
+    background:
+        linear-gradient(
+            145deg,
+            var(--green-soft),
+            #ffffff
+        );
+}
+
+.report-summary-card.net strong {
+    color: var(--green-dark);
+}
+
+
+/* ---------------------------------------------------------
+   General Report Sections
+   --------------------------------------------------------- */
+
+.report-section {
+    margin-bottom: 22px;
+    padding: 22px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    background: var(--surface);
+
+    box-shadow: var(--shadow-sm);
+}
+
+
+/* ---------------------------------------------------------
+   Money Overview Bars
+   --------------------------------------------------------- */
+
+.report-chart-area {
+    width: 100%;
+}
+
+.report-overview-bars {
+    display: grid;
+
+    gap: 18px;
+}
+
+.report-overview-row {
+    min-width: 0;
+}
+
+.report-overview-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 16px;
+
+    margin-bottom: 7px;
+}
+
+.report-overview-row-header span {
+    color: var(--charcoal);
+
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.report-overview-row-header strong {
+    color: var(--charcoal);
+
+    font-size: 0.82rem;
+}
+
+.report-overview-track {
+    width: 100%;
+    height: 12px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: #ebe9e2;
+}
+
+.report-overview-fill {
+    min-width: 2px;
+    height: 100%;
+
+    border-radius: inherit;
+
+    transition:
+        width 0.35s ease;
+}
+
+.report-overview-fill.income {
+    background:
+        linear-gradient(
+            90deg,
+            var(--success),
+            #58a675
+        );
+}
+
+.report-overview-fill.bills {
+    background:
+        linear-gradient(
+            90deg,
+            var(--gold),
+            #d2ba78
+        );
+}
+
+.report-overview-fill.expenses {
+    background:
+        linear-gradient(
+            90deg,
+            var(--danger),
+            #d57676
+        );
+}
+
+.report-overview-fill.savings {
+    background:
+        linear-gradient(
+            90deg,
+            var(--purple),
+            #b497c8
+        );
+}
+
+
+/* ---------------------------------------------------------
+   Category / Merchant Breakdowns
+   --------------------------------------------------------- */
+
+.report-breakdown-list {
+    width: 100%;
+}
+
+.report-breakdown-items {
+    display: grid;
+
+    gap: 13px;
+}
+
+.report-breakdown-item {
+    padding: 14px 15px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    background: var(--surface-soft);
+}
+
+.report-breakdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 16px;
+
+    margin-bottom: 9px;
+}
+
+.report-breakdown-header > div {
+    min-width: 0;
+}
+
+.report-breakdown-header strong {
+    color: var(--charcoal);
+
+    font-size: 0.84rem;
+}
+
+.report-breakdown-header > div strong {
+    display: block;
+
+    overflow-wrap: anywhere;
+}
+
+.report-breakdown-header span {
+    display: block;
+
+    margin-top: 2px;
+
+    color: var(--muted);
+
+    font-size: 0.69rem;
+    font-weight: 650;
+}
+
+.report-breakdown-track {
+    width: 100%;
+    height: 7px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: #e5e3dc;
+}
+
+.report-breakdown-fill {
+    min-width: 2px;
+    height: 100%;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--green),
+            var(--gold)
+        );
+
+    transition:
+        width 0.35s ease;
 }
 
 
 /* =========================================================
-   29. SETTINGS
+   30. SETTINGS
    ========================================================= */
 
 .settings-section {
@@ -1860,7 +3126,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   30. PWA INSTALL
+   31. PWA INSTALL
    ========================================================= */
 
 .install-app-button {
@@ -1936,7 +3202,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   31. BOTTOM NAVIGATION
+   32. BOTTOM NAVIGATION
    ========================================================= */
 
 .bottom-nav {
@@ -2052,7 +3318,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   32. MONEY COLORS
+   33. MONEY COLORS
    ========================================================= */
 
 .money-positive {
@@ -2077,7 +3343,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   33. SCROLLBAR
+   34. SCROLLBAR
    ========================================================= */
 
 ::-webkit-scrollbar {
@@ -2102,7 +3368,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   34. ACCESSIBILITY
+   35. ACCESSIBILITY
    ========================================================= */
 
 button:focus-visible,
@@ -2118,8 +3384,21 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   35. TABLET
+   36. TABLET
    ========================================================= */
+
+@media (max-width: 900px) {
+
+    .report-summary-grid {
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(0, 1fr)
+            );
+    }
+
+}
+
 
 @media (max-width: 800px) {
 
@@ -2131,11 +3410,24 @@ textarea:focus-visible {
         grid-template-columns: 1fr;
     }
 
+    .report-range-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .report-range-arrow {
+        width: 36px;
+        height: 36px;
+
+        margin: -2px auto;
+
+        transform: rotate(90deg);
+    }
+
 }
 
 
 /* =========================================================
-   36. MOBILE
+   37. MOBILE
    ========================================================= */
 
 @media (max-width: 600px) {
@@ -2201,6 +3493,31 @@ textarea:focus-visible {
     }
 
 
+    /* Report Header */
+
+    .report-navigation {
+        width: min(280px, calc(100% - 90px));
+
+        gap: 7px;
+    }
+
+    .report-navigation-label {
+        font-size: 0.64rem;
+    }
+
+    .report-type-select {
+        min-width: 130px;
+
+        padding:
+            8px
+            26px
+            8px
+            9px;
+
+        font-size: 0.76rem;
+    }
+
+
     /* Main */
 
     .app-content {
@@ -2252,7 +3569,9 @@ textarea:focus-visible {
     .dashboard-section,
     .budget-block,
     .settings-section,
-    .money-management-section {
+    .money-management-section,
+    .report-control-card,
+    .report-section {
         padding: 18px;
     }
 
@@ -2329,7 +3648,7 @@ textarea:focus-visible {
     }
 
 
-    /* Transaction Activity */
+    /* Transactions */
 
     .transaction-item {
         grid-template-columns:
@@ -2343,6 +3662,71 @@ textarea:focus-visible {
     .transaction-info strong,
     .transaction-info span {
         overflow-wrap: anywhere;
+    }
+
+
+    /* Savings */
+
+    .savings-goal-header {
+        align-items: flex-start;
+    }
+
+
+    /* Reports */
+
+    .reports-heading {
+        margin-bottom: 16px;
+    }
+
+    .report-period-panel {
+        grid-template-columns: 1fr;
+    }
+
+    #report-yearly-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .report-range-fields {
+        grid-template-columns:
+            minmax(0, 1.3fr)
+            minmax(0, 0.9fr);
+    }
+
+    .report-period-summary {
+        align-items: flex-start;
+        flex-direction: column;
+
+        gap: 5px;
+    }
+
+    .report-summary-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+    .report-summary-card.net {
+        grid-column:
+            1 /
+            -1;
+    }
+
+    .report-summary-card {
+        padding: 15px;
+    }
+
+    .report-summary-card strong {
+        font-size: 1rem;
+    }
+
+    .report-overview-row-header {
+        gap: 8px;
+    }
+
+    .report-breakdown-header {
+        align-items: flex-start;
     }
 
 
@@ -2437,7 +3821,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   37. EXTRA SMALL PHONES
+   38. EXTRA SMALL PHONES
    ========================================================= */
 
 @media (max-width: 390px) {
@@ -2503,6 +3887,33 @@ textarea:focus-visible {
         flex-basis: 34px;
     }
 
+
+    /* Report Header */
+
+    .report-navigation {
+        width: calc(100% - 78px);
+
+        flex-direction: column;
+
+        gap: 4px;
+
+        margin-top: 7px;
+    }
+
+    .report-navigation-label {
+        display: none;
+    }
+
+    .report-type-select {
+        width: 100%;
+        min-width: 0;
+
+        max-width: 150px;
+    }
+
+
+    /* General */
+
     .summary-grid,
     .budget-block .summary-grid {
         grid-template-columns: 1fr;
@@ -2516,6 +3927,41 @@ textarea:focus-visible {
         grid-template-columns: 1fr;
     }
 
+
+    /* Reports */
+
+    .report-range-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .report-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .report-summary-card.net {
+        grid-column: auto;
+    }
+
+    .report-period-summary strong {
+        font-size: 0.9rem;
+    }
+
+    .report-overview-row-header {
+        align-items: flex-start;
+        flex-direction: column;
+
+        gap: 2px;
+    }
+
+    .report-breakdown-header {
+        flex-direction: column;
+
+        gap: 5px;
+    }
+
+
+    /* Modal */
+
     .money-modal-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -2526,6 +3972,9 @@ textarea:focus-visible {
         min-width: 0;
     }
 
+
+    /* Bottom Nav */
+
     .nav-button {
         font-size: 0.55rem;
     }
@@ -2533,6 +3982,9 @@ textarea:focus-visible {
     .nav-icon {
         font-size: 1rem;
     }
+
+
+    /* Money Cards */
 
     .money-action-card {
         grid-template-columns:
@@ -2555,7 +4007,138 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   38. DESKTOP
+   SAVINGS RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .savings-balance-card {
+        grid-template-columns: 1fr;
+    }
+
+    .savings-quick-actions {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .savings-balance-card {
+        gap: 20px;
+
+        padding: 22px 20px;
+    }
+
+    .savings-balance-main h2 {
+        font-size: clamp(2.35rem, 13vw, 3.25rem);
+    }
+
+    .savings-actions-section {
+        padding: 18px;
+    }
+
+    .savings-quick-actions {
+        grid-template-columns: 1fr 1fr;
+
+        gap: 10px;
+    }
+
+    .savings-quick-action {
+        min-height: 82px;
+
+        padding: 13px;
+    }
+
+    .savings-quick-action-icon {
+        width: 38px;
+        height: 38px;
+
+        flex-basis: 38px;
+
+        font-size: 1rem;
+    }
+
+    .savings-quick-action strong {
+        font-size: 0.8rem;
+    }
+
+    .savings-quick-action small {
+        font-size: 0.66rem;
+    }
+
+    .savings-goal-header {
+        gap: 12px;
+    }
+
+    .savings-goal-actions {
+        display: grid;
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+    .savings-action-button {
+        width: 100%;
+
+        min-height: 38px;
+    }
+
+}
+
+
+@media (max-width: 390px) {
+
+    .savings-balance-card {
+        padding: 20px 17px;
+    }
+
+    .savings-balance-stat {
+        align-items: flex-start;
+        flex-direction: column;
+
+        gap: 4px;
+    }
+
+    .savings-quick-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .savings-quick-action {
+        min-height: 74px;
+    }
+
+    .savings-goal-header {
+        flex-direction: column;
+    }
+
+    .savings-goal-amount {
+        text-align: left;
+    }
+
+    .savings-goal-progress-details {
+        align-items: flex-start;
+        flex-direction: column;
+
+        gap: 3px;
+    }
+
+    .savings-goal-actions {
+        grid-template-columns: 1fr 1fr;
+    }
+
+}
+
+
+/* =========================================================
+   39. DESKTOP
    ========================================================= */
 
 @media (min-width: 1000px) {
@@ -2570,15 +4153,20 @@ textarea:focus-visible {
 
     .dashboard-section,
     .budget-block,
-    .money-management-section {
+    .money-management-section,
+    .report-section {
         padding: 26px;
+    }
+
+    .report-control-card {
+        padding: 24px 26px;
     }
 
 }
 
 
 /* =========================================================
-   39. STANDALONE PWA
+   40. STANDALONE PWA
    ========================================================= */
 
 @media (display-mode: standalone) {
@@ -2601,7 +4189,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   40. IOS SUPPORT
+   41. IOS SUPPORT
    ========================================================= */
 
 @supports (-webkit-touch-callout: none) {
@@ -2615,7 +4203,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   41. REDUCED MOTION
+   42. REDUCED MOTION
    ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
