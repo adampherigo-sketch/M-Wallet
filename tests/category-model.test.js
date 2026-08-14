@@ -266,7 +266,7 @@ test("legacy expense, bill, and transaction category strings remain untouched", 
     assert.equal(expense.category, "Groceries");
     assert.equal(expense.subcategory, "Food");
     assert.equal(expense.merchant, "Walmart");
-    assert.equal(expense.categoryId, undefined);
+    assert.equal(expense.categoryId, null);
 
     assert.equal(bill.category, "Phone");
     assert.equal(bill.categoryId, undefined);
@@ -507,6 +507,246 @@ test("getCategories/getSubcategories return clones that cannot mutate internal s
 
     assert.equal(storage.getCategory(category.id).name, "Hobbies");
     assert.equal(storage.getSubcategories(category.id).length, 1);
+
+    harness.cleanup();
+});
+
+/* =========================================================
+   P2.6.2 - LEGACY CATEGORY RESOLUTION
+   ========================================================= */
+
+test("resolveCategoryId matches exact, case-insensitive, trimmed category names", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+    const list = storage.getCategories();
+
+    assert.equal(storage.resolveCategoryId(list, "Groceries"), "groceries");
+    assert.equal(storage.resolveCategoryId(list, "groceries"), "groceries");
+    assert.equal(storage.resolveCategoryId(list, "  GROCERIES  "), "groceries");
+
+    harness.cleanup();
+});
+
+test("resolveCategoryId leaves unknown strings and typos unresolved (no fuzzy matching)", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+    const list = storage.getCategories();
+
+    assert.equal(storage.resolveCategoryId(list, "Grocerries"), null);
+    assert.equal(storage.resolveCategoryId(list, "Not A Real Category"), null);
+    assert.equal(storage.resolveCategoryId(list, ""), null);
+
+    harness.cleanup();
+});
+
+test("resolveSubcategoryId resolves an exact subcategory name within its parent category", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+    const list = storage.getCategories();
+
+    assert.equal(storage.resolveSubcategoryId(list, "utilities", "Phone"), "phone");
+    assert.equal(storage.resolveSubcategoryId(list, "groceries", " food "), "food");
+    assert.equal(storage.resolveSubcategoryId(list, "utilities", "Phone Line"), null);
+    assert.equal(storage.resolveSubcategoryId(list, "utilities", "Rent"), null);
+
+    harness.cleanup();
+});
+
+test("resolveCategoryIds resolves the safe legacy aliases (Phone, Internet)", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+    const list = storage.getCategories();
+
+    const phone = storage.resolveCategoryIds(list, "Phone");
+    assert.equal(phone.categoryId, "utilities");
+    assert.equal(phone.subcategoryId, "phone");
+
+    const internet = storage.resolveCategoryIds(list, "internet");
+    assert.equal(internet.categoryId, "utilities");
+    assert.equal(internet.subcategoryId, "internet");
+
+    harness.cleanup();
+});
+
+test("ambiguous Manual Transaction classification labels remain unresolved", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+    const list = storage.getCategories();
+
+    ["Income", "Bills", "Personal", "Savings", "Transfer"].forEach(label => {
+        assert.equal(storage.resolveCategoryId(list, label), null);
+    });
+
+    harness.cleanup();
+});
+
+function categoriesResolutionFixture() {
+    return {
+        version: 5,
+        income: [],
+        expenses: [
+            { id: "expense-1", name: "Grocery Run", category: "Groceries", subcategory: "Food", amount: 42, date: "2026-08-04" },
+            { id: "expense-2", name: "Typo Expense", category: "Grocerries", amount: 10, date: "2026-08-05" }
+        ],
+        savingsGoals: [],
+        savingsTransfers: [],
+        accounts: {
+            checking: { name: "Checking", balance: 0 },
+            savings: { name: "General Savings", balance: 0 }
+        },
+        months: {
+            "2026-08": {
+                monthKey: "2026-08",
+                startingBalance: 0,
+                endingBalance: 0,
+                paychecks: [],
+                expenses: [],
+                bills: [
+                    { id: "bill-1", name: "Phone Bill", category: "Phone", amount: 60, dueDate: "2026-08-05" }
+                ],
+                transactions: [
+                    { id: "txn-1", description: "Cash withdrawal", category: "Groceries", amount: -50, date: "2026-08-02" },
+                    { id: "txn-2", description: "Paycheck", category: "Income", amount: 1000, date: "2026-08-01" }
+                ]
+            },
+            "2026-09": {
+                monthKey: "2026-09",
+                startingBalance: 0,
+                endingBalance: 0,
+                paychecks: [],
+                expenses: [],
+                bills: [
+                    { id: "bill-2", name: "Rent", category: "Housing", amount: 1600, dueDate: "2026-09-01" }
+                ],
+                transactions: []
+            }
+        }
+    };
+}
+
+function sumFinancialTotals(data) {
+    let total = data.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+    Object.values(data.months).forEach(month => {
+        total += month.bills.reduce((sum, bill) => sum + bill.amount, 0);
+        total += month.transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+    });
+
+    return total;
+}
+
+test("a known expense category and subcategory resolve to ids while original strings are preserved", () => {
+    const harness = freshHarness({ preloadedData: categoriesResolutionFixture() });
+
+    const data = harness.reload();
+    const expense = data.expenses.find(item => item.id === "expense-1");
+
+    assert.equal(expense.category, "Groceries");
+    assert.equal(expense.subcategory, "Food");
+    assert.equal(expense.categoryId, "groceries");
+    assert.equal(expense.subcategoryId, "food");
+
+    harness.cleanup();
+});
+
+test("a typo/unknown expense category remains unresolved and no custom category is created for it", () => {
+    const harness = freshHarness({ preloadedData: categoriesResolutionFixture() });
+
+    const data = harness.reload();
+    const expense = data.expenses.find(item => item.id === "expense-2");
+
+    assert.equal(expense.category, "Grocerries");
+    assert.equal(expense.categoryId, null);
+    assert.ok(!data.settings.categories.list.some(category => category.name === "Grocerries"));
+    assert.equal(data.settings.categories.list.length, 21);
+
+    harness.cleanup();
+});
+
+test("a known bill resolves a safe alias category/subcategory id and its strings are preserved", () => {
+    const harness = freshHarness({ preloadedData: categoriesResolutionFixture() });
+
+    const data = harness.reload();
+    const bill = data.months["2026-08"].bills.find(item => item.id === "bill-1");
+
+    assert.equal(bill.category, "Phone");
+    assert.equal(bill.categoryId, "utilities");
+    assert.equal(bill.subcategoryId, "phone");
+
+    harness.cleanup();
+});
+
+test("a safe Manual Transaction category resolves an id, while ambiguous classifications stay unresolved", () => {
+    const harness = freshHarness({ preloadedData: categoriesResolutionFixture() });
+
+    const data = harness.reload();
+    const groceryTxn = data.months["2026-08"].transactions.find(item => item.id === "txn-1");
+    const incomeTxn = data.months["2026-08"].transactions.find(item => item.id === "txn-2");
+
+    assert.equal(groceryTxn.category, "Groceries");
+    assert.equal(groceryTxn.categoryId, "groceries");
+
+    assert.equal(incomeTxn.category, "Income");
+    assert.equal(incomeTxn.categoryId, undefined);
+
+    harness.cleanup();
+});
+
+test("migration inspects every stored month, not only the selected one", () => {
+    const harness = freshHarness({ preloadedData: categoriesResolutionFixture() });
+
+    const data = harness.reload();
+    const septemberBill = data.months["2026-09"].bills.find(item => item.id === "bill-2");
+
+    assert.equal(septemberBill.category, "Housing");
+    assert.equal(septemberBill.categoryId, "housing");
+
+    harness.cleanup();
+});
+
+test("category resolution migration is idempotent and financial totals never change", () => {
+    const harness = freshHarness({ preloadedData: categoriesResolutionFixture() });
+
+    const before = harness.reload();
+    const totalBefore = sumFinancialTotals(before);
+
+    const after = harness.reload();
+    const totalAfter = sumFinancialTotals(after);
+
+    assert.equal(totalAfter, totalBefore);
+    assert.equal(after.migrations.categoriesResolutionV1, true);
+
+    const expenseBefore = before.expenses.find(item => item.id === "expense-1");
+    const expenseAfter = after.expenses.find(item => item.id === "expense-1");
+    assert.equal(expenseAfter.categoryId, expenseBefore.categoryId);
+    assert.equal(expenseAfter.subcategoryId, expenseBefore.subcategoryId);
+
+    const billBefore = before.months["2026-08"].bills.find(item => item.id === "bill-1");
+    const billAfter = after.months["2026-08"].bills.find(item => item.id === "bill-1");
+    assert.equal(billAfter.categoryId, billBefore.categoryId);
+    assert.equal(billAfter.subcategoryId, billBefore.subcategoryId);
+
+    assert.equal(after.settings.categories.list.length, 21);
+
+    harness.cleanup();
+});
+
+test("an already-resolved categoryId is never overwritten by a later migration pass", () => {
+    const harness = freshHarness({
+        preloadedData: {
+            ...categoriesResolutionFixture(),
+            migrations: { categoriesResolutionV1: false },
+            expenses: [
+                { id: "expense-1", name: "Grocery Run", category: "Groceries", subcategory: "Food", categoryId: "custom-preset", subcategoryId: "custom-preset-sub", amount: 42, date: "2026-08-04" }
+            ]
+        }
+    });
+
+    const data = harness.reload();
+    const expense = data.expenses.find(item => item.id === "expense-1");
+
+    assert.equal(expense.categoryId, "custom-preset");
+    assert.equal(expense.subcategoryId, "custom-preset-sub");
 
     harness.cleanup();
 });

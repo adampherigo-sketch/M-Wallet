@@ -213,6 +213,31 @@ const DEFAULT_CATEGORIES = [
 
 ];
 
+/*
+    LEGACY CATEGORY ALIASES (P2.6.2)
+
+    Unambiguous, hand-audited aliases only. Each key is a legacy
+    Bill/Expense/Transaction "category" string (trimmed, lowercased)
+    that does not literally match a default category name but has
+    always meant one specific category/subcategory pair in this app
+    (e.g. the Bill form's "Phone" option is really Utilities/Phone).
+
+    Deliberately excluded, per audit:
+      - "Tickets & Events" / "Personal Care" need no alias; they are
+        exact (case-insensitive) matches on default category names
+        already handled by resolveCategoryId.
+      - "Rent" is never used as a category value anywhere in the
+        app (only as a Bill/Expense name), so no alias is added for
+        it to avoid guessing at an unused mapping.
+      - "Income", "Bills", "Personal", "Savings", "Transfer" are
+        Manual Transaction classification labels, not spending
+        categories, and are intentionally never aliased here.
+*/
+const CATEGORY_ALIASES = {
+    "phone": { categoryId: "utilities", subcategoryId: "phone" },
+    "internet": { categoryId: "utilities", subcategoryId: "internet" }
+};
+
 const BudgetStorage = {
 
     storageKey: "mWalletData",
@@ -816,6 +841,9 @@ const BudgetStorage = {
                     true,
 
                 categoriesV1:
+                    true,
+
+                categoriesResolutionV1:
                     true
 
             },
@@ -1329,6 +1357,20 @@ const BudgetStorage = {
                 this.normalizeString(
                     expense?.subcategory
                 ),
+
+
+            /*
+                P2.6.2: classification ids resolved from the legacy
+                category/subcategory strings above. Preserved as-is
+                on every normalization pass; never (re)computed here.
+            */
+            categoryId:
+                expense?.categoryId ||
+                null,
+
+            subcategoryId:
+                expense?.subcategoryId ||
+                null,
 
 
             paymentMethod:
@@ -1915,6 +1957,232 @@ const BudgetStorage = {
 
 
         return merged;
+
+    },
+
+
+    /*
+        LEGACY CATEGORY RESOLUTION (P2.6.2)
+
+        Pure, deterministic helpers that resolve a legacy category/
+        subcategory string to the stable ids introduced in P2.6.0/
+        P2.6.1. Matching is trimmed + case-insensitive only — never
+        fuzzy — so a typo such as "Grocerries" is left unresolved
+        rather than silently guessed at. Callers pass the current
+        categories list explicitly so these stay pure and testable.
+    */
+    resolveCategoryId(
+        categoryList,
+        rawCategory
+    ) {
+
+        const key =
+            String(
+                rawCategory ?? ""
+            ).trim().toLowerCase();
+
+
+        if (
+            !key
+        ) {
+            return null;
+        }
+
+
+        const alias =
+            CATEGORY_ALIASES[
+                key
+            ];
+
+
+        if (
+            alias
+        ) {
+            return alias.categoryId;
+        }
+
+
+        const list =
+            Array.isArray(
+                categoryList
+            )
+                ? categoryList
+                : [];
+
+
+        const match =
+            list.find(
+                category =>
+                    category.name
+                        .trim()
+                        .toLowerCase() ===
+                    key
+            );
+
+
+        return match
+            ? match.id
+            : null;
+
+    },
+
+
+    resolveSubcategoryId(
+        categoryList,
+        categoryId,
+        rawSubcategory
+    ) {
+
+        const key =
+            String(
+                rawSubcategory ?? ""
+            ).trim().toLowerCase();
+
+
+        if (
+            !key ||
+            !categoryId
+        ) {
+            return null;
+        }
+
+
+        const list =
+            Array.isArray(
+                categoryList
+            )
+                ? categoryList
+                : [];
+
+
+        const category =
+            list.find(
+                item =>
+                    item.id ===
+                    categoryId
+            );
+
+
+        if (
+            !category
+        ) {
+            return null;
+        }
+
+
+        const subcategories =
+            Array.isArray(
+                category.subcategories
+            )
+                ? category.subcategories
+                : [];
+
+
+        const match =
+            subcategories.find(
+                subcategory =>
+                    subcategory.name
+                        .trim()
+                        .toLowerCase() ===
+                    key
+            );
+
+
+        return match
+            ? match.id
+            : null;
+
+    },
+
+
+    /*
+        Resolves a legacy category string and (optionally) a legacy
+        subcategory string together in one call, honoring aliases
+        that already imply a specific subcategory (e.g. "Phone").
+    */
+    resolveCategoryIds(
+        categoryList,
+        rawCategory,
+        rawSubcategory
+    ) {
+
+        const key =
+            String(
+                rawCategory ?? ""
+            ).trim().toLowerCase();
+
+
+        const alias =
+            key
+                ? CATEGORY_ALIASES[
+                    key
+                ]
+                : null;
+
+
+        if (
+            alias
+        ) {
+
+            const subcategoryId =
+                alias.subcategoryId ||
+                this.resolveSubcategoryId(
+                    categoryList,
+                    alias.categoryId,
+                    rawSubcategory
+                );
+
+
+            return {
+
+                categoryId:
+                    alias.categoryId,
+
+                subcategoryId:
+                    subcategoryId ||
+                    null
+
+            };
+
+        }
+
+
+        const categoryId =
+            this.resolveCategoryId(
+                categoryList,
+                rawCategory
+            );
+
+
+        if (
+            !categoryId
+        ) {
+
+            return {
+
+                categoryId:
+                    null,
+
+                subcategoryId:
+                    null
+
+            };
+
+        }
+
+
+        return {
+
+            categoryId,
+
+            subcategoryId:
+                this.resolveSubcategoryId(
+                    categoryList,
+                    categoryId,
+                    rawSubcategory
+                )
+
+        };
 
     },
 
@@ -2540,6 +2808,179 @@ const BudgetStorage = {
     },
 
 
+    /*
+        P2.6.2 resolves legacy Expense/Bill/Manual Transaction
+        category (and Expense/Bill subcategory) strings to the
+        stable ids from data.settings.categories, using only exact
+        trimmed/case-insensitive matches and the hand-audited
+        CATEGORY_ALIASES table. It never touches the original
+        category/subcategory/merchant strings, never creates
+        custom categories for unresolved values, and only adds an
+        id to a record that does not already have one — so running
+        it again is a no-op and already-resolved ids never change.
+
+        This inspects every stored month (not just the selected
+        one) plus the global expenses array.
+    */
+    migrateCategoriesResolutionV1(
+        data
+    ) {
+
+        if (
+            data.migrations
+                ?.categoriesResolutionV1
+        ) {
+            return;
+        }
+
+
+        const categoryList =
+            data.settings
+                ?.categories
+                ?.list ||
+            [];
+
+
+        (
+            Array.isArray(
+                data.expenses
+            )
+                ? data.expenses
+                : []
+        ).forEach(
+            expense => {
+
+                if (
+                    expense.categoryId
+                ) {
+                    return;
+                }
+
+
+                const resolved =
+                    this.resolveCategoryIds(
+                        categoryList,
+                        expense.category,
+                        expense.subcategory
+                    );
+
+
+                if (
+                    resolved.categoryId
+                ) {
+                    expense.categoryId =
+                        resolved.categoryId;
+                }
+
+
+                if (
+                    resolved.subcategoryId
+                ) {
+                    expense.subcategoryId =
+                        resolved.subcategoryId;
+                }
+
+            }
+        );
+
+
+        Object.values(
+            data.months ||
+                {}
+        ).forEach(
+            month => {
+
+                (
+                    Array.isArray(
+                        month.bills
+                    )
+                        ? month.bills
+                        : []
+                ).forEach(
+                    bill => {
+
+                        if (
+                            bill.categoryId
+                        ) {
+                            return;
+                        }
+
+
+                        const resolved =
+                            this.resolveCategoryIds(
+                                categoryList,
+                                bill.category,
+                                bill.subcategory
+                            );
+
+
+                        if (
+                            resolved.categoryId
+                        ) {
+                            bill.categoryId =
+                                resolved.categoryId;
+                        }
+
+
+                        if (
+                            resolved.subcategoryId
+                        ) {
+                            bill.subcategoryId =
+                                resolved.subcategoryId;
+                        }
+
+                    }
+                );
+
+
+                (
+                    Array.isArray(
+                        month.transactions
+                    )
+                        ? month.transactions
+                        : []
+                ).forEach(
+                    transaction => {
+
+                        if (
+                            transaction.categoryId
+                        ) {
+                            return;
+                        }
+
+
+                        // Manual transactions get categoryId only; no subcategory support yet.
+                        const categoryId =
+                            this.resolveCategoryId(
+                                categoryList,
+                                transaction.category
+                            );
+
+
+                        if (
+                            categoryId
+                        ) {
+                            transaction.categoryId =
+                                categoryId;
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+
+        data.migrations =
+            data.migrations ||
+            {};
+
+        data.migrations.categoriesResolutionV1 =
+            true;
+
+    },
+
+
     normalizeData(
         data
     ) {
@@ -2772,6 +3213,11 @@ const BudgetStorage = {
 
 
         this.migrateCategoriesV1(
+            data
+        );
+
+
+        this.migrateCategoriesResolutionV1(
             data
         );
 
