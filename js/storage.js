@@ -70,6 +70,21 @@ const BudgetStorage = {
     },
 
 
+    // Deep-copies plain JSON-safe data so callers can't mutate
+    // internal storage state without going through a save().
+    cloneJSON(
+        value
+    ) {
+
+        return JSON.parse(
+            JSON.stringify(
+                value
+            )
+        );
+
+    },
+
+
     generateId(
         prefix = "item"
     ) {
@@ -608,7 +623,22 @@ const BudgetStorage = {
                     "$",
 
                 firstDayOfWeek:
-                    "sunday"
+                    "sunday",
+
+                /*
+                    P2.6.0: category configuration store.
+                    Predefined categories are seeded in P2.6.1;
+                    this phase only establishes the structure.
+                */
+                categories: {
+
+                    version:
+                        1,
+
+                    list:
+                        []
+
+                }
 
             },
 
@@ -1486,6 +1516,281 @@ const BudgetStorage = {
     },
 
 
+    /*
+        CATEGORY CONFIGURATION NORMALIZATION (P2.6.0)
+
+        Normalizes data.settings.categories only. It never
+        touches expense/bill/transaction category strings —
+        legacy resolution is a separate, later phase (P2.6.2).
+    */
+    normalizeCategoryConfig(
+        config
+    ) {
+
+        const source =
+            config &&
+            typeof config === "object"
+                ? config
+                : {};
+
+
+        const rawList =
+            Array.isArray(
+                source.list
+            )
+                ? source.list
+                : [];
+
+
+        const seenIds =
+            new Set();
+
+        const seenNames =
+            new Set();
+
+        const list =
+            [];
+
+
+        rawList.forEach(
+            raw => {
+
+                const category =
+                    this.normalizeCategory(
+                        raw
+                    );
+
+
+                if (
+                    !category
+                ) {
+                    return;
+                }
+
+
+                const nameKey =
+                    category.name.toLowerCase();
+
+
+                /*
+                    Conservative dedupe: first valid entry wins.
+                    Later entries sharing an id or a trimmed,
+                    case-insensitive name are dropped rather than
+                    merged, so malformed persisted data can never
+                    silently combine two distinct categories.
+                */
+                if (
+                    seenIds.has(
+                        category.id
+                    ) ||
+                    seenNames.has(
+                        nameKey
+                    )
+                ) {
+                    return;
+                }
+
+
+                seenIds.add(
+                    category.id
+                );
+
+                seenNames.add(
+                    nameKey
+                );
+
+                list.push(
+                    category
+                );
+
+            }
+        );
+
+
+        return {
+
+            version:
+                Number(
+                    source.version
+                ) || 1,
+
+            list
+
+        };
+
+    },
+
+
+    normalizeCategory(
+        raw
+    ) {
+
+        if (
+            !raw ||
+            typeof raw !== "object"
+        ) {
+            return null;
+        }
+
+
+        const id =
+            String(
+                raw.id ?? ""
+            ).trim();
+
+        const name =
+            String(
+                raw.name ?? ""
+            ).trim();
+
+
+        // Malformed entries are dropped, never replaced with a
+        // randomly generated stand-in category.
+        if (
+            !id ||
+            !name
+        ) {
+            return null;
+        }
+
+
+        const rawSubcategories =
+            Array.isArray(
+                raw.subcategories
+            )
+                ? raw.subcategories
+                : [];
+
+
+        const seenIds =
+            new Set();
+
+        const seenNames =
+            new Set();
+
+        const subcategories =
+            [];
+
+
+        rawSubcategories.forEach(
+            rawSub => {
+
+                const subcategory =
+                    this.normalizeSubcategory(
+                        rawSub
+                    );
+
+
+                if (
+                    !subcategory
+                ) {
+                    return;
+                }
+
+
+                const nameKey =
+                    subcategory.name.toLowerCase();
+
+
+                if (
+                    seenIds.has(
+                        subcategory.id
+                    ) ||
+                    seenNames.has(
+                        nameKey
+                    )
+                ) {
+                    return;
+                }
+
+
+                seenIds.add(
+                    subcategory.id
+                );
+
+                seenNames.add(
+                    nameKey
+                );
+
+                subcategories.push(
+                    subcategory
+                );
+
+            }
+        );
+
+
+        return {
+
+            id,
+
+            name,
+
+            system:
+                Boolean(
+                    raw.system
+                ),
+
+            enabled:
+                raw.enabled !== false,
+
+            subcategories
+
+        };
+
+    },
+
+
+    normalizeSubcategory(
+        raw
+    ) {
+
+        if (
+            !raw ||
+            typeof raw !== "object"
+        ) {
+            return null;
+        }
+
+
+        const id =
+            String(
+                raw.id ?? ""
+            ).trim();
+
+        const name =
+            String(
+                raw.name ?? ""
+            ).trim();
+
+
+        if (
+            !id ||
+            !name
+        ) {
+            return null;
+        }
+
+
+        return {
+
+            id,
+
+            name,
+
+            system:
+                Boolean(
+                    raw.system
+                ),
+
+            enabled:
+                raw.enabled !== false
+
+        };
+
+    },
+
+
     /* =====================================================
        4. MIGRATIONS
        ===================================================== */
@@ -1781,6 +2086,48 @@ const BudgetStorage = {
     },
 
 
+    /*
+        P2.6.0 only establishes data.settings.categories.
+
+        It intentionally does NOT resolve legacy expense/bill/
+        transaction category strings to IDs (that is P2.6.2),
+        and it must never auto-create permanent custom categories
+        from unmatched legacy strings such as "Grocerries" —
+        unresolved strings stay untouched until a deliberate
+        future migration rule or user action handles them.
+    */
+    migrateCategoriesV1(
+        data
+    ) {
+
+        if (
+            data.migrations
+                ?.categoriesV1
+        ) {
+            return;
+        }
+
+
+        data.settings =
+            data.settings ||
+            {};
+
+        data.settings.categories =
+            this.normalizeCategoryConfig(
+                data.settings.categories
+            );
+
+
+        data.migrations =
+            data.migrations ||
+            {};
+
+        data.migrations.categoriesV1 =
+            true;
+
+    },
+
+
     normalizeData(
         data
     ) {
@@ -1814,6 +2161,12 @@ const BudgetStorage = {
             ...(data.settings || {})
 
         };
+
+
+        data.settings.categories =
+            this.normalizeCategoryConfig(
+                data.settings.categories
+            );
 
 
         data.migrations = {
@@ -2003,6 +2356,11 @@ const BudgetStorage = {
         this.migrateSavingsAccountV5(
             data,
             previousVersion
+        );
+
+
+        this.migrateCategoriesV1(
+            data
         );
 
 
@@ -7700,6 +8058,721 @@ const BudgetStorage = {
 
 
         return defaultData;
+
+    },
+
+
+    /* =====================================================
+       CATEGORIES (P2.6.0)
+
+       Centralized category/subcategory configuration store.
+       Read helpers return cloned data so callers cannot
+       mutate internal state without going through a storage
+       method below. Legacy expense/bill/transaction category
+       strings are untouched here (see P2.6.2).
+       ===================================================== */
+
+    getCategories(
+        options = {}
+    ) {
+
+        const data =
+            this.load();
+
+        const list =
+            data.settings
+                ?.categories
+                ?.list ||
+            [];
+
+        const enabledOnly =
+            Boolean(
+                options.enabledOnly
+            );
+
+        const filtered =
+            enabledOnly
+                ? list.filter(
+                    category =>
+                        category.enabled
+                )
+                : list;
+
+        return this.cloneJSON(
+            filtered
+        );
+
+    },
+
+
+    getCategory(
+        categoryId
+    ) {
+
+        const data =
+            this.load();
+
+        const category =
+            (
+                data.settings
+                    ?.categories
+                    ?.list ||
+                []
+            ).find(
+                item =>
+                    item.id ===
+                    categoryId
+            );
+
+        return category
+            ? this.cloneJSON(
+                category
+            )
+            : null;
+
+    },
+
+
+    getSubcategories(
+        categoryId,
+        options = {}
+    ) {
+
+        const category =
+            this.getCategory(
+                categoryId
+            );
+
+
+        if (
+            !category
+        ) {
+            return [];
+        }
+
+
+        const enabledOnly =
+            Boolean(
+                options.enabledOnly
+            );
+
+        const list =
+            Array.isArray(
+                category.subcategories
+            )
+                ? category.subcategories
+                : [];
+
+        return enabledOnly
+            ? list.filter(
+                subcategory =>
+                    subcategory.enabled
+            )
+            : list;
+
+    },
+
+
+    getSubcategory(
+        categoryId,
+        subcategoryId
+    ) {
+
+        const subcategories =
+            this.getSubcategories(
+                categoryId
+            );
+
+        return (
+            subcategories.find(
+                item =>
+                    item.id ===
+                    subcategoryId
+            ) ||
+            null
+        );
+
+    },
+
+
+    addCustomCategory(
+        name
+    ) {
+
+        const trimmedName =
+            String(
+                name ?? ""
+            ).trim();
+
+
+        if (
+            !trimmedName
+        ) {
+            return null;
+        }
+
+
+        const data =
+            this.load();
+
+        const list =
+            data.settings.categories.list;
+
+        const nameKey =
+            trimmedName.toLowerCase();
+
+        const isDuplicate =
+            list.some(
+                category =>
+                    category.name.toLowerCase() ===
+                    nameKey
+            );
+
+
+        if (
+            isDuplicate
+        ) {
+            return null;
+        }
+
+
+        const category = {
+
+            id:
+                this.generateId(
+                    "category"
+                ),
+
+            name:
+                trimmedName,
+
+            system:
+                false,
+
+            enabled:
+                true,
+
+            subcategories:
+                []
+
+        };
+
+
+        list.push(
+            category
+        );
+
+
+        if (
+            !this.save(
+                data
+            )
+        ) {
+            return null;
+        }
+
+
+        return this.getCategory(
+            category.id
+        );
+
+    },
+
+
+    renameCategory(
+        categoryId,
+        name
+    ) {
+
+        const trimmedName =
+            String(
+                name ?? ""
+            ).trim();
+
+
+        if (
+            !trimmedName
+        ) {
+            return null;
+        }
+
+
+        const data =
+            this.load();
+
+        const list =
+            data.settings.categories.list;
+
+        const category =
+            list.find(
+                item =>
+                    item.id ===
+                    categoryId
+            );
+
+
+        if (
+            !category
+        ) {
+            return null;
+        }
+
+
+        const nameKey =
+            trimmedName.toLowerCase();
+
+        const isDuplicate =
+            list.some(
+                item =>
+                    item.id !==
+                        categoryId &&
+                    item.name.toLowerCase() ===
+                        nameKey
+            );
+
+
+        if (
+            isDuplicate
+        ) {
+            return null;
+        }
+
+
+        category.name =
+            trimmedName;
+
+
+        if (
+            !this.save(
+                data
+            )
+        ) {
+            return null;
+        }
+
+
+        return this.getCategory(
+            categoryId
+        );
+
+    },
+
+
+    setCategoryEnabled(
+        categoryId,
+        enabled
+    ) {
+
+        const data =
+            this.load();
+
+        const category =
+            data.settings.categories.list.find(
+                item =>
+                    item.id ===
+                    categoryId
+            );
+
+
+        if (
+            !category
+        ) {
+            return false;
+        }
+
+
+        category.enabled =
+            Boolean(
+                enabled
+            );
+
+
+        return this.save(
+            data
+        );
+
+    },
+
+
+    deleteCustomCategory(
+        categoryId
+    ) {
+
+        const data =
+            this.load();
+
+        const list =
+            data.settings.categories.list;
+
+        const category =
+            list.find(
+                item =>
+                    item.id ===
+                    categoryId
+            );
+
+
+        if (
+            !category
+        ) {
+            return false;
+        }
+
+
+        // System categories can be disabled but never deleted.
+        if (
+            category.system
+        ) {
+            return false;
+        }
+
+
+        const before =
+            list.length;
+
+        data.settings.categories.list =
+            list.filter(
+                item =>
+                    item.id !==
+                    categoryId
+            );
+
+
+        if (
+            !this.save(
+                data
+            )
+        ) {
+            return false;
+        }
+
+
+        return (
+            data.settings.categories.list.length !==
+            before
+        );
+
+    },
+
+
+    addCustomSubcategory(
+        categoryId,
+        name
+    ) {
+
+        const trimmedName =
+            String(
+                name ?? ""
+            ).trim();
+
+
+        if (
+            !trimmedName
+        ) {
+            return null;
+        }
+
+
+        const data =
+            this.load();
+
+        const category =
+            data.settings.categories.list.find(
+                item =>
+                    item.id ===
+                    categoryId
+            );
+
+
+        if (
+            !category
+        ) {
+            return null;
+        }
+
+
+        category.subcategories =
+            Array.isArray(
+                category.subcategories
+            )
+                ? category.subcategories
+                : [];
+
+
+        const nameKey =
+            trimmedName.toLowerCase();
+
+        const isDuplicate =
+            category.subcategories.some(
+                item =>
+                    item.name.toLowerCase() ===
+                    nameKey
+            );
+
+
+        if (
+            isDuplicate
+        ) {
+            return null;
+        }
+
+
+        const subcategory = {
+
+            id:
+                this.generateId(
+                    "subcategory"
+                ),
+
+            name:
+                trimmedName,
+
+            system:
+                false,
+
+            enabled:
+                true
+
+        };
+
+
+        category.subcategories.push(
+            subcategory
+        );
+
+
+        if (
+            !this.save(
+                data
+            )
+        ) {
+            return null;
+        }
+
+
+        return this.getSubcategory(
+            categoryId,
+            subcategory.id
+        );
+
+    },
+
+
+    renameSubcategory(
+        categoryId,
+        subcategoryId,
+        name
+    ) {
+
+        const trimmedName =
+            String(
+                name ?? ""
+            ).trim();
+
+
+        if (
+            !trimmedName
+        ) {
+            return null;
+        }
+
+
+        const data =
+            this.load();
+
+        const category =
+            data.settings.categories.list.find(
+                item =>
+                    item.id ===
+                    categoryId
+            );
+
+
+        if (
+            !category ||
+            !Array.isArray(
+                category.subcategories
+            )
+        ) {
+            return null;
+        }
+
+
+        const subcategory =
+            category.subcategories.find(
+                item =>
+                    item.id ===
+                    subcategoryId
+            );
+
+
+        if (
+            !subcategory
+        ) {
+            return null;
+        }
+
+
+        const nameKey =
+            trimmedName.toLowerCase();
+
+        const isDuplicate =
+            category.subcategories.some(
+                item =>
+                    item.id !==
+                        subcategoryId &&
+                    item.name.toLowerCase() ===
+                        nameKey
+            );
+
+
+        if (
+            isDuplicate
+        ) {
+            return null;
+        }
+
+
+        subcategory.name =
+            trimmedName;
+
+
+        if (
+            !this.save(
+                data
+            )
+        ) {
+            return null;
+        }
+
+
+        return this.getSubcategory(
+            categoryId,
+            subcategoryId
+        );
+
+    },
+
+
+    setSubcategoryEnabled(
+        categoryId,
+        subcategoryId,
+        enabled
+    ) {
+
+        const data =
+            this.load();
+
+        const category =
+            data.settings.categories.list.find(
+                item =>
+                    item.id ===
+                    categoryId
+            );
+
+        const subcategory =
+            category
+                ?.subcategories
+                ?.find(
+                    item =>
+                        item.id ===
+                        subcategoryId
+                );
+
+
+        if (
+            !subcategory
+        ) {
+            return false;
+        }
+
+
+        subcategory.enabled =
+            Boolean(
+                enabled
+            );
+
+
+        return this.save(
+            data
+        );
+
+    },
+
+
+    deleteCustomSubcategory(
+        categoryId,
+        subcategoryId
+    ) {
+
+        const data =
+            this.load();
+
+        const category =
+            data.settings.categories.list.find(
+                item =>
+                    item.id ===
+                    categoryId
+            );
+
+
+        if (
+            !category ||
+            !Array.isArray(
+                category.subcategories
+            )
+        ) {
+            return false;
+        }
+
+
+        const subcategory =
+            category.subcategories.find(
+                item =>
+                    item.id ===
+                    subcategoryId
+            );
+
+
+        if (
+            !subcategory
+        ) {
+            return false;
+        }
+
+
+        // System subcategories can be disabled but never deleted.
+        if (
+            subcategory.system
+        ) {
+            return false;
+        }
+
+
+        const before =
+            category.subcategories.length;
+
+        category.subcategories =
+            category.subcategories.filter(
+                item =>
+                    item.id !==
+                    subcategoryId
+            );
+
+
+        if (
+            !this.save(
+                data
+            )
+        ) {
+            return false;
+        }
+
+
+        return (
+            category.subcategories.length !==
+            before
+        );
 
     }
 
