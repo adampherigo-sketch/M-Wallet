@@ -1,8 +1,8 @@
 {
     "id": "./",
-    "name": "Budget Tracker",
-    "short_name": "Budget",
-    "description": "Personal budget and money management app",
+    "name": "M-Wallet",
+    "short_name": "M-Wallet",
+    "description": "Personal money management and budgeting app",
 
     "start_url": "./",
     "scope": "./",

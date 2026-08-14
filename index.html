@@ -19,7 +19,7 @@
          APP INFORMATION
     ====================================================== -->
 
-    <title>M Wallet</title>
+    <title>M-Wallet</title>
 
     <meta
         name="description"
@@ -31,45 +31,42 @@
          PWA / INSTALLABLE APP
     ====================================================== -->
 
-    <!-- PWA Manifest -->
     <link
         rel="manifest"
         href="./manifest.json"
     >
 
 
-    <!-- Browser / App Theme -->
     <meta
         name="theme-color"
         content="#0f1714"
     >
 
 
-    <!-- Android / General Mobile App Support -->
     <meta
         name="mobile-web-app-capable"
         content="yes"
     >
 
 
-    <!-- Apple Home Screen App Support -->
     <meta
         name="apple-mobile-web-app-capable"
         content="yes"
     >
+
 
     <meta
         name="apple-mobile-web-app-status-bar-style"
         content="black-translucent"
     >
 
+
     <meta
         name="apple-mobile-web-app-title"
-        content="Budget Tracker"
+        content="M-Wallet"
     >
 
 
-    <!-- Apple Home Screen Icon -->
     <link
         rel="apple-touch-icon"
         sizes="180x180"
@@ -77,7 +74,6 @@
     >
 
 
-    <!-- Standard App Icon -->
     <link
         rel="icon"
         type="image/png"
@@ -122,14 +118,13 @@
 
 
                     <p class="header-label">
-                        Budget Tracker
+                        M-Wallet
                     </p>
 
 
                     <div class="month-navigation">
 
 
-                        <!-- Previous Month -->
                         <button
                             class="month-arrow"
                             id="previous-month"
@@ -141,66 +136,29 @@
 
 
 
-                        <!-- Month -->
                         <select
                             id="month-select"
                             class="month-select"
                             aria-label="Select month"
                         >
 
-                            <option value="01">
-                                January
-                            </option>
-
-                            <option value="02">
-                                February
-                            </option>
-
-                            <option value="03">
-                                March
-                            </option>
-
-                            <option value="04">
-                                April
-                            </option>
-
-                            <option value="05">
-                                May
-                            </option>
-
-                            <option value="06">
-                                June
-                            </option>
-
-                            <option value="07">
-                                July
-                            </option>
-
-                            <option value="08">
-                                August
-                            </option>
-
-                            <option value="09">
-                                September
-                            </option>
-
-                            <option value="10">
-                                October
-                            </option>
-
-                            <option value="11">
-                                November
-                            </option>
-
-                            <option value="12">
-                                December
-                            </option>
+                            <option value="01">January</option>
+                            <option value="02">February</option>
+                            <option value="03">March</option>
+                            <option value="04">April</option>
+                            <option value="05">May</option>
+                            <option value="06">June</option>
+                            <option value="07">July</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
 
                         </select>
 
 
 
-                        <!-- Year -->
                         <select
                             id="year-select"
                             class="year-select"
@@ -210,7 +168,6 @@
 
 
 
-                        <!-- Next Month -->
                         <button
                             class="month-arrow"
                             id="next-month"
@@ -222,7 +179,6 @@
 
 
 
-                        <!-- Return to Current Month -->
                         <button
                             class="today-button"
                             id="today-month"
@@ -231,23 +187,25 @@
                             Today
                         </button>
 
+
                     </div>
 
 
 
-                    <!-- Hidden/secondary heading used by app -->
                     <h1
                         id="current-month"
                         class="current-month-title"
+                        hidden
+                        aria-hidden="true"
                     >
                         August 2026
                     </h1>
+
 
                 </div>
 
 
 
-                <!-- Settings -->
                 <button
                     class="header-button"
                     id="settings-button"
@@ -315,8 +273,6 @@
 
 
 
-                <!-- Main Checking Balance -->
-
                 <section class="balance-card">
 
                     <p>
@@ -365,8 +321,6 @@
 
 
 
-
-                <!-- Monthly Summary -->
 
                 <section class="dashboard-section">
 
@@ -446,8 +400,6 @@
 
 
 
-                <!-- Upcoming Bills -->
-
                 <section class="dashboard-section">
 
 
@@ -488,8 +440,6 @@
 
 
 
-
-                <!-- Next Paycheck -->
 
                 <section class="dashboard-section">
 
@@ -541,8 +491,6 @@
 
 
 
-
-                <!-- Savings Overview -->
 
                 <section class="dashboard-section">
 
@@ -621,10 +569,6 @@
 
 
 
-                <!-- ================================
-                     INCOME
-                ================================= -->
-
                 <section class="money-management-section">
 
 
@@ -650,8 +594,6 @@
 
                     <div class="money-action-grid">
 
-
-                        <!-- Add Paycheck -->
 
                         <button
                             type="button"
@@ -697,10 +639,6 @@
 
 
 
-                <!-- ================================
-                     BILLS & SPENDING
-                ================================= -->
-
                 <section class="money-management-section">
 
 
@@ -727,8 +665,6 @@
                     <div class="money-action-grid">
 
 
-
-                        <!-- Add Bill -->
 
                         <button
                             type="button"
@@ -768,8 +704,6 @@
 
 
 
-                        <!-- Add Expense -->
-
                         <button
                             type="button"
                             class="money-action-card"
@@ -807,8 +741,6 @@
 
 
 
-
-                        <!-- Add Transaction -->
 
                         <button
                             type="button"
@@ -854,10 +786,6 @@
 
 
 
-                <!-- ================================
-                     SAVINGS
-                ================================= -->
-
                 <section class="money-management-section">
 
 
@@ -884,8 +812,6 @@
                     <div class="money-action-grid">
 
 
-
-                        <!-- Add Savings Goal -->
 
                         <button
                             type="button"
@@ -924,8 +850,6 @@
 
 
 
-
-                        <!-- Add Money to Savings -->
 
                         <button
                             type="button"
@@ -971,10 +895,6 @@
 
 
 
-                <!-- ================================
-                     BUDGET SETUP
-                ================================= -->
-
                 <section class="money-management-section">
 
 
@@ -1001,8 +921,6 @@
                     <div class="money-action-grid">
 
 
-
-                        <!-- Change Starting Balance -->
 
                         <button
                             type="button"
@@ -1093,8 +1011,6 @@
 
 
 
-                <!-- Starting Balance -->
-
                 <section class="budget-block">
 
 
@@ -1140,8 +1056,6 @@
 
 
 
-                <!-- Paychecks -->
-
                 <section class="budget-block">
 
 
@@ -1184,8 +1098,6 @@
 
 
 
-                <!-- Bills -->
-
                 <section class="budget-block">
 
 
@@ -1227,8 +1139,6 @@
 
 
 
-
-                <!-- Expenses -->
 
                 <section class="budget-block">
 
@@ -1393,8 +1303,6 @@
 
 
 
-                <!-- Total Savings -->
-
                 <section class="balance-card">
 
 
@@ -1412,8 +1320,6 @@
 
 
 
-
-                <!-- Savings Goals -->
 
                 <section class="dashboard-section">
 
@@ -1531,7 +1437,7 @@
                         </h2>
 
                         <p>
-                            Manage your budget tracker.
+                            Manage your M-Wallet.
                         </p>
 
                     </div>
@@ -1542,28 +1448,22 @@
 
 
 
-                <!-- ================================
-                     APP INSTALLATION
-                ================================= -->
-
                 <section class="settings-section">
 
 
                     <div class="settings-section-heading">
 
                         <h3>
-                            Budget Tracker App
+                            M-Wallet App
                         </h3>
 
                         <p>
-                            Install Budget Tracker on this device for an app-like experience.
+                            Install M-Wallet on this device for an app-like experience.
                         </p>
 
                     </div>
 
 
-
-                    <!-- Install App -->
 
                     <button
                         type="button"
@@ -1575,7 +1475,7 @@
                         <span class="settings-item-content">
 
                             <strong>
-                                Install Budget Tracker
+                                Install M-Wallet
                             </strong>
 
                             <small>
@@ -1591,8 +1491,6 @@
                     </button>
 
 
-
-                    <!-- Installed App Status -->
 
                     <div
                         class="app-installed-message"
@@ -1611,7 +1509,7 @@
                             </strong>
 
                             <small>
-                                Budget Tracker is running as an installed app.
+                                M-Wallet is running as an installed app.
                             </small>
 
                         </div>
@@ -1623,10 +1521,6 @@
 
 
 
-
-                <!-- ================================
-                     BUDGET SETTINGS
-                ================================= -->
 
                 <section class="settings-section">
 
@@ -1691,8 +1585,6 @@
         >
 
 
-            <!-- Home -->
-
             <button
                 class="nav-button active"
                 type="button"
@@ -1711,8 +1603,6 @@
 
 
 
-
-            <!-- Budget -->
 
             <button
                 class="nav-button"
@@ -1733,8 +1623,6 @@
 
 
 
-            <!-- Money Management -->
-
             <button
                 class="nav-button"
                 type="button"
@@ -1753,8 +1641,6 @@
 
 
 
-
-            <!-- Transactions -->
 
             <button
                 class="nav-button"
@@ -1775,8 +1661,6 @@
 
 
 
-            <!-- Savings -->
-
             <button
                 class="nav-button"
                 type="button"
@@ -1795,8 +1679,6 @@
 
 
 
-
-            <!-- Reports -->
 
             <button
                 class="nav-button"
@@ -1835,8 +1717,6 @@
     >
 
 
-        <!-- Dark background behind popup -->
-
         <div
             class="money-modal-overlay"
             id="money-modal-overlay"
@@ -1846,8 +1726,6 @@
 
 
 
-        <!-- Popup Pane -->
-
         <div
             class="money-modal-content"
             role="dialog"
@@ -1856,8 +1734,6 @@
         >
 
 
-
-            <!-- Popup Header -->
 
             <div class="money-modal-header">
 
@@ -1879,8 +1755,6 @@
 
 
 
-                <!-- Red X -->
-
                 <button
                     type="button"
                     class="money-modal-close"
@@ -1898,21 +1772,11 @@
 
 
 
-
-            <!-- ====================================
-                 UNIVERSAL FORM
-            ===================================== -->
-
             <form
                 id="money-modal-form"
                 autocomplete="off"
             >
 
-
-                <!--
-                    money.js will place the correct
-                    form fields inside this area.
-                -->
 
                 <div
                     class="money-modal-body"
@@ -1922,8 +1786,6 @@
 
 
 
-
-                <!-- Status Message -->
 
                 <p
                     class="money-modal-status"
@@ -1935,13 +1797,9 @@
 
 
 
-                <!-- Popup Buttons -->
-
                 <div class="money-modal-actions">
 
 
-
-                    <!-- Undo -->
 
                     <button
                         type="button"
@@ -1952,8 +1810,6 @@
                     </button>
 
 
-
-                    <!-- Save -->
 
                     <button
                         type="submit"
@@ -1983,30 +1839,13 @@
          JAVASCRIPT
     ========================================= -->
 
-
-    <!-- Storage loads first -->
-
     <script src="./js/storage.js"></script>
-
-
-    <!-- Navigation -->
 
     <script src="./js/nav.js"></script>
 
-
-    <!-- Main App -->
-
     <script src="./js/app.js"></script>
 
-
-    <!-- Money Management -->
-
     <script src="./js/money.js"></script>
-
-
-    <!-- ========================================
-         PWA / INSTALLABLE APP
-    ========================================= -->
 
     <script src="./js/pwa.js"></script>
 

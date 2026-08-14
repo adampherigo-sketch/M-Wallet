@@ -2574,3 +2574,234 @@ textarea:focus-visible {
     }
 
 }
+/* =========================================================
+   M-WALLET
+   HEADER UPDATE
+
+
+
+/* =========================================================
+   CENTER THE TOP HEADER
+   ========================================================= */
+
+.header-content {
+    position: relative;
+
+    width: min(1100px, 100%);
+    margin: 0 auto;
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+
+    padding: 20px 22px;
+}
+
+
+/* =========================================================
+   M-WALLET NAME
+   ========================================================= */
+
+.header-month-area {
+    width: 100%;
+    min-width: 0;
+
+    text-align: center;
+}
+
+.header-label {
+    margin-bottom: 3px;
+
+    color: var(--green);
+
+    font-size: 0.82rem;
+    font-weight: 800;
+
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+
+
+/* =========================================================
+   MONTH / YEAR NAVIGATION
+   ========================================================= */
+
+.month-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    margin-top: 7px;
+}
+
+
+/* =========================================================
+   SETTINGS BUTTON
+   Keep it in the upper-right corner
+   ========================================================= */
+
+.header-button {
+    position: absolute;
+
+    top: 20px;
+    right: 22px;
+
+    width: 44px;
+    height: 44px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid var(--border);
+    border-radius: 50%;
+
+    background: var(--surface);
+
+    color: var(--green-dark);
+
+    font-size: 1.2rem;
+
+    box-shadow: var(--shadow-sm);
+
+    transition:
+        transform var(--transition),
+        background var(--transition),
+        border-color var(--transition);
+}
+
+.header-button:hover {
+    transform: translateY(-2px);
+
+    background: var(--green-soft);
+
+    border-color: var(--green-light);
+}
+
+
+/* =========================================================
+   REMOVE DUPLICATE MONTH TITLE
+   ========================================================= */
+
+.current-month-title {
+    display: none !important;
+}
+
+
+/* =========================================================
+   MOBILE HEADER
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .header-content {
+        padding: 17px 16px 16px;
+    }
+
+
+    .header-month-area {
+        width: 100%;
+
+        text-align: center;
+    }
+
+
+    .header-label {
+        padding: 0 52px;
+
+        text-align: center;
+    }
+
+
+    .header-button {
+        top: 17px;
+        right: 16px;
+    }
+
+
+    .month-navigation {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        flex-wrap: wrap;
+
+        gap: 8px;
+
+        padding: 0 2px;
+    }
+
+
+    .month-select {
+        min-width: 115px;
+    }
+
+
+    .year-select {
+        min-width: 80px;
+    }
+
+
+    .today-button {
+        padding: 8px 10px;
+    }
+
+}
+
+
+/* =========================================================
+   EXTRA SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 390px) {
+
+    .header-content {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+
+    .header-button {
+        right: 10px;
+
+        width: 40px;
+        height: 40px;
+    }
+
+
+    .header-label {
+        padding: 0 46px;
+
+        font-size: 0.76rem;
+    }
+
+
+    .month-navigation {
+        gap: 6px;
+    }
+
+
+    .month-select {
+        min-width: 108px;
+
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+
+    .year-select {
+        min-width: 76px;
+
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+
+    .month-arrow {
+        width: 34px;
+        height: 34px;
+    }
+
+}
