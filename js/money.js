@@ -3,8 +3,9 @@
    Money Management + Universal Popup
    money.js
 
-   Savings System Upgrade
+   Savings System Upgrade + Bills Management UI
    Checking ↔ General Savings ↔ Savings Goals
+   P2.4.2 — Bill Edit / Paid / Delete Wiring
    ========================================================= */
 
 
@@ -21,7 +22,6 @@ function getMoneyStorage() {
     );
 
 }
-
 
 function formatMoneyCurrency(
     value
@@ -749,180 +749,178 @@ const MONEY_FORMS = {
         ]
 
     },
-
-
     /* =====================================================
-       GENERAL SAVINGS → CHECKING
-       ===================================================== */
+   GENERAL SAVINGS → CHECKING
+   ===================================================== */
 
-    "savings-withdrawal": {
+"savings-withdrawal": {
 
-        title:
-            "Move Savings to Checking",
+    title:
+        "Move Savings to Checking",
 
-        fields: [
+    fields: [
 
-            {
-                type: "number",
-                name: "amount",
-                label: "Amount to Return to Checking",
-                placeholder: "0.00",
-                min: "0.01",
-                step: "0.01",
-                money: true,
-                required: true
-            },
+        {
+            type: "number",
+            name: "amount",
+            label: "Amount to Return to Checking",
+            placeholder: "0.00",
+            min: "0.01",
+            step: "0.01",
+            money: true,
+            required: true
+        },
 
-            {
-                type: "date",
-                name: "date",
-                label: "Transfer Date",
-                required: true,
-                useSelectedMonth: true
-            },
+        {
+            type: "date",
+            name: "date",
+            label: "Transfer Date",
+            required: true,
+            useSelectedMonth: true
+        },
 
-            {
-                type: "textarea",
-                name: "notes",
-                label: "Notes",
-                placeholder:
-                    "Optional notes about this transfer"
-            }
+        {
+            type: "textarea",
+            name: "notes",
+            label: "Notes",
+            placeholder:
+                "Optional notes about this transfer"
+        }
 
-        ]
+    ]
 
-    },
-
-
-    /* =====================================================
-       GENERAL SAVINGS → FUND
-       ===================================================== */
-
-    "savings-allocation": {
-
-        title:
-            "Allocate Savings to Fund",
-
-        fields: [
-
-            {
-                type: "select",
-                name: "goalId",
-                label: "Savings Fund",
-                placeholder: "Select a fund",
-                required: true,
-                dynamicOptions:
-                    getSavingsGoalOptions
-            },
-
-            {
-                type: "number",
-                name: "amount",
-                label: "Amount to Allocate",
-                placeholder: "0.00",
-                min: "0.01",
-                step: "0.01",
-                money: true,
-                required: true
-            },
-
-            {
-                type: "date",
-                name: "date",
-                label: "Allocation Date",
-                required: true,
-                useSelectedMonth: true
-            },
-
-            {
-                type: "textarea",
-                name: "notes",
-                label: "Notes",
-                placeholder:
-                    "Optional notes about this allocation"
-            }
-
-        ]
-
-    },
+},
 
 
-    /* =====================================================
-       FUND → GENERAL SAVINGS
-       ===================================================== */
+/* =====================================================
+   GENERAL SAVINGS → FUND
+   ===================================================== */
 
-    "savings-release": {
+"savings-allocation": {
 
-        title:
-            "Return Fund Money to Savings",
+    title:
+        "Allocate Savings to Fund",
 
-        fields: [
+    fields: [
 
-            {
-                type: "select",
-                name: "goalId",
-                label: "Savings Fund",
-                placeholder: "Select a fund",
-                required: true,
-                dynamicOptions:
-                    getSavingsGoalOptions
-            },
+        {
+            type: "select",
+            name: "goalId",
+            label: "Savings Fund",
+            placeholder: "Select a fund",
+            required: true,
+            dynamicOptions:
+                getSavingsGoalOptions
+        },
 
-            {
-                type: "number",
-                name: "amount",
-                label: "Amount to Return",
-                placeholder: "0.00",
-                min: "0.01",
-                step: "0.01",
-                money: true,
-                required: true
-            },
+        {
+            type: "number",
+            name: "amount",
+            label: "Amount to Allocate",
+            placeholder: "0.00",
+            min: "0.01",
+            step: "0.01",
+            money: true,
+            required: true
+        },
 
-            {
-                type: "date",
-                name: "date",
-                label: "Transfer Date",
-                required: true,
-                useSelectedMonth: true
-            },
+        {
+            type: "date",
+            name: "date",
+            label: "Allocation Date",
+            required: true,
+            useSelectedMonth: true
+        },
 
-            {
-                type: "textarea",
-                name: "notes",
-                label: "Notes",
-                placeholder:
-                    "Optional notes about returning this money"
-            }
+        {
+            type: "textarea",
+            name: "notes",
+            label: "Notes",
+            placeholder:
+                "Optional notes about this allocation"
+        }
 
-        ]
+    ]
 
-    },
+},
 
 
-    "starting-balance": {
+/* =====================================================
+   FUND → GENERAL SAVINGS
+   ===================================================== */
 
-        title:
-            "Change Starting Balance",
+"savings-release": {
 
-        fields: [
+    title:
+        "Return Fund Money to Savings",
 
-            {
-                type: "number",
-                name: "balance",
-                label: "Starting Balance",
-                placeholder: "0.00",
-                step: "0.01",
-                money: true,
-                required: true,
+    fields: [
 
-                help:
-                    "This is the checking balance you are starting the selected month with."
-            }
+        {
+            type: "select",
+            name: "goalId",
+            label: "Savings Fund",
+            placeholder: "Select a fund",
+            required: true,
+            dynamicOptions:
+                getSavingsGoalOptions
+        },
 
-        ]
+        {
+            type: "number",
+            name: "amount",
+            label: "Amount to Return",
+            placeholder: "0.00",
+            min: "0.01",
+            step: "0.01",
+            money: true,
+            required: true
+        },
 
-    }
+        {
+            type: "date",
+            name: "date",
+            label: "Transfer Date",
+            required: true,
+            useSelectedMonth: true
+        },
+
+        {
+            type: "textarea",
+            name: "notes",
+            label: "Notes",
+            placeholder:
+                "Optional notes about returning this money"
+        }
+
+    ]
+
+},
+
+
+"starting-balance": {
+
+    title:
+        "Change Starting Balance",
+
+    fields: [
+
+        {
+            type: "number",
+            name: "balance",
+            label: "Starting Balance",
+            placeholder: "0.00",
+            step: "0.01",
+            money: true,
+            required: true,
+
+            help:
+                "This is the checking balance you are starting the selected month with."
+        }
+
+    ]
+
+}
 
 };
 
@@ -936,6 +934,14 @@ let currentMoneyAction =
 
 
 let currentEditingIncomeId =
+    null;
+
+
+let currentEditingBillId =
+    null;
+
+
+let currentEditingBillMonthKey =
     null;
 
 
@@ -1490,8 +1496,7 @@ function buildInput(
         field.useSelectedMonth
     ) {
 
-        input.value =
-            getDefaultDateForSelectedMonth();
+        input.value = getDefaultDateForSelectedMonth();
 
     }
 
@@ -2239,9 +2244,7 @@ function populateMoneyForm(
                     return;
 
                 }
-
-
-                const value =
+                                const value =
                     values[
                         field.name
                     ];
@@ -2326,6 +2329,26 @@ function openMoneyModal(
             : null;
 
 
+    currentEditingBillId =
+        (
+            normalizedAction ===
+                "bill" &&
+            options.editingId
+        )
+            ? options.editingId
+            : null;
+
+
+    currentEditingBillMonthKey =
+        (
+            normalizedAction ===
+                "bill" &&
+            options.monthKey
+        )
+            ? options.monthKey
+            : null;
+
+
     currentEditingExpenseId =
         (
             normalizedAction ===
@@ -2378,6 +2401,19 @@ function openMoneyModal(
 
         moneyModalTitle.textContent =
             "Edit Income";
+
+
+        moneyModalSave.textContent =
+            "💾 Save Changes";
+
+    }
+
+    else if (
+        currentEditingBillId
+    ) {
+
+        moneyModalTitle.textContent =
+            "Edit Bill";
 
 
         moneyModalSave.textContent =
@@ -2537,7 +2573,83 @@ function openIncomeEditor(
 
 
 /* =========================================================
-   21. EXPENSE EDITOR
+   21. BILL EDITOR
+   ========================================================= */
+
+function openBillEditor(
+    billId,
+    monthKey = null
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getBills !==
+            "function"
+    ) {
+
+        console.error(
+            "Bill editing is not available."
+        );
+
+
+        return;
+
+    }
+
+
+    const targetMonthKey =
+        monthKey ||
+        storage.getSelectedMonthKey?.() ||
+        getSelectedBudgetPeriod().key;
+
+
+    const bill =
+        storage
+            .getBills(
+                targetMonthKey
+            )
+            .find(
+                item =>
+                    item.id ===
+                    billId
+            );
+
+
+    if (!bill) {
+
+        console.warn(
+            `Bill record not found: ${billId}`
+        );
+
+
+        return;
+
+    }
+
+
+    openMoneyModal(
+        "bill",
+        {
+            editingId:
+                bill.id,
+
+            monthKey:
+                targetMonthKey,
+
+            record:
+                bill
+        }
+    );
+
+}
+
+
+/* =========================================================
+   22. EXPENSE EDITOR
    ========================================================= */
 
 function openExpenseEditor(
@@ -2597,7 +2709,7 @@ function openExpenseEditor(
 
 
 /* =========================================================
-   22. SAVINGS GOAL EDITOR
+   23. SAVINGS GOAL EDITOR
    ========================================================= */
 
 function openSavingsGoalEditor(
@@ -2657,7 +2769,7 @@ function openSavingsGoalEditor(
 
 
 /* =========================================================
-   23. OPEN SAVINGS ALLOCATION
+   24. OPEN SAVINGS ALLOCATION
    ========================================================= */
 
 function openSavingsAllocation(
@@ -2682,7 +2794,7 @@ function openSavingsAllocation(
 
 
 /* =========================================================
-   24. OPEN SAVINGS RELEASE
+   25. OPEN SAVINGS RELEASE
    ========================================================= */
 
 function openSavingsRelease(
@@ -2707,7 +2819,7 @@ function openSavingsRelease(
 
 
 /* =========================================================
-   25. CLOSE MONEY MODAL
+   26. CLOSE MONEY MODAL
    ========================================================= */
 
 function closeMoneyModal() {
@@ -2743,6 +2855,14 @@ function closeMoneyModal() {
 
 
     currentEditingIncomeId =
+        null;
+
+
+    currentEditingBillId =
+        null;
+
+
+    currentEditingBillMonthKey =
         null;
 
 
@@ -2786,7 +2906,7 @@ function closeMoneyModal() {
 
 
 /* =========================================================
-   26. CAPTURE FORM STATE
+   27. CAPTURE FORM STATE
    ========================================================= */
 
 function captureMoneyFormState() {
@@ -2830,7 +2950,7 @@ function captureMoneyFormState() {
 
 
 /* =========================================================
-   27. UNDO FORM CHANGES
+   28. UNDO FORM CHANGES
    ========================================================= */
 
 function undoMoneyForm() {
@@ -2874,8 +2994,7 @@ function undoMoneyForm() {
 
                 field.value =
                     savedField.value;
-
-            }
+                                }
 
         }
     );
@@ -2896,7 +3015,7 @@ function undoMoneyForm() {
 
 
 /* =========================================================
-   28. GET FORM DATA
+   29. GET FORM DATA
    ========================================================= */
 
 function getMoneyFormData() {
@@ -2982,7 +3101,7 @@ function getMoneyFormData() {
 
 
 /* =========================================================
-   29. CREATE MONEY RECORD
+   30. CREATE MONEY RECORD
    ========================================================= */
 
 function createMoneyRecord() {
@@ -2999,6 +3118,8 @@ function createMoneyRecord() {
 
         currentEditingIncomeId ||
 
+        currentEditingBillId ||
+
         currentEditingExpenseId ||
 
         currentEditingSavingsGoalId;
@@ -3014,6 +3135,7 @@ function createMoneyRecord() {
             currentMoneyAction,
 
         monthKey:
+            currentEditingBillMonthKey ||
             period.key,
 
         month:
@@ -3134,6 +3256,45 @@ function createMoneyRecord() {
 
 
         delete record.twiceMonthlyDay2;
+
+    }
+
+
+    /* -----------------------------------------------------
+       BILL
+       ----------------------------------------------------- */
+
+    if (
+        currentMoneyAction ===
+        "bill"
+    ) {
+
+        record.name =
+            String(
+                record.name ||
+                "Bill"
+            ).trim();
+
+
+        record.amount =
+            Math.abs(
+                Number(
+                    record.amount
+                ) || 0
+            );
+
+
+        record.category =
+            String(
+                record.category ||
+                "Other"
+            ).trim();
+
+
+        record.recurring =
+            Boolean(
+                record.recurring
+            );
 
     }
 
@@ -3274,7 +3435,7 @@ function createMoneyRecord() {
 
 
 /* =========================================================
-   30. CREATE UNIQUE ID
+   31. CREATE UNIQUE ID
    ========================================================= */
 
 function createMoneyId() {
@@ -3309,7 +3470,7 @@ function createMoneyId() {
 
 
 /* =========================================================
-   31. VALIDATE SAVINGS ACTION
+   32. VALIDATE SAVINGS ACTION
    ========================================================= */
 
 function validateSavingsRecord(
@@ -3439,7 +3600,7 @@ function validateSavingsRecord(
 
 
 /* =========================================================
-   32. SAVE MONEY FORM
+   33. SAVE MONEY FORM
    ========================================================= */
 
 function saveMoneyForm(
@@ -3486,6 +3647,12 @@ function saveMoneyForm(
     const wasEditingIncome =
         Boolean(
             currentEditingIncomeId
+        );
+
+
+    const wasEditingBill =
+        Boolean(
+            currentEditingBillId
         );
 
 
@@ -3562,6 +3729,23 @@ function saveMoneyForm(
 
 
         if (
+            wasEditingBill
+        ) {
+
+            document.dispatchEvent(
+
+                new CustomEvent(
+                    "mwallet:bill-updated",
+                    {
+                        detail
+                    }
+                )
+
+            );
+                    }
+
+
+        if (
             wasEditingExpense
         ) {
 
@@ -3622,6 +3806,7 @@ function saveMoneyForm(
                 actionBeforeSave,
                 {
                     wasEditingIncome,
+                    wasEditingBill,
                     wasEditingExpense,
                     wasEditingSavingsGoal
                 }
@@ -3661,7 +3846,7 @@ function saveMoneyForm(
 
 
 /* =========================================================
-   33. SUCCESS MESSAGE
+   34. SUCCESS MESSAGE
    ========================================================= */
 
 function getMoneySuccessMessage(
@@ -3671,6 +3856,7 @@ function getMoneySuccessMessage(
 
     if (
         state.wasEditingIncome ||
+        state.wasEditingBill ||
         state.wasEditingExpense
     ) {
 
@@ -3727,7 +3913,7 @@ function getMoneySuccessMessage(
 
 
 /* =========================================================
-   34. SAVE MONEY RECORD
+   35. SAVE MONEY RECORD
    ========================================================= */
 
 function saveMoneyRecord(
@@ -3760,6 +3946,59 @@ function saveMoneyRecord(
         return storage.updateIncome(
             currentEditingIncomeId,
             record
+        );
+
+    }
+
+
+    if (
+        currentMoneyAction ===
+            "bill" &&
+        currentEditingBillId
+    ) {
+
+        if (
+            !storage ||
+            typeof storage.updateBill !==
+                "function"
+        ) {
+
+            throw new Error(
+                "Bill editing is not available in storage.js."
+            );
+
+        }
+
+
+        const billUpdates = {
+
+            name:
+                record.name,
+
+            dueDate:
+                record.dueDate,
+
+            amount:
+                record.amount,
+
+            category:
+                record.category,
+
+            recurring:
+                record.recurring
+
+        };
+
+
+        return storage.updateBill(
+
+            currentEditingBillId,
+
+            billUpdates,
+
+            currentEditingBillMonthKey ||
+                record.monthKey
+
         );
 
     }
@@ -3840,7 +4079,7 @@ function saveMoneyRecord(
 
 
 /* =========================================================
-   35. DELETE INCOME
+   36. DELETE INCOME
    ========================================================= */
 
 function deleteIncomeRecord(
@@ -3985,7 +4224,259 @@ function deleteIncomeRecord(
 
 
 /* =========================================================
-   36. DELETE EXPENSE
+   37. BILL PAID / UNPAID
+   ========================================================= */
+
+function toggleBillPaidRecord(
+    billId,
+    monthKey
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getBills !==
+            "function" ||
+        typeof storage.markBillPaid !==
+            "function"
+    ) {
+
+        console.error(
+            "Bill payment status is not available."
+        );
+
+
+        return false;
+
+    }
+
+
+    const targetMonthKey =
+        monthKey ||
+        storage.getSelectedMonthKey();
+
+
+    const bill =
+        storage
+            .getBills(
+                targetMonthKey
+            )
+            .find(
+                item =>
+                    item.id ===
+                    billId
+            );
+
+
+    if (!bill) {
+
+        console.warn(
+            `Bill record not found: ${billId}`
+        );
+
+
+        return false;
+
+    }
+
+
+    const updatedBill =
+        storage.markBillPaid(
+
+            billId,
+
+            !Boolean(
+                bill.paid
+            ),
+
+            targetMonthKey
+
+        );
+
+
+    if (!updatedBill) {
+
+        return false;
+
+    }
+
+
+    const detail = {
+
+        type:
+            "bill",
+
+        action:
+            updatedBill.paid
+                ? "paid"
+                : "unpaid",
+
+        id:
+            billId,
+
+        monthKey:
+            targetMonthKey,
+
+        record:
+            updatedBill
+
+    };
+
+
+    dispatchMoneyChangeEvents(
+        detail
+    );
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+            "mwallet:bill-updated",
+            {
+                detail
+            }
+        )
+
+    );
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   38. DELETE BILL
+   ========================================================= */
+
+function deleteBillRecord(
+    billId,
+    monthKey
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getBills !==
+            "function" ||
+        typeof storage.deleteBill !==
+            "function"
+    ) {
+
+        console.error(
+            "Bill deletion is not available."
+        );
+
+
+        return false;
+
+    }
+
+
+    const targetMonthKey =
+        monthKey ||
+        storage.getSelectedMonthKey();
+
+
+    const bill =
+        storage
+            .getBills(
+                targetMonthKey
+            )
+            .find(
+                item =>
+                    item.id ===
+                    billId
+            );
+
+
+    if (!bill) {
+
+        console.warn(
+            `Bill record not found: ${billId}`
+        );
+
+
+        return false;
+
+    }
+
+
+    const confirmed =
+        window.confirm(
+            `Delete "${bill.name || "this bill"}"?`
+        );
+
+
+    if (!confirmed) {
+
+        return false;
+
+    }
+
+
+    const deleted =
+        storage.deleteBill(
+            billId,
+            targetMonthKey
+        );
+
+
+    if (!deleted) {
+
+        return false;
+
+    }
+
+
+    const detail = {
+
+        type:
+            "bill",
+
+        action:
+            "delete",
+
+        id:
+            billId,
+
+        monthKey:
+            targetMonthKey,
+
+        record:
+            bill
+
+    };
+
+
+    dispatchMoneyChangeEvents(
+        detail
+    );
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+            "mwallet:bill-deleted",
+            {
+                detail
+            }
+        )
+
+    );
+
+
+    return true;
+
+}
+/* =========================================================
+   39. DELETE EXPENSE
    ========================================================= */
 
 function deleteExpenseRecord(
@@ -4107,7 +4598,7 @@ function deleteExpenseRecord(
 
 
 /* =========================================================
-   37. DELETE SAVINGS GOAL
+   40. DELETE SAVINGS GOAL
    ========================================================= */
 
 function deleteSavingsGoalRecord(
@@ -4255,7 +4746,7 @@ function deleteSavingsGoalRecord(
 
 
 /* =========================================================
-   38. SHARED MONEY EVENTS
+   41. SHARED MONEY EVENTS
    ========================================================= */
 
 function dispatchMoneyChangeEvents(
@@ -4289,7 +4780,7 @@ function dispatchMoneyChangeEvents(
 
 
 /* =========================================================
-   39. FALLBACK STORAGE
+   42. FALLBACK STORAGE
    ========================================================= */
 
 const MONEY_FALLBACK_STORAGE_KEY =
@@ -4394,7 +4885,7 @@ function saveMoneyRecordFallback(
 
 
 /* =========================================================
-   40. STATUS MESSAGE
+   43. STATUS MESSAGE
    ========================================================= */
 
 function showMoneyStatus(
@@ -4429,7 +4920,7 @@ function showMoneyStatus(
 
 
 /* =========================================================
-   41. CLEAR STATUS
+   44. CLEAR STATUS
    ========================================================= */
 
 function clearMoneyStatus() {
@@ -4456,7 +4947,7 @@ function clearMoneyStatus() {
 
 
 /* =========================================================
-   42. ESCAPE HTML
+   45. ESCAPE HTML
    ========================================================= */
 
 function escapeMoneyHTML(
@@ -4497,7 +4988,7 @@ function escapeMoneyHTML(
 
 
 /* =========================================================
-   43. INCOME EDIT / DELETE BUTTONS
+   46. INCOME EDIT / DELETE BUTTONS
    ========================================================= */
 
 document.addEventListener(
@@ -4576,7 +5067,139 @@ document.addEventListener(
 
 
 /* =========================================================
-   44. EXPENSE EDIT / DELETE BUTTONS
+   47. BILL PAID / EDIT / DELETE BUTTONS
+   ========================================================= */
+
+document.addEventListener(
+    "click",
+    event => {
+
+        const paidButton =
+            event.target.closest(
+                "[data-bill-paid]"
+            );
+
+
+        if (
+            paidButton
+        ) {
+
+            event.preventDefault();
+
+
+            const billId =
+                paidButton.dataset
+                    .billPaid;
+
+
+            const monthKey =
+                paidButton.dataset
+                    .billMonth ||
+                getSelectedBudgetPeriod().key;
+
+
+            if (
+                billId
+            ) {
+
+                toggleBillPaidRecord(
+                    billId,
+                    monthKey
+                );
+
+            }
+
+
+            return;
+
+        }
+
+
+        const editButton =
+            event.target.closest(
+                "[data-bill-edit]"
+            );
+
+
+        if (
+            editButton
+        ) {
+
+            event.preventDefault();
+
+
+            const billId =
+                editButton.dataset
+                    .billEdit;
+
+
+            const monthKey =
+                editButton.dataset
+                    .billMonth ||
+                getSelectedBudgetPeriod().key;
+
+
+            if (
+                billId
+            ) {
+
+                openBillEditor(
+                    billId,
+                    monthKey
+                );
+
+            }
+
+
+            return;
+
+        }
+
+
+        const deleteButton =
+            event.target.closest(
+                "[data-bill-delete]"
+            );
+
+
+        if (
+            !deleteButton
+        ) {
+
+            return;
+
+        }
+
+
+        event.preventDefault();
+
+
+        const billId =
+            deleteButton.dataset
+                .billDelete;
+
+
+        const monthKey =
+            deleteButton.dataset
+                .billMonth ||
+            getSelectedBudgetPeriod().key;
+
+
+        if (
+            billId
+        ) {
+
+            deleteBillRecord(
+                billId,
+                monthKey
+            );
+
+        }
+
+    }
+);
+/* =========================================================
+   48. EXPENSE EDIT / DELETE BUTTONS
    ========================================================= */
 
 document.addEventListener(
@@ -4655,7 +5278,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   45. SAVINGS GOAL ACTION BUTTONS
+   49. SAVINGS GOAL ACTION BUTTONS
    ========================================================= */
 
 document.addEventListener(
@@ -4759,7 +5382,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   46. MONEY ACTION BUTTONS
+   50. MONEY ACTION BUTTONS
    ========================================================= */
 
 document.addEventListener(
@@ -4817,7 +5440,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   47. CONDITIONAL / SAVINGS FIELD CHANGES
+   51. CONDITIONAL / SAVINGS FIELD CHANGES
    ========================================================= */
 
 if (
@@ -4856,7 +5479,7 @@ if (
 
 
 /* =========================================================
-   48. CLOSE BUTTON / OVERLAY
+   52. CLOSE BUTTON / OVERLAY
    ========================================================= */
 
 document.addEventListener(
@@ -4885,7 +5508,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   49. ESCAPE KEY
+   53. ESCAPE KEY
    ========================================================= */
 
 document.addEventListener(
@@ -4923,7 +5546,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   50. UNDO
+   54. UNDO
    ========================================================= */
 
 if (
@@ -4939,7 +5562,7 @@ if (
 
 
 /* =========================================================
-   51. FORM SUBMIT
+   55. FORM SUBMIT
    ========================================================= */
 
 if (
@@ -4955,7 +5578,7 @@ if (
 
 
 /* =========================================================
-   52. CLEAR STATUS WHILE TYPING
+   56. CLEAR STATUS WHILE TYPING
    ========================================================= */
 
 if (
@@ -4975,7 +5598,7 @@ if (
 
 
 /* =========================================================
-   53. EXPOSE MONEY MANAGER
+   57. EXPOSE MONEY MANAGER
    ========================================================= */
 
 window.MoneyManager = {
@@ -4986,6 +5609,18 @@ window.MoneyManager = {
 
     editIncome:
         openIncomeEditor,
+
+
+    editBill:
+        openBillEditor,
+
+
+    deleteBill:
+        deleteBillRecord,
+
+
+    toggleBillPaid:
+        toggleBillPaidRecord,
 
 
     deleteIncome:
@@ -5049,6 +5684,15 @@ window.MoneyManager = {
     },
 
 
+    isEditingBill() {
+
+        return Boolean(
+            currentEditingBillId
+        );
+
+    },
+
+
     isEditingExpense() {
 
         return Boolean(
@@ -5070,7 +5714,7 @@ window.MoneyManager = {
 
 
 /* =========================================================
-   54. DEVELOPMENT HELPER
+   58. DEVELOPMENT HELPER
    ========================================================= */
 
 console.log(

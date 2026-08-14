@@ -782,7 +782,8 @@ const BudgetApp = {
         );
 
         this.renderBillTable(
-            snapshot.bills || []
+            snapshot.bills || [],
+            snapshot.monthKey
         );
 
         this.renderExpenseTable(
@@ -1234,7 +1235,10 @@ const BudgetApp = {
        16. BILL TABLE
        ===================================================== */
 
-    renderBillTable(bills) {
+    renderBillTable(
+        bills,
+        monthKey
+    ) {
 
         const container =
             document.getElementById(
@@ -1253,12 +1257,16 @@ const BudgetApp = {
         ) {
 
             container.innerHTML = `
+
                 <p class="empty-message">
                     No bills added.
                 </p>
+
             `;
 
+
             return;
+
         }
 
 
@@ -1273,63 +1281,172 @@ const BudgetApp = {
 
 
         container.innerHTML = `
-            <table>
 
-                <thead>
-                    <tr>
-                        <th>Bill</th>
-                        <th>Due</th>
-                        <th>Category</th>
-                        <th>Amount</th>
-                        <th>Repeats</th>
-                    </tr>
-                </thead>
+        <table>
 
-                <tbody>
+            <thead>
 
-                    ${sorted.map(bill => `
+                <tr>
+
+                    <th>Bill</th>
+                    <th>Due</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Repeats</th>
+                    <th>Actions</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                ${sorted.map(bill => {
+
+                    const billId =
+                        this.escapeHTML(
+                            bill.id || ""
+                        );
+
+
+                    const safeMonthKey =
+                        this.escapeHTML(
+                            monthKey || ""
+                        );
+
+
+                    const isPaid =
+                        Boolean(
+                            bill.paid
+                        );
+
+
+                    return `
+
                         <tr>
 
                             <td>
-                                ${this.escapeHTML(
-                                    bill.name
-                                )}
+
+                                <strong>
+                                    ${this.escapeHTML(
+                                        bill.name ||
+                                        "Bill"
+                                    )}
+                                </strong>
+
                             </td>
 
+
                             <td>
+
                                 ${this.formatDate(
                                     bill.dueDate
                                 )}
+
                             </td>
 
+
                             <td>
+
                                 ${this.escapeHTML(
                                     bill.category ||
                                     "Other"
                                 )}
+
                             </td>
 
+
                             <td class="money-negative">
+
                                 ${this.formatCurrency(
                                     bill.amount
                                 )}
+
                             </td>
 
+
                             <td>
-                                ${
-                                    bill.recurring
-                                        ? "Yes"
-                                        : "No"
-                                }
+
+                                <span class="
+                                    bill-status
+                                    ${isPaid
+                                        ? "paid"
+                                        : "unpaid"}
+                                ">
+
+                                    ${isPaid
+                                        ? "Paid"
+                                        : "Unpaid"}
+
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                ${bill.recurring
+                                    ? "Yes"
+                                    : "No"}
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="income-actions bill-actions">
+
+                                    <button
+                                        type="button"
+                                        class="text-button"
+                                        data-bill-paid="${billId}"
+                                        data-bill-month="${safeMonthKey}"
+                                    >
+
+                                        ${isPaid
+                                            ? "Mark Unpaid"
+                                            : "Mark Paid"}
+
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="text-button"
+                                        data-bill-edit="${billId}"
+                                        data-bill-month="${safeMonthKey}"
+                                    >
+                                        Edit
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="text-button money-negative"
+                                        data-bill-delete="${billId}"
+                                        data-bill-month="${safeMonthKey}"
+                                    >
+                                        Delete
+                                    </button>
+
+                                </div>
+
                             </td>
 
                         </tr>
-                    `).join("")}
 
-                </tbody>
+                    `;
 
-            </table>
-        `;
+                }).join("")}
+
+            </tbody>
+
+        </table>
+
+    `;
+
     },
 
 
