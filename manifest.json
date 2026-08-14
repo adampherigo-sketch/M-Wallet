@@ -1,0 +1,19 @@
+{
+    "name": "Budget Tracker",
+    "short_name": "Budget",
+    "description": "Personal budget and money management app",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#0f1714",
+    "theme_color": "#0f1714",
+    "icons": [
+        {
+            "src": "./icons/app-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
