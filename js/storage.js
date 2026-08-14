@@ -9,6 +9,210 @@
    Checking ↔ General Savings ↔ Savings Goals
    ========================================================= */
 
+/*
+    DEFAULT CATEGORY LIBRARY (P2.6.1)
+
+    Single canonical definition of the official M-Wallet system
+    category/subcategory taxonomy. This is intentionally the only
+    place the default taxonomy is listed; BudgetStorage.getDefaultCategories()
+    stamps every entry with system: true and enabled: true, and
+    seedDefaultCategories() merges any missing default ids into
+    data.settings.categories without touching existing entries.
+*/
+const DEFAULT_CATEGORIES = [
+
+    { id: "housing", name: "Housing", subcategories: [
+        { id: "rent", name: "Rent" },
+        { id: "mortgage", name: "Mortgage" },
+        { id: "home-repairs", name: "Home Repairs" },
+        { id: "furniture", name: "Furniture" },
+        { id: "home-improvement", name: "Home Improvement" },
+        { id: "property-fees", name: "Property Fees" },
+        { id: "other-housing", name: "Other Housing" }
+    ] },
+
+    { id: "utilities", name: "Utilities", subcategories: [
+        { id: "electric", name: "Electric" },
+        { id: "water", name: "Water" },
+        { id: "gas", name: "Gas" },
+        { id: "internet", name: "Internet" },
+        { id: "phone", name: "Phone" },
+        { id: "trash", name: "Trash" },
+        { id: "sewer", name: "Sewer" },
+        { id: "other-utilities", name: "Other Utilities" }
+    ] },
+
+    { id: "groceries", name: "Groceries", subcategories: [
+        { id: "food", name: "Food" },
+        { id: "produce", name: "Produce" },
+        { id: "meat", name: "Meat" },
+        { id: "snacks", name: "Snacks" },
+        { id: "drinks", name: "Drinks" },
+        { id: "household-groceries", name: "Household Supplies" },
+        { id: "other-groceries", name: "Other Groceries" }
+    ] },
+
+    { id: "dining", name: "Dining", subcategories: [
+        { id: "restaurants", name: "Restaurants" },
+        { id: "fast-food", name: "Fast Food" },
+        { id: "coffee", name: "Coffee" },
+        { id: "delivery", name: "Food Delivery" },
+        { id: "bars", name: "Bars" },
+        { id: "other-dining", name: "Other Dining" }
+    ] },
+
+    { id: "transportation", name: "Transportation", subcategories: [
+        { id: "fuel", name: "Fuel" },
+        { id: "public-transit", name: "Public Transit" },
+        { id: "rideshare", name: "Rideshare" },
+        { id: "parking", name: "Parking" },
+        { id: "tolls", name: "Tolls" },
+        { id: "vehicle-maintenance", name: "Vehicle Maintenance" },
+        { id: "vehicle-repair", name: "Vehicle Repair" },
+        { id: "other-transportation", name: "Other Transportation" }
+    ] },
+
+    { id: "health", name: "Health", subcategories: [
+        { id: "doctor", name: "Doctor" },
+        { id: "pharmacy", name: "Pharmacy" },
+        { id: "dental", name: "Dental" },
+        { id: "vision", name: "Vision" },
+        { id: "therapy", name: "Therapy" },
+        { id: "medical-equipment", name: "Medical Equipment" },
+        { id: "hospital", name: "Hospital" },
+        { id: "other-health", name: "Other Health" }
+    ] },
+
+    { id: "pets", name: "Pets", subcategories: [
+        { id: "pet-food", name: "Food" },
+        { id: "vet", name: "Vet" },
+        { id: "pet-medication", name: "Medication" },
+        { id: "pet-supplies", name: "Supplies" },
+        { id: "grooming", name: "Grooming" },
+        { id: "boarding", name: "Boarding" },
+        { id: "other-pets", name: "Other Pets" }
+    ] },
+
+    { id: "shopping", name: "Shopping", subcategories: [
+        { id: "clothing", name: "Clothing" },
+        { id: "electronics", name: "Electronics" },
+        { id: "home-goods", name: "Home Goods" },
+        { id: "personal-items", name: "Personal Items" },
+        { id: "online-shopping", name: "Online Shopping" },
+        { id: "other-shopping", name: "Other Shopping" }
+    ] },
+
+    { id: "entertainment", name: "Entertainment", subcategories: [
+        { id: "movies", name: "Movies" },
+        { id: "gaming", name: "Gaming" },
+        { id: "streaming", name: "Streaming" },
+        { id: "hobbies", name: "Hobbies" },
+        { id: "nightlife", name: "Nightlife" },
+        { id: "other-entertainment", name: "Other Entertainment" }
+    ] },
+
+    { id: "personal-care", name: "Personal Care", subcategories: [
+        { id: "hair", name: "Hair" },
+        { id: "grooming", name: "Grooming" },
+        { id: "skincare", name: "Skincare" },
+        { id: "beauty", name: "Beauty" },
+        { id: "massage", name: "Massage" },
+        { id: "other-personal-care", name: "Other Personal Care" }
+    ] },
+
+    { id: "travel", name: "Travel", subcategories: [
+        { id: "lodging", name: "Lodging" },
+        { id: "flights", name: "Flights" },
+        { id: "train", name: "Train" },
+        { id: "rental-car", name: "Rental Car" },
+        { id: "travel-food", name: "Travel Food" },
+        { id: "travel-activities", name: "Activities" },
+        { id: "other-travel", name: "Other Travel" }
+    ] },
+
+    { id: "education", name: "Education", subcategories: [
+        { id: "tuition", name: "Tuition" },
+        { id: "books", name: "Books" },
+        { id: "courses", name: "Courses" },
+        { id: "supplies", name: "School Supplies" },
+        { id: "certifications", name: "Certifications" },
+        { id: "other-education", name: "Other Education" }
+    ] },
+
+    { id: "subscriptions", name: "Subscriptions", subcategories: [
+        { id: "streaming-subscription", name: "Streaming" },
+        { id: "software", name: "Software" },
+        { id: "membership", name: "Memberships" },
+        { id: "cloud-storage", name: "Cloud Storage" },
+        { id: "news-media", name: "News & Media" },
+        { id: "other-subscriptions", name: "Other Subscriptions" }
+    ] },
+
+    { id: "gifts", name: "Gifts", subcategories: [
+        { id: "birthday", name: "Birthday" },
+        { id: "holiday", name: "Holiday" },
+        { id: "charity", name: "Charity / Donations" },
+        { id: "personal-gifts", name: "Personal Gifts" },
+        { id: "other-gifts", name: "Other Gifts" }
+    ] },
+
+    { id: "tickets-events", name: "Tickets & Events", subcategories: [
+        { id: "concerts", name: "Concerts" },
+        { id: "festivals", name: "Festivals" },
+        { id: "sporting-events", name: "Sporting Events" },
+        { id: "theater", name: "Theater" },
+        { id: "conventions", name: "Conventions" },
+        { id: "event-tickets", name: "Other Event Tickets" }
+    ] },
+
+    { id: "debt", name: "Debt", subcategories: [
+        { id: "credit-card", name: "Credit Card" },
+        { id: "personal-loan", name: "Personal Loan" },
+        { id: "student-loan", name: "Student Loan" },
+        { id: "medical-debt", name: "Medical Debt" },
+        { id: "other-debt", name: "Other Debt" }
+    ] },
+
+    { id: "insurance", name: "Insurance", subcategories: [
+        { id: "auto-insurance", name: "Auto Insurance" },
+        { id: "health-insurance", name: "Health Insurance" },
+        { id: "renters-insurance", name: "Renters Insurance" },
+        { id: "home-insurance", name: "Home Insurance" },
+        { id: "life-insurance", name: "Life Insurance" },
+        { id: "other-insurance", name: "Other Insurance" }
+    ] },
+
+    { id: "taxes", name: "Taxes", subcategories: [
+        { id: "income-tax", name: "Income Tax" },
+        { id: "property-tax", name: "Property Tax" },
+        { id: "tax-preparation", name: "Tax Preparation" },
+        { id: "fees-penalties", name: "Fees & Penalties" },
+        { id: "other-taxes", name: "Other Taxes" }
+    ] },
+
+    { id: "fees", name: "Fees", subcategories: [
+        { id: "bank-fees", name: "Bank Fees" },
+        { id: "late-fees", name: "Late Fees" },
+        { id: "service-fees", name: "Service Fees" },
+        { id: "atm-fees", name: "ATM Fees" },
+        { id: "other-fees", name: "Other Fees" }
+    ] },
+
+    { id: "household", name: "Household", subcategories: [
+        { id: "cleaning-supplies", name: "Cleaning Supplies" },
+        { id: "paper-products", name: "Paper Products" },
+        { id: "tools", name: "Tools" },
+        { id: "household-maintenance", name: "Maintenance" },
+        { id: "other-household", name: "Other Household" }
+    ] },
+
+    { id: "other", name: "Other", subcategories: [
+        { id: "miscellaneous", name: "Miscellaneous" },
+        { id: "uncategorized", name: "Uncategorized" }
+    ] }
+
+];
+
 const BudgetStorage = {
 
     storageKey: "mWalletData",
@@ -609,6 +813,9 @@ const BudgetStorage = {
             migrations: {
 
                 savingsAccountV5:
+                    true,
+
+                categoriesV1:
                     true
 
             },
@@ -626,9 +833,8 @@ const BudgetStorage = {
                     "sunday",
 
                 /*
-                    P2.6.0: category configuration store.
-                    Predefined categories are seeded in P2.6.1;
-                    this phase only establishes the structure.
+                    P2.6.0 established the structure; P2.6.1 seeds
+                    it with the default system category library.
                 */
                 categories: {
 
@@ -636,7 +842,9 @@ const BudgetStorage = {
                         1,
 
                     list:
-                        []
+                        this.seedDefaultCategories(
+                            []
+                        )
 
                 }
 
@@ -1517,11 +1725,212 @@ const BudgetStorage = {
 
 
     /*
-        CATEGORY CONFIGURATION NORMALIZATION (P2.6.0)
+        DEFAULT CATEGORY LIBRARY ACCESSOR (P2.6.1)
+
+        Returns a fresh, deep clone of the canonical DEFAULT_CATEGORIES
+        taxonomy with system: true / enabled: true stamped on every
+        category and subcategory. Callers can never mutate the shared
+        constant through this accessor.
+    */
+    getDefaultCategories() {
+
+        return DEFAULT_CATEGORIES.map(
+            category => ({
+
+                id:
+                    category.id,
+
+                name:
+                    category.name,
+
+                system:
+                    true,
+
+                enabled:
+                    true,
+
+                subcategories:
+                    category.subcategories.map(
+                        subcategory => ({
+
+                            id:
+                                subcategory.id,
+
+                            name:
+                                subcategory.name,
+
+                            system:
+                                true,
+
+                            enabled:
+                                true
+
+                        })
+                    )
+
+            })
+        );
+
+    },
+
+
+    /*
+        DEFAULT CATEGORY SEEDING (P2.6.1)
+
+        Merges the default system library into an already-normalized
+        category list. Any default category/subcategory id that is
+        not yet present is appended as system: true, enabled: true.
+        Anything already present (custom categories, custom
+        subcategories, and any user enabled/disabled preference on a
+        system entry) is left completely untouched. Running this
+        repeatedly against its own output is a no-op, so seeding is
+        idempotent and safe to run on every normalization.
+    */
+    seedDefaultCategories(
+        list
+    ) {
+
+        const merged =
+            list.map(
+                category => ({
+
+                    ...category,
+
+                    subcategories:
+                        category.subcategories.map(
+                            subcategory => (
+                                { ...subcategory }
+                            )
+                        )
+
+                })
+            );
+
+
+        this.getDefaultCategories().forEach(
+            defaultCategory => {
+
+                const nameKey =
+                    defaultCategory.name.toLowerCase();
+
+                let existing =
+                    merged.find(
+                        category =>
+                            category.id ===
+                            defaultCategory.id
+                    );
+
+
+                if (
+                    !existing
+                ) {
+
+                    // A different category already owns this name.
+                    const nameTaken =
+                        merged.some(
+                            category =>
+                                category.name.toLowerCase() ===
+                                nameKey
+                        );
+
+
+                    if (
+                        nameTaken
+                    ) {
+                        return;
+                    }
+
+
+                    existing = {
+
+                        id:
+                            defaultCategory.id,
+
+                        name:
+                            defaultCategory.name,
+
+                        system:
+                            true,
+
+                        enabled:
+                            true,
+
+                        subcategories:
+                            []
+
+                    };
+
+                    merged.push(
+                        existing
+                    );
+
+                }
+
+
+                defaultCategory.subcategories.forEach(
+                    defaultSubcategory => {
+
+                        const subNameKey =
+                            defaultSubcategory.name.toLowerCase();
+
+                        const hasSubcategory =
+                            existing.subcategories.some(
+                                subcategory =>
+                                    subcategory.id ===
+                                        defaultSubcategory.id ||
+                                    subcategory.name.toLowerCase() ===
+                                        subNameKey
+                            );
+
+
+                        if (
+                            !hasSubcategory
+                        ) {
+
+                            existing.subcategories.push(
+                                {
+
+                                    id:
+                                        defaultSubcategory.id,
+
+                                    name:
+                                        defaultSubcategory.name,
+
+                                    system:
+                                        true,
+
+                                    enabled:
+                                        true
+
+                                }
+                            );
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+
+        return merged;
+
+    },
+
+
+    /*
+        CATEGORY CONFIGURATION NORMALIZATION (P2.6.0 / P2.6.1)
 
         Normalizes data.settings.categories only. It never
         touches expense/bill/transaction category strings —
         legacy resolution is a separate, later phase (P2.6.2).
+
+        As of P2.6.1, this also seeds the default system category
+        library (seedDefaultCategories) after normalizing whatever
+        was already persisted, so defaults can be safely introduced
+        without ever overwriting custom categories, custom
+        subcategories, or a user's enabled/disabled preferences.
     */
     normalizeCategoryConfig(
         config
@@ -1614,7 +2023,10 @@ const BudgetStorage = {
                     source.version
                 ) || 1,
 
-            list
+            list:
+                this.seedDefaultCategories(
+                    list
+                )
 
         };
 
