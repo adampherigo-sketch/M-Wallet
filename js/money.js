@@ -4153,13 +4153,16 @@ function deleteIncomeRecord(
     ) {
 
         const monthKey =
-            income.date
-                ? income.date.slice(
-                    0,
-                    7
-                )
-                : storage
-                    .getSelectedMonthKey();
+            income.legacyMonthKey ||
+            (
+                income.date
+                    ? income.date.slice(
+                        0,
+                        7
+                    )
+                    : storage
+                        .getSelectedMonthKey()
+            );
 
 
         deleted =
