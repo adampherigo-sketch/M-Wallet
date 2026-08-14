@@ -2890,11 +2890,32 @@ function closeMoneyModal() {
 
     if (
         lastFocusedElement &&
+        lastFocusedElement.isConnected &&
         typeof lastFocusedElement.focus ===
             "function"
     ) {
 
         lastFocusedElement.focus();
+
+    }
+
+    else {
+
+        const fallbackFocus =
+            document.querySelector(
+                '[data-money-action]'
+            );
+
+
+        if (
+            fallbackFocus &&
+            typeof fallbackFocus.focus ===
+                "function"
+        ) {
+
+            fallbackFocus.focus();
+
+        }
 
     }
 
@@ -5524,19 +5545,96 @@ document.addEventListener(
    53. ESCAPE KEY
    ========================================================= */
 
+function getMoneyModalFocusableElements() {
+
+    if (!moneyModal) {
+
+        return [];
+
+    }
+
+
+    const selectors = [
+
+        'button:not([disabled])',
+
+        'input:not([disabled])',
+
+        'select:not([disabled])',
+
+        'textarea:not([disabled])',
+
+        'a[href]',
+
+        '[tabindex]:not([tabindex="-1"])'
+
+    ].join(",");
+
+
+    return Array.from(
+        moneyModal.querySelectorAll(
+            selectors
+        )
+    ).filter(
+        element => {
+
+            if (
+                element.hidden
+            ) {
+
+                return false;
+
+            }
+
+
+            if (
+                element.closest(
+                    "[hidden]"
+                )
+            ) {
+
+                return false;
+
+            }
+
+
+            if (
+                element.getAttribute(
+                    "aria-hidden"
+                ) ===
+                "true"
+            ) {
+
+                return false;
+
+            }
+
+
+            if (
+                element.closest(
+                    '[aria-hidden="true"]'
+                )
+            ) {
+
+                return false;
+
+            }
+
+
+            return (
+                element.offsetWidth > 0 ||
+                element.offsetHeight > 0 ||
+                element.getClientRects().length > 0
+            );
+
+        }
+    );
+
+}
+
 document.addEventListener(
     "keydown",
     event => {
-
-        if (
-            event.key !==
-            "Escape"
-        ) {
-
-            return;
-
-        }
-
 
         if (
             !moneyModal ||
@@ -5552,7 +5650,102 @@ document.addEventListener(
         }
 
 
-        closeMoneyModal();
+        if (
+            event.key ===
+            "Escape"
+        ) {
+
+            event.preventDefault();
+
+
+            closeMoneyModal();
+
+
+            return;
+
+        }
+
+
+        if (
+            event.key !==
+            "Tab"
+        ) {
+
+            return;
+
+        }
+
+
+        const focusableElements =
+            getMoneyModalFocusableElements();
+
+
+        if (
+            focusableElements.length ===
+            0
+        ) {
+
+            event.preventDefault();
+
+
+            return;
+
+        }
+
+
+        const firstElement =
+            focusableElements[0];
+
+
+        const lastElement =
+            focusableElements[
+                focusableElements.length - 1
+            ];
+
+
+        const activeElement =
+            document.activeElement;
+
+
+        if (
+            event.shiftKey
+        ) {
+
+            if (
+                activeElement ===
+                    firstElement ||
+                !moneyModal.contains(
+                    activeElement
+                )
+            ) {
+
+                event.preventDefault();
+
+
+                lastElement.focus();
+
+            }
+
+
+            return;
+
+        }
+
+
+        if (
+            activeElement ===
+                lastElement ||
+            !moneyModal.contains(
+                activeElement
+            )
+        ) {
+
+            event.preventDefault();
+
+
+            firstElement.focus();
+
+        }
 
     }
 );
