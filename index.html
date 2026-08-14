@@ -36,43 +36,36 @@
         href="./manifest.json"
     >
 
-
     <meta
         name="theme-color"
         content="#0f1714"
     >
-
 
     <meta
         name="mobile-web-app-capable"
         content="yes"
     >
 
-
     <meta
         name="apple-mobile-web-app-capable"
         content="yes"
     >
-
 
     <meta
         name="apple-mobile-web-app-status-bar-style"
         content="black-translucent"
     >
 
-
     <meta
         name="apple-mobile-web-app-title"
         content="M-Wallet"
     >
-
 
     <link
         rel="apple-touch-icon"
         sizes="180x180"
         href="./icons/apple-touch-icon.png"
     >
-
 
     <link
         rel="icon"
@@ -88,7 +81,7 @@
 
     <link
         rel="stylesheet"
-        href="./css/style.css?v=3"
+        href="./css/style.css?v=4"
     >
 
 </head>
@@ -104,7 +97,6 @@
     <div class="app">
 
 
-
         <!-- ========================================
              TOP HEADER
         ========================================= -->
@@ -116,8 +108,6 @@
 
                 <div class="header-month-area">
 
-
-                    <!-- M-Wallet Logo + Name -->
 
                     <div class="header-brand">
 
@@ -134,11 +124,7 @@
                     </div>
 
 
-
-                    <!-- Month / Year Navigation -->
-
                     <div class="month-navigation">
-
 
                         <button
                             class="month-arrow"
@@ -148,7 +134,6 @@
                         >
                             ‹
                         </button>
-
 
 
                         <select
@@ -173,14 +158,12 @@
                         </select>
 
 
-
                         <select
                             id="year-select"
                             class="year-select"
                             aria-label="Select year"
                         >
                         </select>
-
 
 
                         <button
@@ -193,7 +176,6 @@
                         </button>
 
 
-
                         <button
                             class="today-button"
                             id="today-month"
@@ -202,12 +184,8 @@
                             Today
                         </button>
 
-
                     </div>
 
-
-
-                    <!-- Hidden Month Heading Used by JavaScript -->
 
                     <h1
                         id="current-month"
@@ -221,9 +199,6 @@
 
                 </div>
 
-
-
-                <!-- Settings -->
 
                 <button
                     class="header-button"
@@ -242,13 +217,11 @@
 
 
 
-
         <!-- ========================================
              MAIN APP CONTENT
         ========================================= -->
 
         <main class="app-content">
-
 
 
             <!-- ====================================
@@ -263,7 +236,6 @@
 
 
                 <div class="page-heading">
-
 
                     <div>
 
@@ -286,9 +258,7 @@
                         + Manage Money
                     </button>
 
-
                 </div>
-
 
 
 
@@ -322,7 +292,6 @@
                         </div>
 
 
-
                         <div>
 
                             <span>
@@ -342,11 +311,9 @@
 
 
 
-
                 <!-- Monthly Summary -->
 
                 <section class="dashboard-section">
-
 
                     <div class="section-header">
 
@@ -355,7 +322,6 @@
                         </h3>
 
                     </div>
-
 
 
                     <div class="summary-grid">
@@ -374,7 +340,6 @@
                         </article>
 
 
-
                         <article class="summary-card">
 
                             <span>
@@ -388,7 +353,6 @@
                         </article>
 
 
-
                         <article class="summary-card">
 
                             <span>
@@ -400,7 +364,6 @@
                             </strong>
 
                         </article>
-
 
 
                         <article class="summary-card">
@@ -419,7 +382,6 @@
                     </div>
 
                 </section>
-
 
 
 
@@ -448,7 +410,6 @@
                     </div>
 
 
-
                     <div
                         class="list-container"
                         id="upcoming-bills"
@@ -462,7 +423,6 @@
 
 
                 </section>
-
 
 
 
@@ -480,7 +440,6 @@
                     </div>
 
 
-
                     <article class="info-card">
 
 
@@ -490,11 +449,6 @@
                                 Expected Date
                             </span>
 
-                            <!--
-                                Legacy ID kept temporarily so the
-                                current app.js does not break.
-                            -->
-
                             <strong id="next-pay-date">
                                 —
                             </strong>
@@ -502,17 +456,11 @@
                         </div>
 
 
-
                         <div>
 
                             <span>
                                 Expected Amount
                             </span>
-
-                            <!--
-                                Legacy ID kept temporarily so the
-                                current app.js does not break.
-                            -->
 
                             <strong id="next-pay-amount">
                                 $0.00
@@ -525,7 +473,6 @@
 
 
                 </section>
-
 
 
 
@@ -554,7 +501,6 @@
                     </div>
 
 
-
                     <div
                         class="list-container"
                         id="savings-overview"
@@ -574,8 +520,6 @@
 
 
 
-
-
             <!-- ====================================
                  MONEY MANAGEMENT PAGE
             ===================================== -->
@@ -589,7 +533,6 @@
 
                 <div class="page-heading">
 
-
                     <div>
 
                         <h2>
@@ -602,9 +545,7 @@
 
                     </div>
 
-
                 </div>
-
 
 
 
@@ -630,7 +571,6 @@
 
 
                     </div>
-
 
 
                     <div class="money-action-grid">
@@ -679,7 +619,6 @@
 
 
 
-
                 <!-- Bills & Spending -->
 
                 <section class="money-management-section">
@@ -704,9 +643,7 @@
                     </div>
 
 
-
                     <div class="money-action-grid">
-
 
 
                         <button
@@ -745,8 +682,6 @@
                         </button>
 
 
-
-
                         <button
                             type="button"
                             class="money-action-card"
@@ -768,7 +703,7 @@
 
 
                                 <small>
-                                    Record everyday spending.
+                                    Record everyday spending, merchants, categories, and recurring expenses.
                                 </small>
 
 
@@ -781,8 +716,6 @@
 
 
                         </button>
-
-
 
 
                         <button
@@ -828,7 +761,6 @@
 
 
 
-
                 <!-- Savings -->
 
                 <section class="money-management-section">
@@ -853,9 +785,7 @@
                     </div>
 
 
-
                     <div class="money-action-grid">
-
 
 
                         <button
@@ -892,8 +822,6 @@
 
 
                         </button>
-
-
 
 
                         <button
@@ -939,7 +867,6 @@
 
 
 
-
                 <!-- Budget Setup -->
 
                 <section class="money-management-section">
@@ -964,9 +891,7 @@
                     </div>
 
 
-
                     <div class="money-action-grid">
-
 
 
                         <button
@@ -1015,8 +940,6 @@
 
 
 
-
-
             <!-- ====================================
                  MONTHLY BUDGET PAGE
             ===================================== -->
@@ -1057,7 +980,6 @@
 
 
 
-
                 <!-- Starting Balance -->
 
                 <section class="budget-block">
@@ -1083,7 +1005,6 @@
                     </div>
 
 
-
                     <div class="amount-display">
 
 
@@ -1101,7 +1022,6 @@
 
 
                 </section>
-
 
 
 
@@ -1139,9 +1059,6 @@
                     </div>
 
 
-
-                    <!-- Income Totals -->
-
                     <div class="summary-grid">
 
 
@@ -1156,7 +1073,6 @@
                             </strong>
 
                         </article>
-
 
 
                         <article class="summary-card">
@@ -1175,9 +1091,6 @@
                     </div>
 
 
-
-                    <!-- Income List -->
-
                     <div
                         class="table-container"
                         id="income-list"
@@ -1191,7 +1104,6 @@
 
 
                 </section>
-
 
 
 
@@ -1221,7 +1133,6 @@
                     </div>
 
 
-
                     <div
                         class="table-container"
                         id="bill-list"
@@ -1238,8 +1149,9 @@
 
 
 
-
-                <!-- Expenses -->
+                <!-- ====================================
+                     P2.2 EXPENSE MANAGEMENT
+                ===================================== -->
 
                 <section class="budget-block">
 
@@ -1247,9 +1159,17 @@
                     <div class="section-header">
 
 
-                        <h3>
-                            Monthly Expenses
-                        </h3>
+                        <div>
+
+                            <h3>
+                                Monthly Expenses
+                            </h3>
+
+                            <p>
+                                Track one-time and recurring spending for this month.
+                            </p>
+
+                        </div>
 
 
                         <button
@@ -1265,6 +1185,43 @@
                     </div>
 
 
+
+                    <!-- Expense Totals -->
+
+                    <div class="summary-grid">
+
+
+                        <article class="summary-card">
+
+                            <span>
+                                Monthly Expenses
+                            </span>
+
+                            <strong id="monthly-expense-total">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                        <article class="summary-card">
+
+                            <span>
+                                Yearly Expenses
+                            </span>
+
+                            <strong id="yearly-expense-total">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                    </div>
+
+
+
+                    <!-- Expense List -->
 
                     <div
                         class="table-container"
@@ -1282,8 +1239,6 @@
 
 
             </section>
-
-
 
 
 
@@ -1327,7 +1282,6 @@
                 </div>
 
 
-
                 <div
                     class="transaction-list"
                     id="transaction-list"
@@ -1341,8 +1295,6 @@
 
 
             </section>
-
-
 
 
 
@@ -1371,7 +1323,6 @@
                         </p>
 
                     </div>
-
 
 
                     <div class="page-actions">
@@ -1403,9 +1354,6 @@
 
 
 
-
-                <!-- Total Savings -->
-
                 <section class="balance-card">
 
 
@@ -1423,9 +1371,6 @@
 
 
 
-
-                <!-- Savings Goals -->
-
                 <section class="dashboard-section">
 
 
@@ -1436,7 +1381,6 @@
                         </h3>
 
                     </div>
-
 
 
                     <div
@@ -1455,8 +1399,6 @@
 
 
             </section>
-
-
 
 
 
@@ -1490,7 +1432,6 @@
                 </div>
 
 
-
                 <section class="dashboard-section">
 
 
@@ -1501,7 +1442,6 @@
                         </h3>
 
                     </div>
-
 
 
                     <div
@@ -1516,8 +1456,6 @@
 
 
             </section>
-
-
 
 
 
@@ -1552,9 +1490,6 @@
 
 
 
-
-                <!-- App Installation -->
-
                 <section class="settings-section">
 
 
@@ -1569,7 +1504,6 @@
                         </p>
 
                     </div>
-
 
 
                     <button
@@ -1596,7 +1530,6 @@
                         </span>
 
                     </button>
-
 
 
                     <div
@@ -1628,9 +1561,6 @@
 
 
 
-
-                <!-- Budget Settings -->
-
                 <section class="settings-section">
 
 
@@ -1641,7 +1571,6 @@
                         </h3>
 
                     </div>
-
 
 
                     <button
@@ -1682,8 +1611,6 @@
 
 
 
-
-
         <!-- ========================================
              BOTTOM NAVIGATION
         ========================================= -->
@@ -1693,8 +1620,6 @@
             aria-label="Main navigation"
         >
 
-
-            <!-- Home -->
 
             <button
                 class="nav-button active"
@@ -1713,10 +1638,6 @@
             </button>
 
 
-
-
-            <!-- Budget -->
-
             <button
                 class="nav-button"
                 type="button"
@@ -1733,10 +1654,6 @@
 
             </button>
 
-
-
-
-            <!-- Money -->
 
             <button
                 class="nav-button"
@@ -1755,10 +1672,6 @@
             </button>
 
 
-
-
-            <!-- Activity -->
-
             <button
                 class="nav-button"
                 type="button"
@@ -1776,10 +1689,6 @@
             </button>
 
 
-
-
-            <!-- Savings -->
-
             <button
                 class="nav-button"
                 type="button"
@@ -1796,10 +1705,6 @@
 
             </button>
 
-
-
-
-            <!-- Reports -->
 
             <button
                 class="nav-button"
@@ -1825,8 +1730,6 @@
 
 
 
-
-
     <!-- ========================================
          UNIVERSAL MONEY POPUP
     ========================================= -->
@@ -1846,7 +1749,6 @@
         </div>
 
 
-
         <div
             class="money-modal-content"
             role="dialog"
@@ -1854,9 +1756,6 @@
             aria-labelledby="money-modal-title"
         >
 
-
-
-            <!-- Popup Header -->
 
             <div class="money-modal-header">
 
@@ -1877,7 +1776,6 @@
                 </div>
 
 
-
                 <button
                     type="button"
                     class="money-modal-close"
@@ -1893,10 +1791,6 @@
             </div>
 
 
-
-
-            <!-- Universal Form -->
-
             <form
                 id="money-modal-form"
                 autocomplete="off"
@@ -1910,8 +1804,6 @@
                 </div>
 
 
-
-
                 <p
                     class="money-modal-status"
                     id="money-modal-status"
@@ -1920,10 +1812,7 @@
                 </p>
 
 
-
-
                 <div class="money-modal-actions">
-
 
 
                     <button
@@ -1933,7 +1822,6 @@
                     >
                         ↶ Undo
                     </button>
-
 
 
                     <button
@@ -1958,21 +1846,20 @@
 
 
 
-
-
     <!-- ========================================
          JAVASCRIPT
+         P2.2 CACHE VERSION
     ========================================= -->
 
-    <script src="./js/storage.js?v=3"></script>
+    <script src="./js/storage.js?v=4"></script>
 
-    <script src="./js/nav.js?v=3"></script>
+    <script src="./js/nav.js?v=4"></script>
 
-    <script src="./js/app.js?v=3"></script>
+    <script src="./js/app.js?v=4"></script>
 
-    <script src="./js/money.js?v=3"></script>
+    <script src="./js/money.js?v=4"></script>
 
-    <script src="./js/pwa.js?v=3"></script>
+    <script src="./js/pwa.js?v=4"></script>
 
 
 </body>

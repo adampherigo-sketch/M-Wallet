@@ -1,6 +1,7 @@
 /* =========================================================
    M-WALLET
    Main Theme + Layout + PWA Support
+   Phase 2.2 - Expense Management
    ========================================================= */
 
 
@@ -642,6 +643,16 @@ img {
     gap: 12px;
 }
 
+.budget-block .summary-grid {
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    margin-bottom: 18px;
+}
+
 .summary-card {
     min-width: 0;
 
@@ -864,6 +875,17 @@ img {
    18. TABLES
    ========================================================= */
 
+.table-container {
+    max-width: 100%;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    -webkit-overflow-scrolling: touch;
+
+    border-radius: var(--radius-sm);
+}
+
 table {
     width: 100%;
 
@@ -882,6 +904,8 @@ td {
 
     text-align: left;
 
+    vertical-align: middle;
+
     border-bottom: 1px solid var(--border);
 }
 
@@ -892,6 +916,8 @@ th {
     text-transform: uppercase;
 
     letter-spacing: 0.05em;
+
+    white-space: nowrap;
 }
 
 td {
@@ -906,9 +932,105 @@ tbody tr:hover {
     background: var(--green-soft);
 }
 
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
 
 /* =========================================================
-   19. TRANSACTION ITEMS
+   19. P2.2 TABLE DETAILS
+   ========================================================= */
+
+#income-list table {
+    min-width: 760px;
+}
+
+#expense-list table {
+    min-width: 1050px;
+}
+
+.table-note {
+    max-width: 230px;
+
+    margin-top: 4px;
+
+    color: var(--muted);
+
+    font-size: 0.73rem;
+    font-weight: 500;
+    line-height: 1.35;
+
+    white-space: normal;
+}
+
+.income-actions,
+.expense-actions {
+    display: flex;
+    align-items: center;
+
+    gap: 6px;
+
+    flex-wrap: nowrap;
+
+    white-space: nowrap;
+}
+
+.income-actions .text-button,
+.expense-actions .text-button {
+    min-height: 34px;
+
+    padding: 6px 10px;
+
+    border: 1px solid transparent;
+    border-radius: 999px;
+
+    background: var(--green-soft);
+
+    color: var(--green);
+
+    font-size: 0.76rem;
+    font-weight: 750;
+}
+
+.income-actions .text-button:hover,
+.expense-actions .text-button:hover {
+    border-color: var(--green-light);
+
+    background: var(--green-light);
+
+    color: var(--green-dark);
+
+    transform: translateY(-1px);
+}
+
+.income-actions .text-button.money-negative,
+.expense-actions .text-button.money-negative {
+    border-color: rgba(179, 66, 66, 0.08);
+
+    background: var(--danger-soft);
+
+    color: var(--danger) !important;
+}
+
+.income-actions .text-button.money-negative:hover,
+.expense-actions .text-button.money-negative:hover {
+    border-color: rgba(179, 66, 66, 0.22);
+
+    background: #f2cccc;
+
+    color: var(--danger-dark) !important;
+}
+
+#income-list td:last-child,
+#expense-list td:last-child {
+    width: 1%;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   20. TRANSACTION ITEMS
    ========================================================= */
 
 .transaction-item {
@@ -944,6 +1066,10 @@ tbody tr:hover {
     font-weight: 800;
 }
 
+.transaction-info {
+    min-width: 0;
+}
+
 .transaction-info strong {
     display: block;
 
@@ -953,13 +1079,18 @@ tbody tr:hover {
 }
 
 .transaction-info span {
+    display: block;
+
     color: var(--muted);
 
     font-size: 0.78rem;
+    line-height: 1.4;
 }
 
 .transaction-amount {
     font-weight: 750;
+
+    white-space: nowrap;
 }
 
 .transaction-amount.income {
@@ -972,7 +1103,7 @@ tbody tr:hover {
 
 
 /* =========================================================
-   20. SAVINGS GOALS
+   21. SAVINGS GOALS
    ========================================================= */
 
 .savings-goal-card {
@@ -1028,7 +1159,7 @@ tbody tr:hover {
 
 
 /* =========================================================
-   21. MONEY MANAGEMENT
+   22. MONEY MANAGEMENT
    ========================================================= */
 
 .money-management-section {
@@ -1171,7 +1302,7 @@ tbody tr:hover {
 
 
 /* =========================================================
-   22. MONEY MODAL
+   23. MONEY MODAL
    ========================================================= */
 
 .money-modal {
@@ -1320,7 +1451,7 @@ tbody tr:hover {
 
 
 /* =========================================================
-   23. FORMS
+   24. FORMS
    ========================================================= */
 
 #money-modal-form {
@@ -1442,7 +1573,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   24. MONEY INPUT
+   25. MONEY INPUT
    ========================================================= */
 
 .money-input-wrapper {
@@ -1470,7 +1601,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   25. CHECKBOX
+   26. CHECKBOX
    ========================================================= */
 
 .form-group.checkbox,
@@ -1510,7 +1641,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   26. MODAL STATUS / ACTIONS
+   27. MODAL STATUS / ACTIONS
    ========================================================= */
 
 .money-modal-status {
@@ -1594,7 +1725,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   27. REPORTS
+   28. REPORTS
    ========================================================= */
 
 .chart-placeholder {
@@ -1615,7 +1746,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   28. SETTINGS
+   29. SETTINGS
    ========================================================= */
 
 .settings-section {
@@ -1729,7 +1860,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   29. PWA INSTALL
+   30. PWA INSTALL
    ========================================================= */
 
 .install-app-button {
@@ -1805,7 +1936,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   30. BOTTOM NAVIGATION
+   31. BOTTOM NAVIGATION
    ========================================================= */
 
 .bottom-nav {
@@ -1921,7 +2052,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   31. MONEY COLORS
+   32. MONEY COLORS
    ========================================================= */
 
 .money-positive {
@@ -1946,11 +2077,12 @@ input[type="date"] {
 
 
 /* =========================================================
-   32. SCROLLBAR
+   33. SCROLLBAR
    ========================================================= */
 
 ::-webkit-scrollbar {
     width: 9px;
+    height: 9px;
 }
 
 ::-webkit-scrollbar-track {
@@ -1970,7 +2102,7 @@ input[type="date"] {
 
 
 /* =========================================================
-   33. ACCESSIBILITY
+   34. ACCESSIBILITY
    ========================================================= */
 
 button:focus-visible,
@@ -1986,7 +2118,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   34. TABLET
+   35. TABLET
    ========================================================= */
 
 @media (max-width: 800px) {
@@ -2003,7 +2135,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   35. MOBILE
+   36. MOBILE
    ========================================================= */
 
 @media (max-width: 600px) {
@@ -2127,8 +2259,13 @@ textarea:focus-visible {
 
     /* Summary */
 
-    .summary-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .summary-grid,
+    .budget-block .summary-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
     }
 
 
@@ -2152,6 +2289,10 @@ textarea:focus-visible {
     /* Tables */
 
     .table-container {
+        width: calc(100% + 4px);
+
+        margin-right: -4px;
+
         overflow-x: auto;
 
         -webkit-overflow-scrolling: touch;
@@ -2159,6 +2300,49 @@ textarea:focus-visible {
 
     table {
         min-width: 620px;
+    }
+
+    #income-list table {
+        min-width: 760px;
+    }
+
+    #expense-list table {
+        min-width: 1050px;
+    }
+
+    th,
+    td {
+        padding: 12px 10px;
+    }
+
+    .income-actions .text-button,
+    .expense-actions .text-button {
+        min-height: 38px;
+
+        padding: 7px 11px;
+
+        font-size: 0.78rem;
+    }
+
+    .table-note {
+        max-width: 200px;
+    }
+
+
+    /* Transaction Activity */
+
+    .transaction-item {
+        grid-template-columns:
+            auto
+            minmax(0, 1fr)
+            auto;
+
+        gap: 11px;
+    }
+
+    .transaction-info strong,
+    .transaction-info span {
+        overflow-wrap: anywhere;
     }
 
 
@@ -2253,7 +2437,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   36. EXTRA SMALL PHONES
+   37. EXTRA SMALL PHONES
    ========================================================= */
 
 @media (max-width: 390px) {
@@ -2319,7 +2503,8 @@ textarea:focus-visible {
         flex-basis: 34px;
     }
 
-    .summary-grid {
+    .summary-grid,
+    .budget-block .summary-grid {
         grid-template-columns: 1fr;
     }
 
@@ -2370,7 +2555,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   37. DESKTOP
+   38. DESKTOP
    ========================================================= */
 
 @media (min-width: 1000px) {
@@ -2393,7 +2578,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   38. STANDALONE PWA
+   39. STANDALONE PWA
    ========================================================= */
 
 @media (display-mode: standalone) {
@@ -2416,7 +2601,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   39. IOS SUPPORT
+   40. IOS SUPPORT
    ========================================================= */
 
 @supports (-webkit-touch-callout: none) {
@@ -2430,7 +2615,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   40. REDUCED MOTION
+   41. REDUCED MOTION
    ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
@@ -2447,3 +2632,8 @@ textarea:focus-visible {
     }
 
 }
+
+
+/* =========================================================
+   END STYLE.CSS
+   ========================================================= */

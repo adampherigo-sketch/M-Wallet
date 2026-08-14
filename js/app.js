@@ -2,6 +2,7 @@
    M-WALLET
    Main Application / Rendering
    app.js
+   Phase 2.2 - Expense Management
    ========================================================= */
 
 
@@ -64,7 +65,7 @@ const BudgetApp = {
 
 
         console.log(
-            "M-Wallet app loaded."
+            "M-Wallet app loaded - P2.2 Expense Management."
         );
 
     },
@@ -92,10 +93,6 @@ const BudgetApp = {
             );
 
 
-        /* -------------------------------------------------
-           MONTH CHANGED
-           ------------------------------------------------- */
-
         if (monthSelect) {
 
             monthSelect.addEventListener(
@@ -110,10 +107,6 @@ const BudgetApp = {
         }
 
 
-        /* -------------------------------------------------
-           YEAR CHANGED
-           ------------------------------------------------- */
-
         if (yearSelect) {
 
             yearSelect.addEventListener(
@@ -127,10 +120,6 @@ const BudgetApp = {
 
         }
 
-
-        /* -------------------------------------------------
-           PREVIOUS / NEXT / TODAY
-           ------------------------------------------------- */
 
         [
             "previous-month",
@@ -168,10 +157,6 @@ const BudgetApp = {
         });
 
 
-        /* -------------------------------------------------
-           MONEY SAVED
-           ------------------------------------------------- */
-
         document.addEventListener(
             "budget:money-saved",
             () => {
@@ -191,10 +176,6 @@ const BudgetApp = {
             }
         );
 
-
-        /* -------------------------------------------------
-           INCOME UPDATED / DELETED
-           ------------------------------------------------- */
 
         document.addEventListener(
             "mwallet:income-updated",
@@ -216,9 +197,25 @@ const BudgetApp = {
         );
 
 
-        /* -------------------------------------------------
-           MONTH CHANGED EVENTS
-           ------------------------------------------------- */
+        document.addEventListener(
+            "mwallet:expense-updated",
+            () => {
+
+                this.refresh();
+
+            }
+        );
+
+
+        document.addEventListener(
+            "mwallet:expense-deleted",
+            () => {
+
+                this.refresh();
+
+            }
+        );
+
 
         document.addEventListener(
             "budget:month-changed",
@@ -239,10 +236,6 @@ const BudgetApp = {
             }
         );
 
-
-        /* -------------------------------------------------
-           ANOTHER TAB CHANGED STORAGE
-           ------------------------------------------------- */
 
         window.addEventListener(
             "storage",
@@ -298,21 +291,17 @@ const BudgetApp = {
 
             this.updateCurrentMonthTitle();
 
-
             this.renderDashboard(
                 snapshot
             );
-
 
             this.renderBudget(
                 snapshot
             );
 
-
             this.renderTransactions(
                 snapshot
             );
-
 
             this.renderSavings(
                 snapshot
@@ -709,9 +698,7 @@ const BudgetApp = {
             income[0];
 
 
-        if (
-            !nextIncome
-        ) {
+        if (!nextIncome) {
 
             dateElement.textContent =
                 "—";
@@ -760,12 +747,14 @@ const BudgetApp = {
 
 
         const goals =
-            snapshot
-                .savingsGoals
-                .slice(
+            Array.isArray(
+                snapshot.savingsGoals
+            )
+                ? snapshot.savingsGoals.slice(
                     0,
                     3
-                );
+                )
+                : [];
 
 
         if (
@@ -851,9 +840,11 @@ const BudgetApp = {
         );
 
 
-        /* -------------------------------------------------
-           INCOME TOTALS
-           ------------------------------------------------- */
+        const selectedYear =
+            snapshot
+                .monthKey
+                .split("-")[0];
+
 
         const monthlyIncome =
             typeof storage
@@ -866,12 +857,6 @@ const BudgetApp = {
                     )
 
                 : 0;
-
-
-        const selectedYear =
-            snapshot
-                .monthKey
-                .split("-")[0];
 
 
         const yearlyIncome =
@@ -899,18 +884,56 @@ const BudgetApp = {
         );
 
 
+        const monthlyExpenses =
+            typeof storage
+                .getMonthlyExpenseTotal ===
+                "function"
+
+                ? storage
+                    .getMonthlyExpenseTotal(
+                        snapshot.monthKey
+                    )
+
+                : 0;
+
+
+        const yearlyExpenses =
+            typeof storage
+                .getYearlyExpenseTotal ===
+                "function"
+
+                ? storage
+                    .getYearlyExpenseTotal(
+                        selectedYear
+                    )
+
+                : 0;
+
+
+        this.setMoneyText(
+            "monthly-expense-total",
+            monthlyExpenses
+        );
+
+
+        this.setMoneyText(
+            "yearly-expense-total",
+            yearlyExpenses
+        );
+
+
         this.renderIncomeTable(
             snapshot.income || []
         );
 
 
         this.renderBillTable(
-            snapshot.bills
+            snapshot.bills || []
         );
 
 
         this.renderExpenseTable(
-            snapshot.expenses
+            snapshot.expenses || []
         );
 
     },
@@ -971,15 +994,10 @@ const BudgetApp = {
                     <tr>
 
                         <th>Income</th>
-
                         <th>Date</th>
-
                         <th>Type</th>
-
                         <th>Frequency</th>
-
                         <th>Amount</th>
-
                         <th>Actions</th>
 
                     </tr>
@@ -1063,11 +1081,6 @@ const BudgetApp = {
                                             data-income-edit="${this.escapeHTML(
                                                 incomeId
                                             )}"
-                                            aria-label="Edit ${this.escapeHTML(
-                                                item.name ||
-                                                item.source ||
-                                                "income"
-                                            )}"
                                         >
                                             Edit
                                         </button>
@@ -1078,11 +1091,6 @@ const BudgetApp = {
                                             class="text-button money-negative"
                                             data-income-delete="${this.escapeHTML(
                                                 incomeId
-                                            )}"
-                                            aria-label="Delete ${this.escapeHTML(
-                                                item.name ||
-                                                item.source ||
-                                                "income"
                                             )}"
                                         >
                                             Delete
@@ -1149,7 +1157,7 @@ const BudgetApp = {
             case "custom":
 
                 return this
-                    .formatCustomIncomeFrequency(
+                    .formatCustomFrequency(
                         income
                     );
 
@@ -1164,189 +1172,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       14. FORMAT CUSTOM INCOME FREQUENCY
-       ===================================================== */
-
-    formatCustomIncomeFrequency(income) {
-
-        const interval =
-            Number(
-                income.customInterval
-            ) || 1;
-
-
-        const unit =
-            income.customUnit ||
-            "months";
-
-
-        let label =
-            unit;
-
-
-        if (
-            interval === 1
-        ) {
-
-            label =
-                unit.endsWith("s")
-                    ? unit.slice(
-                        0,
-                        -1
-                    )
-                    : unit;
-
-        }
-
-
-        label =
-            label.charAt(0)
-                .toUpperCase() +
-            label.slice(1);
-
-
-        return (
-            `Every ${interval} ${label}`
-        );
-
-    },
-
-
-    /* =====================================================
-       15. BILL TABLE
-       ===================================================== */
-
-    renderBillTable(bills) {
-
-        const container =
-            document.getElementById(
-                "bill-list"
-            );
-
-
-        if (!container) {
-            return;
-        }
-
-
-        if (
-            !Array.isArray(bills) ||
-            bills.length === 0
-        ) {
-
-            container.innerHTML = `
-
-                <p class="empty-message">
-                    No bills added.
-                </p>
-
-            `;
-
-
-            return;
-
-        }
-
-
-        const sorted =
-            [...bills].sort(
-                (a, b) =>
-                    this.compareDates(
-                        a.dueDate,
-                        b.dueDate
-                    )
-            );
-
-
-        container.innerHTML = `
-
-            <table>
-
-                <thead>
-
-                    <tr>
-
-                        <th>Bill</th>
-
-                        <th>Due</th>
-
-                        <th>Category</th>
-
-                        <th>Amount</th>
-
-                        <th>Repeats</th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                    ${sorted.map(bill => `
-
-                        <tr>
-
-                            <td>
-
-                                ${this.escapeHTML(
-                                    bill.name
-                                )}
-
-                            </td>
-
-
-                            <td>
-
-                                ${this.formatDate(
-                                    bill.dueDate
-                                )}
-
-                            </td>
-
-
-                            <td>
-
-                                ${this.escapeHTML(
-                                    bill.category ||
-                                    "Other"
-                                )}
-
-                            </td>
-
-
-                            <td class="money-negative">
-
-                                ${this.formatCurrency(
-                                    bill.amount
-                                )}
-
-                            </td>
-
-
-                            <td>
-
-                                ${bill.recurring
-                                    ? "Yes"
-                                    : "No"}
-
-                            </td>
-
-                        </tr>
-
-                    `).join("")}
-
-                </tbody>
-
-            </table>
-
-        `;
-
-    },
-
-
-    /* =====================================================
-       16. EXPENSE TABLE
+       14. EXPENSE TABLE - P2.2
        ===================================================== */
 
     renderExpenseTable(expenses) {
@@ -1400,14 +1226,13 @@ const BudgetApp = {
                     <tr>
 
                         <th>Expense</th>
-
                         <th>Date</th>
-
                         <th>Merchant</th>
-
                         <th>Category</th>
-
+                        <th>Subcategory</th>
+                        <th>Frequency</th>
                         <th>Amount</th>
+                        <th>Actions</th>
 
                     </tr>
 
@@ -1416,54 +1241,363 @@ const BudgetApp = {
 
                 <tbody>
 
-                    ${sorted.map(expense => `
+                    ${sorted.map(expense => {
+
+                        const expenseId =
+                            expense.sourceId ||
+                            expense.id ||
+                            "";
+
+
+                        return `
+
+                            <tr>
+
+                                <td>
+
+                                    <strong>
+                                        ${this.escapeHTML(
+                                            expense.name ||
+                                            "Expense"
+                                        )}
+                                    </strong>
+
+                                    ${
+                                        expense.notes
+                                            ? `
+                                                <div class="table-note">
+
+                                                    ${this.escapeHTML(
+                                                        expense.notes
+                                                    )}
+
+                                                </div>
+                                            `
+                                            : ""
+                                    }
+
+                                </td>
+
+
+                                <td>
+
+                                    ${this.formatDate(
+                                        expense.date
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    ${this.escapeHTML(
+                                        expense.merchant ||
+                                        "—"
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    ${this.escapeHTML(
+                                        expense.category ||
+                                        "Other"
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    ${this.escapeHTML(
+                                        expense.subcategory ||
+                                        "—"
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    ${this.escapeHTML(
+                                        this.formatExpenseFrequency(
+                                            expense
+                                        )
+                                    )}
+
+                                </td>
+
+
+                                <td class="money-negative">
+
+                                    ${this.formatCurrency(
+                                        expense.amount
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    <div class="expense-actions">
+
+                                        <button
+                                            type="button"
+                                            class="text-button"
+                                            data-expense-edit="${this.escapeHTML(
+                                                expenseId
+                                            )}"
+                                            aria-label="Edit ${this.escapeHTML(
+                                                expense.name ||
+                                                "expense"
+                                            )}"
+                                        >
+                                            Edit
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="text-button money-negative"
+                                            data-expense-delete="${this.escapeHTML(
+                                                expenseId
+                                            )}"
+                                            aria-label="Delete ${this.escapeHTML(
+                                                expense.name ||
+                                                "expense"
+                                            )}"
+                                        >
+                                            Delete
+                                        </button>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        `;
+
+                    }).join("")}
+
+                </tbody>
+
+            </table>
+
+        `;
+
+    },
+
+
+    /* =====================================================
+       15. FORMAT EXPENSE FREQUENCY
+       ===================================================== */
+
+    formatExpenseFrequency(expense) {
+
+        if (
+            !expense.recurring
+        ) {
+
+            return "One-time";
+
+        }
+
+
+        switch (
+            expense.frequency
+        ) {
+
+            case "weekly":
+
+                return "Weekly";
+
+
+            case "biweekly":
+
+                return "Biweekly";
+
+
+            case "monthly":
+
+                return "Monthly";
+
+
+            case "yearly":
+
+                return "Yearly";
+
+
+            case "custom":
+
+                return this
+                    .formatCustomFrequency(
+                        expense
+                    );
+
+
+            default:
+
+                return "Recurring";
+
+        }
+
+    },
+
+
+    /* =====================================================
+       16. FORMAT CUSTOM FREQUENCY
+       ===================================================== */
+
+    formatCustomFrequency(item) {
+
+        const interval =
+            Number(
+                item.customInterval
+            ) || 1;
+
+
+        const unit =
+            item.customUnit ||
+            "months";
+
+
+        let label =
+            unit;
+
+
+        if (
+            interval === 1 &&
+            label.endsWith("s")
+        ) {
+
+            label =
+                label.slice(
+                    0,
+                    -1
+                );
+
+        }
+
+
+        label =
+            label.charAt(0)
+                .toUpperCase() +
+            label.slice(1);
+
+
+        return (
+            `Every ${interval} ${label}`
+        );
+
+    },
+
+
+    /* =====================================================
+       17. BILL TABLE
+       ===================================================== */
+
+    renderBillTable(bills) {
+
+        const container =
+            document.getElementById(
+                "bill-list"
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        if (
+            !Array.isArray(bills) ||
+            bills.length === 0
+        ) {
+
+            container.innerHTML = `
+
+                <p class="empty-message">
+                    No bills added.
+                </p>
+
+            `;
+
+
+            return;
+
+        }
+
+
+        const sorted =
+            [...bills].sort(
+                (a, b) =>
+                    this.compareDates(
+                        a.dueDate,
+                        b.dueDate
+                    )
+            );
+
+
+        container.innerHTML = `
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>Bill</th>
+                        <th>Due</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Repeats</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    ${sorted.map(bill => `
 
                         <tr>
 
                             <td>
-
                                 ${this.escapeHTML(
-                                    expense.name
+                                    bill.name
                                 )}
-
                             </td>
 
 
                             <td>
-
                                 ${this.formatDate(
-                                    expense.date
+                                    bill.dueDate
                                 )}
-
                             </td>
 
 
                             <td>
-
                                 ${this.escapeHTML(
-                                    expense.merchant ||
-                                    "—"
-                                )}
-
-                            </td>
-
-
-                            <td>
-
-                                ${this.escapeHTML(
-                                    expense.category ||
+                                    bill.category ||
                                     "Other"
                                 )}
-
                             </td>
 
 
                             <td class="money-negative">
-
                                 ${this.formatCurrency(
-                                    expense.amount
+                                    bill.amount
                                 )}
+                            </td>
 
+
+                            <td>
+                                ${bill.recurring
+                                    ? "Yes"
+                                    : "No"}
                             </td>
 
                         </tr>
@@ -1480,7 +1614,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       17. TRANSACTION / ACTIVITY PAGE
+       18. TRANSACTION / ACTIVITY PAGE
        ===================================================== */
 
     renderTransactions(snapshot) {
@@ -1553,22 +1687,18 @@ const BudgetApp = {
                         <article class="transaction-item">
 
                             <div class="transaction-icon">
-
                                 ${icon}
-
                             </div>
 
 
                             <div class="transaction-info">
 
                                 <strong>
-
                                     ${this.escapeHTML(
                                         transaction.description ||
                                         transaction.name ||
                                         "Transaction"
                                     )}
-
                                 </strong>
 
 
@@ -1614,12 +1744,10 @@ const BudgetApp = {
 
 
     /* =====================================================
-       18. TRANSACTION ICON
+       19. TRANSACTION ICON
        ===================================================== */
 
-    getTransactionIcon(
-        transaction
-    ) {
+    getTransactionIcon(transaction) {
 
         switch (
             transaction.sourceType
@@ -1671,7 +1799,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       19. TRANSACTION SUBTITLE
+       20. TRANSACTION SUBTITLE
        ===================================================== */
 
     getTransactionSubtitle(
@@ -1690,7 +1818,7 @@ const BudgetApp = {
                 )
 
                 : (
-                    `${transaction.category || "Bill"} · Planned bill`
+                    `${transaction.category || "Bill"} · Planned Bill`
                 );
 
         }
@@ -1701,9 +1829,31 @@ const BudgetApp = {
             "income"
         ) {
 
-            return (
+            const parts =
+                [];
+
+
+            parts.push(
                 transaction.category ||
                 "Income"
+            );
+
+
+            if (
+                transaction.recurring
+            ) {
+
+                parts.push(
+                    this.formatIncomeFrequency(
+                        transaction
+                    )
+                );
+
+            }
+
+
+            return parts.join(
+                " · "
             );
 
         }
@@ -1750,8 +1900,35 @@ const BudgetApp = {
             }
 
 
+            if (
+                transaction.subcategory
+            ) {
+
+                parts.push(
+                    transaction.subcategory
+                );
+
+            }
+
+
+            if (
+                transaction.recurring
+            ) {
+
+                parts.push(
+                    this.formatExpenseFrequency(
+                        transaction
+                    )
+                );
+
+            }
+
+
             return (
-                parts.join(" · ") ||
+                parts.join(
+                    " · "
+                )
+                ||
                 "Expense"
             );
 
@@ -1767,7 +1944,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       20. SAVINGS PAGE
+       21. SAVINGS PAGE
        ===================================================== */
 
     renderSavings(snapshot) {
@@ -1794,11 +1971,14 @@ const BudgetApp = {
 
 
         const goals =
-            snapshot.savingsGoals;
+            Array.isArray(
+                snapshot.savingsGoals
+            )
+                ? snapshot.savingsGoals
+                : [];
 
 
         if (
-            !Array.isArray(goals) ||
             goals.length === 0
         ) {
 
@@ -1828,7 +2008,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       21. SAVINGS GOAL CARD
+       22. SAVINGS GOAL CARD
        ===================================================== */
 
     createSavingsGoalHTML(goal) {
@@ -1881,11 +2061,9 @@ const BudgetApp = {
                     <div>
 
                         <strong>
-
                             ${this.escapeHTML(
                                 goal.name
                             )}
-
                         </strong>
 
                     </div>
@@ -1931,7 +2109,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       22. CALCULATE OVERALL SAVINGS
+       23. CALCULATE OVERALL SAVINGS
        ===================================================== */
 
     calculateOverallSavings() {
@@ -2021,7 +2199,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       23. FORMAT CURRENCY
+       24. FORMAT CURRENCY
        ===================================================== */
 
     formatCurrency(value) {
@@ -2084,7 +2262,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       24. FORMAT SIGNED CURRENCY
+       25. FORMAT SIGNED CURRENCY
        ===================================================== */
 
     formatSignedCurrency(value) {
@@ -2117,7 +2295,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       25. FORMAT DATE
+       26. FORMAT DATE
        ===================================================== */
 
     formatDate(dateValue) {
@@ -2194,7 +2372,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       26. DATE COMPARISON
+       27. DATE COMPARISON
        ===================================================== */
 
     compareDates(
@@ -2238,7 +2416,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       27. TODAY KEY
+       28. TODAY KEY
        ===================================================== */
 
     getTodayKey() {
@@ -2279,7 +2457,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       28. SET MONEY ELEMENT
+       29. SET MONEY ELEMENT
        ===================================================== */
 
     setMoneyText(
@@ -2307,7 +2485,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       29. ESCAPE HTML
+       30. ESCAPE HTML
        ===================================================== */
 
     escapeHTML(value) {
@@ -2345,7 +2523,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       30. SETTINGS ACTIONS
+       31. SETTINGS ACTIONS
        ===================================================== */
 
     bindSettingsActions() {
@@ -2397,7 +2575,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       31. EXPORT M-WALLET DATA
+       32. EXPORT M-WALLET DATA
        ===================================================== */
 
     exportBudgetData() {
@@ -2466,7 +2644,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       32. RESET M-WALLET DATA
+       33. RESET M-WALLET DATA
        ===================================================== */
 
     resetBudgetData() {
@@ -2506,7 +2684,7 @@ const BudgetApp = {
 
 
 /* =========================================================
-   33. EXPOSE APP GLOBALLY
+   34. EXPOSE APP GLOBALLY
    ========================================================= */
 
 window.BudgetApp =
@@ -2518,7 +2696,7 @@ window.MWalletApp =
 
 
 /* =========================================================
-   34. START APP
+   35. START APP
    ========================================================= */
 
 if (

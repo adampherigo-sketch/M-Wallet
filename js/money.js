@@ -2,6 +2,7 @@
    M-WALLET
    Money Management + Universal Popup
    money.js
+   Phase 2.2 - Expense Edit + Delete
    ========================================================= */
 
 
@@ -79,26 +80,32 @@ const MONEY_FORMS = {
                 required: true,
 
                 options: [
+
                     {
                         value: "weekly",
                         label: "Weekly"
                     },
+
                     {
                         value: "biweekly",
                         label: "Biweekly"
                     },
+
                     {
                         value: "twice-monthly",
                         label: "Twice Monthly"
                     },
+
                     {
                         value: "monthly",
                         label: "Monthly"
                     },
+
                     {
                         value: "custom",
                         label: "Custom"
                     }
+
                 ],
 
                 showWhen: {
@@ -168,22 +175,27 @@ const MONEY_FORMS = {
                 required: true,
 
                 options: [
+
                     {
                         value: "days",
                         label: "Day(s)"
                     },
+
                     {
                         value: "weeks",
                         label: "Week(s)"
                     },
+
                     {
                         value: "months",
                         label: "Month(s)"
                     },
+
                     {
                         value: "years",
                         label: "Year(s)"
                     }
+
                 ],
 
                 showWhen: {
@@ -285,6 +297,10 @@ const MONEY_FORMS = {
     },
 
 
+    /* =====================================================
+       P2.2 EXPENSE MANAGEMENT
+       ===================================================== */
+
     expense: {
 
         title: "Add Expense",
@@ -300,9 +316,27 @@ const MONEY_FORMS = {
             },
 
             {
+                type: "text",
+                name: "merchant",
+                label: "Merchant / Vendor / Payee / Place",
+                placeholder: "Example: Walmart, REI, Netflix"
+            },
+
+            {
+                type: "number",
+                name: "amount",
+                label: "Amount",
+                placeholder: "0.00",
+                min: "0.01",
+                step: "0.01",
+                money: true,
+                required: true
+            },
+
+            {
                 type: "date",
                 name: "date",
-                label: "Date",
+                label: "Expense Date",
                 required: true,
                 useSelectedMonth: true
             },
@@ -315,29 +349,81 @@ const MONEY_FORMS = {
                 required: true,
 
                 options: [
+                    "Housing",
+                    "Utilities",
                     "Groceries",
                     "Dining",
                     "Transportation",
                     "Shopping",
                     "Entertainment",
+                    "Tickets & Events",
                     "Health",
                     "Personal Care",
                     "Household",
                     "Pets",
                     "Travel",
+                    "Education",
+                    "Gifts",
+                    "Fees",
                     "Other"
                 ]
             },
 
             {
-                type: "number",
-                name: "amount",
-                label: "Amount",
-                placeholder: "0.00",
-                min: "0",
-                step: "0.01",
-                money: true,
-                required: true
+                type: "text",
+                name: "subcategory",
+                label: "Subcategory",
+                placeholder: "Example: Fuel, Fast Food, Concert Ticket"
+            },
+
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder: "Optional notes about this expense"
+            },
+
+            {
+                type: "checkbox",
+                name: "recurring",
+                label: "Recurring Expense"
+            },
+
+            {
+                type: "select",
+                name: "frequency",
+                label: "Expense Frequency",
+                placeholder: "Select frequency",
+                required: true,
+
+                options: [
+
+                    {
+                        value: "weekly",
+                        label: "Weekly"
+                    },
+
+                    {
+                        value: "biweekly",
+                        label: "Biweekly"
+                    },
+
+                    {
+                        value: "monthly",
+                        label: "Monthly"
+                    },
+
+                    {
+                        value: "yearly",
+                        label: "Yearly"
+                    }
+
+                ],
+
+                showWhen: {
+                    field: "recurring",
+                    equals: true
+                }
             }
 
         ]
@@ -502,13 +588,20 @@ const MONEY_FORMS = {
    2. MODAL STATE
    ========================================================= */
 
-let currentMoneyAction = null;
+let currentMoneyAction =
+    null;
 
-let currentEditingIncomeId = null;
+let currentEditingIncomeId =
+    null;
 
-let originalFormState = null;
+let currentEditingExpenseId =
+    null;
 
-let lastFocusedElement = null;
+let originalFormState =
+    null;
+
+let lastFocusedElement =
+    null;
 
 
 /* =========================================================
@@ -575,7 +668,8 @@ function normalizeMoneyAction(
 ) {
 
     if (
-        action === "paycheck"
+        action ===
+        "paycheck"
     ) {
 
         return "income";
@@ -726,8 +820,11 @@ function createFieldWrapper(
 
 
     wrapper.className =
-        field.type === "checkbox"
+        field.type ===
+            "checkbox"
+
             ? "form-group checkbox"
+
             : "form-group";
 
 
@@ -757,8 +854,6 @@ function createMoneyField(
             field
         );
 
-
-    /* CHECKBOX */
 
     if (
         field.type ===
@@ -810,8 +905,6 @@ function createMoneyField(
     }
 
 
-    /* LABEL */
-
     const label =
         document.createElement(
             "label"
@@ -830,8 +923,6 @@ function createMoneyField(
     );
 
 
-    /* SELECT */
-
     if (
         field.type ===
         "select"
@@ -845,9 +936,6 @@ function createMoneyField(
 
     }
 
-
-    /* TEXTAREA */
-
     else if (
         field.type ===
         "textarea"
@@ -860,9 +948,6 @@ function createMoneyField(
         );
 
     }
-
-
-    /* NORMAL INPUT */
 
     else {
 
@@ -895,7 +980,9 @@ function createMoneyField(
 
             moneyWrapper.append(
                 symbol,
-                buildInput(field)
+                buildInput(
+                    field
+                )
             );
 
 
@@ -908,15 +995,15 @@ function createMoneyField(
         else {
 
             wrapper.appendChild(
-                buildInput(field)
+                buildInput(
+                    field
+                )
             );
 
         }
 
     }
 
-
-    /* HELP TEXT */
 
     if (
         field.help
@@ -1032,7 +1119,8 @@ function buildInput(
 
 
     if (
-        field.type === "date" &&
+        field.type ===
+            "date" &&
         field.useSelectedMonth
     ) {
 
@@ -1138,8 +1226,12 @@ function buildSelect(
 
             if (
                 field.value !== undefined &&
-                String(field.value) ===
-                    String(option.value)
+                String(
+                    field.value
+                ) ===
+                String(
+                    option.value
+                )
             ) {
 
                 option.selected =
@@ -1234,9 +1326,7 @@ function getMoneyFieldValue(
         );
 
 
-    if (
-        !field
-    ) {
+    if (!field) {
 
         return undefined;
 
@@ -1305,9 +1395,7 @@ function updateConditionalMoneyFields() {
                     ._moneyFieldConfig;
 
 
-            if (
-                !field
-            ) {
+            if (!field) {
 
                 return;
 
@@ -1364,14 +1452,11 @@ function renderMoneyForm(
         ];
 
 
-    if (
-        !config
-    ) {
+    if (!config) {
 
         console.error(
             `Unknown money action: ${action}`
         );
-
 
         return false;
 
@@ -1415,9 +1500,7 @@ function populateMoneyForm(
     record
 ) {
 
-    if (
-        !record
-    ) {
+    if (!record) {
 
         return;
 
@@ -1530,14 +1613,11 @@ function openMoneyModal(
         ];
 
 
-    if (
-        !config
-    ) {
+    if (!config) {
 
         console.error(
             `Cannot open unknown money form: ${action}`
         );
-
 
         return;
 
@@ -1552,6 +1632,16 @@ function openMoneyModal(
         (
             normalizedAction ===
                 "income" &&
+            options.editingId
+        )
+            ? options.editingId
+            : null;
+
+
+    currentEditingExpenseId =
+        (
+            normalizedAction ===
+                "expense" &&
             options.editingId
         )
             ? options.editingId
@@ -1573,11 +1663,12 @@ function openMoneyModal(
     }
 
 
-    /* EDIT MODE */
-
     if (
-        currentEditingIncomeId &&
-        options.record
+        options.record &&
+        (
+            currentEditingIncomeId ||
+            currentEditingExpenseId
+        )
     ) {
 
         populateMoneyForm(
@@ -1585,8 +1676,24 @@ function openMoneyModal(
         );
 
 
-        moneyModalTitle.textContent =
-            "Edit Income";
+        if (
+            currentEditingIncomeId
+        ) {
+
+            moneyModalTitle.textContent =
+                "Edit Income";
+
+        }
+
+
+        if (
+            currentEditingExpenseId
+        ) {
+
+            moneyModalTitle.textContent =
+                "Edit Expense";
+
+        }
 
 
         if (
@@ -1599,9 +1706,6 @@ function openMoneyModal(
         }
 
     }
-
-
-    /* ADD MODE */
 
     else {
 
@@ -1689,7 +1793,6 @@ function openIncomeEditor(
             "Income editing is not available."
         );
 
-
         return;
 
     }
@@ -1701,14 +1804,11 @@ function openIncomeEditor(
         );
 
 
-    if (
-        !income
-    ) {
+    if (!income) {
 
         console.warn(
             `Income record not found: ${incomeId}`
         );
-
 
         return;
 
@@ -1732,14 +1832,72 @@ function openIncomeEditor(
 
 
 /* =========================================================
-   19. CLOSE MONEY MODAL
+   19. OPEN EXPENSE EDITOR
+   ========================================================= */
+
+function openExpenseEditor(
+    expenseId
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getExpenseById !==
+            "function"
+    ) {
+
+        console.error(
+            "Expense editing is not available."
+        );
+
+        return;
+
+    }
+
+
+    const expense =
+        storage.getExpenseById(
+            expenseId
+        );
+
+
+    if (!expense) {
+
+        console.warn(
+            `Expense record not found: ${expenseId}`
+        );
+
+        return;
+
+    }
+
+
+    openMoneyModal(
+        "expense",
+        {
+
+            editingId:
+                expense.id,
+
+            record:
+                expense
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   20. CLOSE MONEY MODAL
    ========================================================= */
 
 function closeMoneyModal() {
 
-    if (
-        !moneyModal
-    ) {
+    if (!moneyModal) {
 
         return;
 
@@ -1770,6 +1928,10 @@ function closeMoneyModal() {
 
 
     currentEditingIncomeId =
+        null;
+
+
+    currentEditingExpenseId =
         null;
 
 
@@ -1805,7 +1967,7 @@ function closeMoneyModal() {
 
 
 /* =========================================================
-   20. CAPTURE FORM STATE
+   21. CAPTURE FORM STATE
    ========================================================= */
 
 function captureMoneyFormState() {
@@ -1849,7 +2011,7 @@ function captureMoneyFormState() {
 
 
 /* =========================================================
-   21. UNDO FORM CHANGES
+   22. UNDO FORM CHANGES
    ========================================================= */
 
 function undoMoneyForm() {
@@ -1872,9 +2034,7 @@ function undoMoneyForm() {
                 );
 
 
-            if (
-                !field
-            ) {
+            if (!field) {
 
                 return;
 
@@ -1914,7 +2074,7 @@ function undoMoneyForm() {
 
 
 /* =========================================================
-   22. GET FORM DATA
+   23. GET FORM DATA
    ========================================================= */
 
 function getMoneyFormData() {
@@ -1998,7 +2158,7 @@ function getMoneyFormData() {
 
 
 /* =========================================================
-   23. CREATE MONEY RECORD
+   24. CREATE MONEY RECORD
    ========================================================= */
 
 function createMoneyRecord() {
@@ -2011,10 +2171,15 @@ function createMoneyRecord() {
         getMoneyFormData();
 
 
+    const editingId =
+        currentEditingIncomeId ||
+        currentEditingExpenseId;
+
+
     const record = {
 
         id:
-            currentEditingIncomeId ||
+            editingId ||
             createMoneyId(),
 
         type:
@@ -2131,13 +2296,70 @@ function createMoneyRecord() {
     }
 
 
+    /* -----------------------------------------------------
+       EXPENSE CLEANUP
+       ----------------------------------------------------- */
+
+    if (
+        currentMoneyAction ===
+        "expense"
+    ) {
+
+        record.name =
+            String(
+                record.name ||
+                "Expense"
+            ).trim();
+
+
+        record.merchant =
+            String(
+                record.merchant ||
+                ""
+            ).trim();
+
+
+        record.subcategory =
+            String(
+                record.subcategory ||
+                ""
+            ).trim();
+
+
+        record.notes =
+            String(
+                record.notes ||
+                ""
+            ).trim();
+
+
+        record.amount =
+            Math.abs(
+                Number(
+                    record.amount
+                ) || 0
+            );
+
+
+        if (
+            !record.recurring
+        ) {
+
+            record.frequency =
+                "";
+
+        }
+
+    }
+
+
     return record;
 
 }
 
 
 /* =========================================================
-   24. CREATE UNIQUE ID
+   25. CREATE UNIQUE ID
    ========================================================= */
 
 function createMoneyId() {
@@ -2172,7 +2394,7 @@ function createMoneyId() {
 
 
 /* =========================================================
-   25. SAVE MONEY FORM
+   26. SAVE MONEY FORM
    ========================================================= */
 
 function saveMoneyForm(
@@ -2195,7 +2417,6 @@ function saveMoneyForm(
             "error"
         );
 
-
         return;
 
     }
@@ -2210,7 +2431,6 @@ function saveMoneyForm(
             "error"
         );
 
-
         return;
 
     }
@@ -2219,6 +2439,12 @@ function saveMoneyForm(
     const wasEditingIncome =
         Boolean(
             currentEditingIncomeId
+        );
+
+
+    const wasEditingExpense =
+        Boolean(
+            currentEditingExpenseId
         );
 
 
@@ -2281,11 +2507,37 @@ function saveMoneyForm(
         }
 
 
+        if (
+            wasEditingExpense
+        ) {
+
+            document.dispatchEvent(
+
+                new CustomEvent(
+                    "mwallet:expense-updated",
+                    {
+                        detail
+                    }
+                )
+
+            );
+
+        }
+
+
         showMoneyStatus(
-            wasEditingIncome
+
+            (
+                wasEditingIncome ||
+                wasEditingExpense
+            )
+
                 ? "✓ Changes Saved"
+
                 : "✓ Saved",
+
             "success"
+
         );
 
 
@@ -2319,7 +2571,7 @@ function saveMoneyForm(
 
 
 /* =========================================================
-   26. SAVE MONEY RECORD
+   27. SAVE MONEY RECORD
    ========================================================= */
 
 function saveMoneyRecord(
@@ -2330,7 +2582,9 @@ function saveMoneyRecord(
         getMoneyStorage();
 
 
-    /* EDIT EXISTING INCOME */
+    /* -----------------------------------------------------
+       EDIT EXISTING INCOME
+       ----------------------------------------------------- */
 
     if (
         currentMoneyAction ===
@@ -2359,7 +2613,40 @@ function saveMoneyRecord(
     }
 
 
-    /* CREATE NEW MONEY RECORD */
+    /* -----------------------------------------------------
+       EDIT EXISTING EXPENSE
+       ----------------------------------------------------- */
+
+    if (
+        currentMoneyAction ===
+            "expense" &&
+        currentEditingExpenseId
+    ) {
+
+        if (
+            !storage ||
+            typeof storage.updateExpense !==
+                "function"
+        ) {
+
+            throw new Error(
+                "Expense editing is not available in storage.js."
+            );
+
+        }
+
+
+        return storage.updateExpense(
+            currentEditingExpenseId,
+            record
+        );
+
+    }
+
+
+    /* -----------------------------------------------------
+       CREATE NEW RECORD
+       ----------------------------------------------------- */
 
     if (
         storage &&
@@ -2382,7 +2669,7 @@ function saveMoneyRecord(
 
 
 /* =========================================================
-   27. DELETE INCOME
+   28. DELETE INCOME
    ========================================================= */
 
 function deleteIncomeRecord(
@@ -2403,7 +2690,6 @@ function deleteIncomeRecord(
             "Income deletion is not available."
         );
 
-
         return false;
 
     }
@@ -2415,14 +2701,11 @@ function deleteIncomeRecord(
         );
 
 
-    if (
-        !income
-    ) {
+    if (!income) {
 
         console.warn(
             `Income record not found: ${incomeId}`
         );
-
 
         return false;
 
@@ -2435,9 +2718,7 @@ function deleteIncomeRecord(
         );
 
 
-    if (
-        !confirmed
-    ) {
+    if (!confirmed) {
 
         return false;
 
@@ -2447,13 +2728,6 @@ function deleteIncomeRecord(
     let deleted =
         false;
 
-
-    /*
-        Older paycheck records were migrated to Income.
-
-        Remove the original paycheck too so storage.js
-        cannot recreate it on the next load.
-    */
 
     if (
         income.legacyPaycheckId &&
@@ -2496,9 +2770,7 @@ function deleteIncomeRecord(
     }
 
 
-    if (
-        !deleted
-    ) {
+    if (!deleted) {
 
         return false;
 
@@ -2521,6 +2793,175 @@ function deleteIncomeRecord(
 
     };
 
+
+    dispatchMoneyChangeEvents(
+        detail
+    );
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+            "mwallet:income-deleted",
+            {
+                detail
+            }
+        )
+
+    );
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   29. DELETE EXPENSE
+   ========================================================= */
+
+function deleteExpenseRecord(
+    expenseId
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getExpenseById !==
+            "function"
+    ) {
+
+        console.error(
+            "Expense deletion is not available."
+        );
+
+        return false;
+
+    }
+
+
+    const expense =
+        storage.getExpenseById(
+            expenseId
+        );
+
+
+    if (!expense) {
+
+        console.warn(
+            `Expense record not found: ${expenseId}`
+        );
+
+        return false;
+
+    }
+
+
+    let message =
+        `Delete "${expense.name || "this expense"}"?`;
+
+
+    if (
+        expense.recurring
+    ) {
+
+        message =
+            `Delete recurring expense "${expense.name || "this expense"}" and all of its generated occurrences?`;
+
+    }
+
+
+    const confirmed =
+        window.confirm(
+            message
+        );
+
+
+    if (!confirmed) {
+
+        return false;
+
+    }
+
+
+    if (
+        typeof storage.deleteExpense !==
+            "function"
+    ) {
+
+        console.error(
+            "Expense deletion is not available in storage.js."
+        );
+
+        return false;
+
+    }
+
+
+    const deleted =
+        Boolean(
+            storage.deleteExpense(
+                expenseId
+            )
+        );
+
+
+    if (!deleted) {
+
+        return false;
+
+    }
+
+
+    const detail = {
+
+        type:
+            "expense",
+
+        action:
+            "delete",
+
+        id:
+            expenseId,
+
+        record:
+            expense
+
+    };
+
+
+    dispatchMoneyChangeEvents(
+        detail
+    );
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+            "mwallet:expense-deleted",
+            {
+                detail
+            }
+        )
+
+    );
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   30. DISPATCH SHARED MONEY EVENTS
+   ========================================================= */
+
+function dispatchMoneyChangeEvents(
+    detail
+) {
 
     document.dispatchEvent(
 
@@ -2545,26 +2986,11 @@ function deleteIncomeRecord(
 
     );
 
-
-    document.dispatchEvent(
-
-        new CustomEvent(
-            "mwallet:income-deleted",
-            {
-                detail
-            }
-        )
-
-    );
-
-
-    return true;
-
 }
 
 
 /* =========================================================
-   28. LOCAL STORAGE FALLBACK
+   31. LOCAL STORAGE FALLBACK
    ========================================================= */
 
 const MONEY_FALLBACK_STORAGE_KEY =
@@ -2659,10 +3085,13 @@ function saveMoneyRecordFallback(
 
 
     localStorage.setItem(
+
         MONEY_FALLBACK_STORAGE_KEY,
+
         JSON.stringify(
             records
         )
+
     );
 
 
@@ -2672,7 +3101,7 @@ function saveMoneyRecordFallback(
 
 
 /* =========================================================
-   29. STATUS MESSAGE
+   32. STATUS MESSAGE
    ========================================================= */
 
 function showMoneyStatus(
@@ -2707,7 +3136,7 @@ function showMoneyStatus(
 
 
 /* =========================================================
-   30. CLEAR STATUS
+   33. CLEAR STATUS
    ========================================================= */
 
 function clearMoneyStatus() {
@@ -2734,7 +3163,7 @@ function clearMoneyStatus() {
 
 
 /* =========================================================
-   31. INCOME EDIT / DELETE BUTTONS
+   34. INCOME EDIT / DELETE BUTTONS
    ========================================================= */
 
 document.addEventListener(
@@ -2813,7 +3242,86 @@ document.addEventListener(
 
 
 /* =========================================================
-   32. MONEY ACTION BUTTONS
+   35. EXPENSE EDIT / DELETE BUTTONS
+   ========================================================= */
+
+document.addEventListener(
+    "click",
+    event => {
+
+        const editButton =
+            event.target.closest(
+                "[data-expense-edit]"
+            );
+
+
+        if (
+            editButton
+        ) {
+
+            event.preventDefault();
+
+
+            const expenseId =
+                editButton.dataset
+                    .expenseEdit;
+
+
+            if (
+                expenseId
+            ) {
+
+                openExpenseEditor(
+                    expenseId
+                );
+
+            }
+
+
+            return;
+
+        }
+
+
+        const deleteButton =
+            event.target.closest(
+                "[data-expense-delete]"
+            );
+
+
+        if (
+            !deleteButton
+        ) {
+
+            return;
+
+        }
+
+
+        event.preventDefault();
+
+
+        const expenseId =
+            deleteButton.dataset
+                .expenseDelete;
+
+
+        if (
+            expenseId
+        ) {
+
+            deleteExpenseRecord(
+                expenseId
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   36. MONEY ACTION BUTTONS
    ========================================================= */
 
 document.addEventListener(
@@ -2856,7 +3364,6 @@ document.addEventListener(
                 `No money form exists for: ${requestedAction}`
             );
 
-
             return;
 
         }
@@ -2871,7 +3378,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   33. CONDITIONAL FIELD CHANGES
+   37. CONDITIONAL FIELD CHANGES
    ========================================================= */
 
 if (
@@ -2888,9 +3395,7 @@ if (
                 );
 
 
-            if (
-                !field
-            ) {
+            if (!field) {
 
                 return;
 
@@ -2909,7 +3414,7 @@ if (
 
 
 /* =========================================================
-   34. CLOSE BUTTON / OVERLAY
+   38. CLOSE BUTTON / OVERLAY
    ========================================================= */
 
 document.addEventListener(
@@ -2938,7 +3443,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   35. ESCAPE KEY
+   39. ESCAPE KEY
    ========================================================= */
 
 document.addEventListener(
@@ -2976,7 +3481,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   36. UNDO BUTTON
+   40. UNDO BUTTON
    ========================================================= */
 
 if (
@@ -2992,7 +3497,7 @@ if (
 
 
 /* =========================================================
-   37. SAVE / FORM SUBMIT
+   41. SAVE / FORM SUBMIT
    ========================================================= */
 
 if (
@@ -3008,7 +3513,7 @@ if (
 
 
 /* =========================================================
-   38. CLEAR STATUS WHILE TYPING
+   42. CLEAR STATUS WHILE TYPING
    ========================================================= */
 
 if (
@@ -3028,7 +3533,7 @@ if (
 
 
 /* =========================================================
-   39. EXPOSE MONEY MANAGER
+   43. EXPOSE MONEY MANAGER
    ========================================================= */
 
 window.MoneyManager = {
@@ -3036,34 +3541,60 @@ window.MoneyManager = {
     open:
         openMoneyModal,
 
+
     editIncome:
         openIncomeEditor,
+
 
     deleteIncome:
         deleteIncomeRecord,
 
+
+    editExpense:
+        openExpenseEditor,
+
+
+    deleteExpense:
+        deleteExpenseRecord,
+
+
     close:
         closeMoneyModal,
+
 
     undo:
         undoMoneyForm,
 
+
     getFormData:
         getMoneyFormData,
+
 
     getSelectedPeriod:
         getSelectedBudgetPeriod,
 
+
     refreshConditionalFields:
         updateConditionalMoneyFields,
 
+
     normalizeAction:
         normalizeMoneyAction,
+
 
     isEditingIncome() {
 
         return Boolean(
             currentEditingIncomeId
+        );
+
+    },
+
+
+    isEditingExpense() {
+
+        return Boolean(
+            currentEditingExpenseId
         );
 
     }
@@ -3072,11 +3603,11 @@ window.MoneyManager = {
 
 
 /* =========================================================
-   40. DEVELOPMENT HELPER
+   44. DEVELOPMENT HELPER
    ========================================================= */
 
 console.log(
-    "M-Wallet money manager with Income editing loaded."
+    "M-Wallet money manager loaded - P2.2 Expense Edit/Delete ready."
 );
 
 

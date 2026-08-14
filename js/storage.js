@@ -1,92 +1,595 @@
 /* =========================================================
-   BUDGET TRACKER
+   M-WALLET
    Local Storage / Data Management
    storage.js
-   ========================================================= */
-
-
-/* =========================================================
-   1. STORAGE OBJECT
+   Phase 2.2 - Income + Expense Management
    ========================================================= */
 
 const BudgetStorage = {
 
-    storageKey: "budgetTrackerData",
+    storageKey: "mWalletData",
 
-    version: 2,
+    legacyStorageKeys: [
+        "budgetTrackerData"
+    ],
+
+    version: 4,
 
 
     /* =====================================================
-       2. CREATE DEFAULT APP DATA
+       1. BASIC HELPERS
+       ===================================================== */
+
+    now() {
+
+        return new Date()
+            .toISOString();
+
+    },
+
+
+    toNumber(value) {
+
+        const number =
+            Number(value);
+
+        return Number.isFinite(number)
+            ? number
+            : 0;
+
+    },
+
+
+    toPositiveNumber(value) {
+
+        return Math.abs(
+            this.toNumber(value)
+        );
+
+    },
+
+
+    normalizeString(
+        value,
+        fallback = ""
+    ) {
+
+        const text =
+            String(
+                value ?? ""
+            ).trim();
+
+        return text || fallback;
+
+    },
+
+
+    generateId(
+        prefix = "item"
+    ) {
+
+        if (
+            window.crypto &&
+            typeof window.crypto.randomUUID ===
+                "function"
+        ) {
+
+            return (
+                `${prefix}-` +
+                window.crypto.randomUUID()
+            );
+
+        }
+
+
+        return (
+            `${prefix}-` +
+            `${Date.now()}-` +
+            `${Math.random()
+                .toString(16)
+                .slice(2)}`
+        );
+
+    },
+
+
+    getRecordId(
+        item,
+        prefix
+    ) {
+
+        return (
+            item?.id ||
+            this.generateId(prefix)
+        );
+
+    },
+
+
+    isDateString(value) {
+
+        return (
+            typeof value === "string" &&
+            /^\d{4}-\d{2}-\d{2}$/.test(
+                value
+            )
+        );
+
+    },
+
+
+    formatDateUTC(date) {
+
+        const year =
+            date.getUTCFullYear();
+
+        const month =
+            String(
+                date.getUTCMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+        const day =
+            String(
+                date.getUTCDate()
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        return (
+            `${year}-` +
+            `${month}-` +
+            `${day}`
+        );
+
+    },
+
+
+    parseDateUTC(dateValue) {
+
+        if (
+            !this.isDateString(
+                dateValue
+            )
+        ) {
+
+            return null;
+
+        }
+
+
+        const [
+            year,
+            month,
+            day
+        ] =
+            dateValue
+                .split("-")
+                .map(Number);
+
+
+        const date =
+            new Date(
+                Date.UTC(
+                    year,
+                    month - 1,
+                    day
+                )
+            );
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return null;
+
+        }
+
+
+        return date;
+
+    },
+
+
+    addDays(
+        dateValue,
+        amount
+    ) {
+
+        const date =
+            this.parseDateUTC(
+                dateValue
+            );
+
+
+        if (!date) {
+
+            return dateValue;
+
+        }
+
+
+        date.setUTCDate(
+            date.getUTCDate() +
+            Number(
+                amount || 0
+            )
+        );
+
+
+        return this.formatDateUTC(
+            date
+        );
+
+    },
+
+
+    daysInMonth(
+        year,
+        month
+    ) {
+
+        return new Date(
+            Date.UTC(
+                Number(year),
+                Number(month),
+                0
+            )
+        ).getUTCDate();
+
+    },
+
+
+    addMonthsClamped(
+        dateValue,
+        amount
+    ) {
+
+        const date =
+            this.parseDateUTC(
+                dateValue
+            );
+
+
+        if (!date) {
+
+            return dateValue;
+
+        }
+
+
+        const originalDay =
+            date.getUTCDate();
+
+
+        const target =
+            new Date(
+                Date.UTC(
+                    date.getUTCFullYear(),
+                    date.getUTCMonth() +
+                        Number(
+                            amount || 0
+                        ),
+                    1
+                )
+            );
+
+
+        const finalDay =
+            Math.min(
+
+                originalDay,
+
+                this.daysInMonth(
+                    target.getUTCFullYear(),
+                    target.getUTCMonth() + 1
+                )
+
+            );
+
+
+        target.setUTCDate(
+            finalDay
+        );
+
+
+        return this.formatDateUTC(
+            target
+        );
+
+    },
+
+
+    addYearsClamped(
+        dateValue,
+        amount
+    ) {
+
+        return this.addMonthsClamped(
+
+            dateValue,
+
+            Number(
+                amount || 0
+            ) * 12
+
+        );
+
+    },
+
+
+    getCurrentMonthKey() {
+
+        const today =
+            new Date();
+
+
+        const year =
+            today.getFullYear();
+
+
+        const month =
+            String(
+                today.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        return (
+            `${year}-` +
+            `${month}`
+        );
+
+    },
+
+
+    getSelectedMonthKey() {
+
+        const monthSelect =
+            document.getElementById(
+                "month-select"
+            );
+
+
+        const yearSelect =
+            document.getElementById(
+                "year-select"
+            );
+
+
+        if (
+            monthSelect?.value &&
+            yearSelect?.value
+        ) {
+
+            return (
+                `${yearSelect.value}-` +
+                `${monthSelect.value}`
+            );
+
+        }
+
+
+        return this.getCurrentMonthKey();
+
+    },
+
+
+    getMonthKeyFromDate(
+        dateValue
+    ) {
+
+        if (
+            this.isDateString(
+                dateValue
+            )
+        ) {
+
+            return dateValue.slice(
+                0,
+                7
+            );
+
+        }
+
+
+        const date =
+            new Date(
+                dateValue
+            );
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return this
+                .getSelectedMonthKey();
+
+        }
+
+
+        const year =
+            date.getFullYear();
+
+
+        const month =
+            String(
+                date.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        return (
+            `${year}-` +
+            `${month}`
+        );
+
+    },
+
+
+    getDefaultDateForMonth(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return (
+            `${monthKey}-01`
+        );
+
+    },
+
+
+    getMonthStart(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return (
+            `${monthKey}-01`
+        );
+
+    },
+
+
+    getMonthEnd(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        const [
+            year,
+            month
+        ] =
+            monthKey
+                .split("-")
+                .map(Number);
+
+
+        return (
+            `${monthKey}-` +
+            `${String(
+                this.daysInMonth(
+                    year,
+                    month
+                )
+            ).padStart(
+                2,
+                "0"
+            )}`
+        );
+
+    },
+
+
+    getYearStart(year) {
+
+        return (
+            `${String(year)}-01-01`
+        );
+
+    },
+
+
+    getYearEnd(year) {
+
+        return (
+            `${String(year)}-12-31`
+        );
+
+    },
+
+
+    isDateInRange(
+        dateValue,
+        startDate,
+        endDate
+    ) {
+
+        return Boolean(
+
+            dateValue &&
+
+            dateValue >=
+                startDate &&
+
+            dateValue <=
+                endDate
+
+        );
+
+    },
+
+
+    /* =====================================================
+       2. DEFAULT DATA
        ===================================================== */
 
     createDefaultData() {
 
         return {
 
-            version: this.version,
+            version:
+                this.version,
 
-
-            /* ---------------------------------------------
-               APP SETTINGS
-               --------------------------------------------- */
 
             settings: {
 
-                currency: "USD",
+                currency:
+                    "USD",
 
-                currencySymbol: "$",
+                currencySymbol:
+                    "$",
 
-                firstDayOfWeek: "sunday"
+                firstDayOfWeek:
+                    "sunday"
 
             },
 
 
-            /* ---------------------------------------------
-               MONTHLY BUDGETS
+            income: [],
 
-               Example:
-
-               months: {
-                   "2026-08": {...},
-                   "2026-09": {...}
-               }
-               --------------------------------------------- */
+            expenses: [],
 
             months: {},
-
-
-            /* ---------------------------------------------
-               SAVINGS GOALS
-
-               Savings goals are global instead of being
-               locked inside one month.
-
-               Example:
-               Emergency Fund created in August will still
-               exist when viewing September.
-
-               Each goal does remember which month it was
-               originally created in.
-               --------------------------------------------- */
 
             savingsGoals: [],
 
 
-            /* ---------------------------------------------
-               ACCOUNTS
-               --------------------------------------------- */
-
             accounts: {
 
                 checking: {
-                    name: "Checking",
-                    balance: 0
+
+                    name:
+                        "Checking",
+
+                    balance:
+                        0
+
                 },
 
+
                 savings: {
-                    name: "Savings",
-                    balance: 0
+
+                    name:
+                        "Savings",
+
+                    balance:
+                        0
+
                 }
 
             }
@@ -96,88 +599,48 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       3. CREATE DEFAULT MONTH
-       ===================================================== */
-
-    createDefaultMonth(monthKey) {
+    createDefaultMonth(
+        monthKey
+    ) {
 
         return {
 
             monthKey,
 
+            startingBalance:
+                0,
 
-            /* ---------------------------------------------
-               START / END BALANCE
-               --------------------------------------------- */
-
-            startingBalance: 0,
-
-            endingBalance: 0,
-
-
-            /* ---------------------------------------------
-               PAYCHECKS
-               --------------------------------------------- */
-
-            paychecks: [],
-
-
-            /* ---------------------------------------------
-               BILLS
-               --------------------------------------------- */
-
-            bills: [],
-
-
-            /* ---------------------------------------------
-               EXPENSES
-               --------------------------------------------- */
-
-            expenses: [],
-
-
-            /* ---------------------------------------------
-               MANUAL TRANSACTIONS
-               --------------------------------------------- */
-
-            transactions: [],
-
-
-            /* ---------------------------------------------
-               SAVINGS DEPOSITS FOR THIS MONTH
-               --------------------------------------------- */
-
-            savingsDeposits: [],
+            endingBalance:
+                0,
 
 
             /*
-                Compatibility with our original storage
-                structure.
-
-                Earlier versions called these
-                savingsTransfers.
-
-                normalizeMonth() keeps this synced with
-                savingsDeposits so older app.js code does
-                not immediately break.
+                Legacy monthly collections remain
+                available for compatibility.
             */
+
+            paychecks: [],
+
+            bills: [],
+
+            expenses: [],
+
+            transactions: [],
+
+            savingsDeposits: [],
 
             savingsTransfers: [],
 
 
-            /* ---------------------------------------------
-               MONTH NOTES
-               --------------------------------------------- */
-
-            notes: "",
+            notes:
+                "",
 
 
             createdAt:
-                new Date().toISOString(),
+                this.now(),
 
             updatedAt:
-                new Date().toISOString()
+                this.now()
 
         };
 
@@ -185,102 +648,110 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       4. NORMALIZE / MIGRATE MONTH
+       3. NORMALIZATION / MIGRATION
        ===================================================== */
 
-    normalizeMonth(month, monthKey) {
+    normalizeMonth(
+        month,
+        monthKey
+    ) {
 
-        if (!month) {
+        if (
+            !month ||
+            typeof month !==
+                "object"
+        ) {
 
-            return this.createDefaultMonth(
-                monthKey
-            );
+            return this
+                .createDefaultMonth(
+                    monthKey
+                );
 
         }
 
 
         month.monthKey =
-            month.monthKey || monthKey;
+            month.monthKey ||
+            monthKey;
 
 
         month.startingBalance =
-            Number(month.startingBalance) || 0;
+            this.toNumber(
+                month.startingBalance
+            );
 
 
         month.endingBalance =
-            Number(month.endingBalance) || 0;
+            this.toNumber(
+                month.endingBalance
+            );
 
 
-        if (!Array.isArray(month.paychecks)) {
-            month.paychecks = [];
-        }
+        [
+            "paychecks",
+            "bills",
+            "expenses",
+            "transactions"
+        ].forEach(
+            key => {
 
+                if (
+                    !Array.isArray(
+                        month[key]
+                    )
+                ) {
 
-        if (!Array.isArray(month.bills)) {
-            month.bills = [];
-        }
+                    month[key] =
+                        [];
 
-
-        if (!Array.isArray(month.expenses)) {
-            month.expenses = [];
-        }
-
-
-        if (!Array.isArray(month.transactions)) {
-            month.transactions = [];
-        }
-
-
-        /*
-            VERSION 1 → VERSION 2 MIGRATION
-
-            Old storage used:
-                savingsTransfers
-
-            New storage uses:
-                savingsDeposits
-        */
-
-        if (!Array.isArray(month.savingsDeposits)) {
-
-            if (Array.isArray(month.savingsTransfers)) {
-
-                month.savingsDeposits =
-                    [...month.savingsTransfers];
+                }
 
             }
+        );
 
-            else {
 
-                month.savingsDeposits = [];
+        if (
+            !Array.isArray(
+                month.savingsDeposits
+            )
+        ) {
 
-            }
+            month.savingsDeposits =
+
+                Array.isArray(
+                    month.savingsTransfers
+                )
+
+                    ? [
+                        ...month.savingsTransfers
+                    ]
+
+                    : [];
 
         }
 
-
-        /*
-            Keep old name available temporarily for
-            compatibility with earlier app.js code.
-        */
 
         month.savingsTransfers =
             month.savingsDeposits;
 
 
-        if (typeof month.notes !== "string") {
-            month.notes = "";
-        }
+        month.notes =
+            typeof month.notes ===
+                "string"
+
+                ? month.notes
+
+                : "";
 
 
         month.createdAt =
             month.createdAt ||
-            new Date().toISOString();
+            this.now();
 
 
         month.updatedAt =
             month.updatedAt ||
-            new Date().toISOString();
+            this.now();
 
 
         return month;
@@ -288,59 +759,644 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       5. NORMALIZE / MIGRATE ALL DATA
-       ===================================================== */
+    normalizeIncome(
+        income
+    ) {
 
-    normalizeData(data) {
+        const recurring =
+            Boolean(
+                income?.recurring
+            );
+
+
+        const frequency =
+            recurring
+
+                ? this.normalizeString(
+                    income?.frequency,
+                    "monthly"
+                )
+
+                : "";
+
+
+        return {
+
+            id:
+                this.getRecordId(
+                    income,
+                    "income"
+                ),
+
+
+            name:
+                this.normalizeString(
+
+                    income?.name ||
+                    income?.source,
+
+                    "Income"
+
+                ),
+
+
+            source:
+                this.normalizeString(
+
+                    income?.source ||
+                    income?.name,
+
+                    "Income"
+
+                ),
+
+
+            amount:
+                this.toPositiveNumber(
+                    income?.amount
+                ),
+
+
+            date:
+                this.isDateString(
+                    income?.date
+                )
+
+                    ? income.date
+
+                    : this
+                        .getDefaultDateForMonth(),
+
+
+            category:
+                this.normalizeString(
+                    income?.category,
+                    "Other Income"
+                ),
+
+
+            incomeType:
+                this.normalizeString(
+                    income?.incomeType,
+                    "income"
+                ),
+
+
+            recurring,
+
+            frequency,
+
+
+            twiceMonthlyDays:
+
+                Array.isArray(
+                    income?.twiceMonthlyDays
+                )
+
+                    ? [
+
+                        Math.min(
+                            31,
+                            Math.max(
+                                1,
+                                Number(
+                                    income.twiceMonthlyDays[0]
+                                ) || 1
+                            )
+                        ),
+
+                        Math.min(
+                            31,
+                            Math.max(
+                                1,
+                                Number(
+                                    income.twiceMonthlyDays[1]
+                                ) || 15
+                            )
+                        )
+
+                    ]
+
+                    : [
+                        1,
+                        15
+                    ],
+
+
+            customInterval:
+                Math.max(
+                    1,
+                    Number(
+                        income?.customInterval
+                    ) || 1
+                ),
+
+
+            customUnit:
+                this.normalizeString(
+                    income?.customUnit,
+                    "months"
+                ),
+
+
+            endDate:
+                this.isDateString(
+                    income?.endDate
+                )
+
+                    ? income.endDate
+
+                    : "",
+
+
+            notes:
+                this.normalizeString(
+                    income?.notes
+                ),
+
+
+            legacyPaycheckId:
+                income?.legacyPaycheckId ||
+                null,
+
+
+            legacyMonthKey:
+                income?.legacyMonthKey ||
+                null,
+
+
+            createdAt:
+                income?.createdAt ||
+                this.now(),
+
+
+            updatedAt:
+                income?.updatedAt ||
+                this.now()
+
+        };
+
+    },
+
+
+    normalizeExpense(
+        expense
+    ) {
+
+        const recurring =
+            Boolean(
+                expense?.recurring
+            );
+
+
+        const frequency =
+            recurring
+
+                ? this.normalizeString(
+                    expense?.frequency,
+                    "monthly"
+                )
+
+                : "";
+
+
+        return {
+
+            id:
+                this.getRecordId(
+                    expense,
+                    "expense"
+                ),
+
+
+            name:
+                this.normalizeString(
+                    expense?.name,
+                    "Expense"
+                ),
+
+
+            merchant:
+                this.normalizeString(
+
+                    expense?.merchant ||
+                    expense?.vendor ||
+                    expense?.payee ||
+                    expense?.place
+
+                ),
+
+
+            amount:
+                this.toPositiveNumber(
+                    expense?.amount
+                ),
+
+
+            date:
+                this.isDateString(
+                    expense?.date
+                )
+
+                    ? expense.date
+
+                    : this
+                        .getDefaultDateForMonth(),
+
+
+            category:
+                this.normalizeString(
+                    expense?.category,
+                    "Other"
+                ),
+
+
+            subcategory:
+                this.normalizeString(
+                    expense?.subcategory
+                ),
+
+
+            paymentMethod:
+                this.normalizeString(
+                    expense?.paymentMethod,
+                    "Checking"
+                ),
+
+
+            recurring,
+
+            frequency,
+
+
+            customInterval:
+                Math.max(
+                    1,
+                    Number(
+                        expense?.customInterval
+                    ) || 1
+                ),
+
+
+            customUnit:
+                this.normalizeString(
+                    expense?.customUnit,
+                    "months"
+                ),
+
+
+            endDate:
+                this.isDateString(
+                    expense?.endDate
+                )
+
+                    ? expense.endDate
+
+                    : "",
+
+
+            notes:
+                this.normalizeString(
+                    expense?.notes
+                ),
+
+
+            legacyExpenseId:
+                expense?.legacyExpenseId ||
+                null,
+
+
+            legacyMonthKey:
+                expense?.legacyMonthKey ||
+                null,
+
+
+            createdAt:
+                expense?.createdAt ||
+                this.now(),
+
+
+            updatedAt:
+                expense?.updatedAt ||
+                this.now()
+
+        };
+
+    },
+
+
+    migrateLegacyPaychecks(
+        data
+    ) {
+
+        Object.entries(
+            data.months
+        ).forEach(
+            ([
+                monthKey,
+                month
+            ]) => {
+
+                month.paychecks.forEach(
+                    paycheck => {
+
+                        const alreadyMigrated =
+                            data.income.some(
+                                item =>
+                                    item.legacyPaycheckId ===
+                                    paycheck.id
+                            );
+
+
+                        if (
+                            alreadyMigrated
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        data.income.push(
+
+                            this.normalizeIncome({
+
+                                id:
+                                    this.generateId(
+                                        "income"
+                                    ),
+
+                                name:
+                                    paycheck.name ||
+                                    "Paycheck",
+
+                                source:
+                                    paycheck.name ||
+                                    "Paycheck",
+
+                                amount:
+                                    paycheck.amount,
+
+                                date:
+                                    paycheck.payDate ||
+                                    this.getDefaultDateForMonth(
+                                        monthKey
+                                    ),
+
+                                category:
+                                    "Employment",
+
+                                incomeType:
+                                    "paycheck",
+
+                                recurring:
+                                    false,
+
+                                notes:
+                                    paycheck.notes ||
+                                    "",
+
+                                legacyPaycheckId:
+                                    paycheck.id,
+
+                                legacyMonthKey:
+                                    monthKey,
+
+                                createdAt:
+                                    paycheck.createdAt ||
+                                    this.now()
+
+                            })
+
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+    },
+
+
+    migrateLegacyExpenses(
+        data
+    ) {
+
+        Object.entries(
+            data.months
+        ).forEach(
+            ([
+                monthKey,
+                month
+            ]) => {
+
+                month.expenses.forEach(
+                    expense => {
+
+                        const alreadyMigrated =
+                            data.expenses.some(
+                                item =>
+                                    item.legacyExpenseId ===
+                                    expense.id
+                            );
+
+
+                        if (
+                            alreadyMigrated
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        data.expenses.push(
+
+                            this.normalizeExpense({
+
+                                ...expense,
+
+                                id:
+                                    this.generateId(
+                                        "expense"
+                                    ),
+
+                                date:
+                                    expense.date ||
+                                    this.getDefaultDateForMonth(
+                                        monthKey
+                                    ),
+
+                                recurring:
+                                    Boolean(
+                                        expense.recurring
+                                    ),
+
+                                frequency:
+                                    expense.frequency ||
+                                    (
+                                        expense.recurring
+                                            ? "monthly"
+                                            : ""
+                                    ),
+
+                                legacyExpenseId:
+                                    expense.id,
+
+                                legacyMonthKey:
+                                    monthKey
+
+                            })
+
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+    },
+
+
+    normalizeData(
+        data
+    ) {
 
         if (
             !data ||
-            typeof data !== "object"
+            typeof data !==
+                "object"
         ) {
 
-            return this.createDefaultData();
+            return this
+                .createDefaultData();
 
         }
 
 
-        if (!data.settings) {
-
-            data.settings =
-                this.createDefaultData().settings;
-
-        }
+        const defaults =
+            this.createDefaultData();
 
 
-        if (!data.months) {
-            data.months = {};
-        }
+        data.settings = {
+
+            ...defaults.settings,
+
+            ...(data.settings || {})
+
+        };
 
 
-        if (!Array.isArray(data.savingsGoals)) {
-            data.savingsGoals = [];
-        }
+        if (
+            !data.months ||
+            typeof data.months !==
+                "object"
+        ) {
 
-
-        if (!data.accounts) {
-
-            data.accounts =
-                this.createDefaultData().accounts;
+            data.months =
+                {};
 
         }
 
 
         Object.keys(
             data.months
-        ).forEach(monthKey => {
+        ).forEach(
+            monthKey => {
 
-            data.months[monthKey] =
-                this.normalizeMonth(
-                    data.months[monthKey],
+                data.months[
                     monthKey
-                );
+                ] =
+                    this.normalizeMonth(
 
-        });
+                        data.months[
+                            monthKey
+                        ],
+
+                        monthKey
+
+                    );
+
+            }
+        );
+
+
+        if (
+            !Array.isArray(
+                data.income
+            )
+        ) {
+
+            data.income =
+                [];
+
+        }
+
+
+        if (
+            !Array.isArray(
+                data.expenses
+            )
+        ) {
+
+            data.expenses =
+                [];
+
+        }
+
+
+        if (
+            !Array.isArray(
+                data.savingsGoals
+            )
+        ) {
+
+            data.savingsGoals =
+                [];
+
+        }
+
+
+        data.income =
+            data.income.map(
+                item =>
+                    this.normalizeIncome(
+                        item
+                    )
+            );
+
+
+        data.expenses =
+            data.expenses.map(
+                item =>
+                    this.normalizeExpense(
+                        item
+                    )
+            );
+
+
+        if (
+            !data.accounts ||
+            typeof data.accounts !==
+                "object"
+        ) {
+
+            data.accounts =
+                defaults.accounts;
+
+        }
+
+
+        this.migrateLegacyPaychecks(
+            data
+        );
+
+
+        this.migrateLegacyExpenses(
+            data
+        );
 
 
         data.version =
@@ -353,28 +1409,59 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       6. LOAD ALL DATA
+       4. LOAD / SAVE
        ===================================================== */
 
     load() {
 
-        const savedData =
+        let savedData =
             localStorage.getItem(
                 this.storageKey
             );
 
 
-        /*
-            First launch.
-        */
+        if (
+            !savedData
+        ) {
 
-        if (!savedData) {
+            for (
+                const legacyKey
+                of this.legacyStorageKeys
+            ) {
+
+                const legacyData =
+                    localStorage.getItem(
+                        legacyKey
+                    );
+
+
+                if (
+                    legacyData
+                ) {
+
+                    savedData =
+                        legacyData;
+
+                    break;
+
+                }
+
+            }
+
+        }
+
+
+        if (
+            !savedData
+        ) {
 
             const defaultData =
                 this.createDefaultData();
 
 
-            this.save(defaultData);
+            this.save(
+                defaultData
+            );
 
 
             return defaultData;
@@ -385,7 +1472,9 @@ const BudgetStorage = {
         try {
 
             const parsedData =
-                JSON.parse(savedData);
+                JSON.parse(
+                    savedData
+                );
 
 
             const normalizedData =
@@ -393,10 +1482,6 @@ const BudgetStorage = {
                     parsedData
                 );
 
-
-            /*
-                Save migrated structure automatically.
-            */
 
             this.save(
                 normalizedData
@@ -407,10 +1492,12 @@ const BudgetStorage = {
 
         }
 
-        catch (error) {
+        catch (
+            error
+        ) {
 
             console.error(
-                "Budget Tracker could not load saved data:",
+                "M-Wallet could not load saved data:",
                 error
             );
 
@@ -431,17 +1518,18 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       7. SAVE ALL DATA
-       ===================================================== */
-
     save(data) {
 
         try {
 
             localStorage.setItem(
+
                 this.storageKey,
-                JSON.stringify(data)
+
+                JSON.stringify(
+                    data
+                )
+
             );
 
 
@@ -449,10 +1537,12 @@ const BudgetStorage = {
 
         }
 
-        catch (error) {
+        catch (
+            error
+        ) {
 
             console.error(
-                "Budget Tracker could not save data:",
+                "M-Wallet could not save data:",
                 error
             );
 
@@ -464,196 +1554,47 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       8. CURRENT REAL-WORLD MONTH KEY
-       ===================================================== */
-
-    getCurrentMonthKey() {
-
-        const today =
-            new Date();
-
-
-        const year =
-            today.getFullYear();
-
-
-        const month =
-            String(
-                today.getMonth() + 1
-            ).padStart(2, "0");
-
-
-        return `${year}-${month}`;
-
-    },
-
-
-    /* =====================================================
-       9. GET MONTH SELECTED IN APP
-       ===================================================== */
-
-    /*
-        THIS IS IMPORTANT.
-
-        Instead of assuming the user is always looking at
-        the current real-world month, storage.js checks:
-
-            #month-select
-            #year-select
-
-        This means if the user changes:
-
-            August 2026
-                ↓
-            September 2026
-
-        all storage functions automatically begin reading
-        and writing September's budget.
-    */
-
-    getSelectedMonthKey() {
-
-        const monthSelect =
-            document.getElementById(
-                "month-select"
-            );
-
-
-        const yearSelect =
-            document.getElementById(
-                "year-select"
-            );
-
-
-        const selectedMonth =
-            monthSelect?.value;
-
-
-        const selectedYear =
-            yearSelect?.value;
-
-
-        if (
-            selectedMonth &&
-            selectedYear
-        ) {
-
-            return (
-                `${selectedYear}-` +
-                `${selectedMonth}`
-            );
-
-        }
-
-
-        return this.getCurrentMonthKey();
-
-    },
-
-
-    /* =====================================================
-       10. CREATE MONTH KEY FROM DATE
-       ===================================================== */
-
-    getMonthKeyFromDate(dateValue) {
-
-        /*
-            YYYY-MM-DD can safely be read directly without
-            timezone conversion.
-        */
-
-        if (
-            typeof dateValue === "string" &&
-            /^\d{4}-\d{2}-\d{2}$/.test(dateValue)
-        ) {
-
-            return dateValue.slice(
-                0,
-                7
-            );
-
-        }
-
-
-        const date =
-            new Date(dateValue);
-
-
-        if (
-            Number.isNaN(
-                date.getTime()
-            )
-        ) {
-
-            return this.getSelectedMonthKey();
-
-        }
-
-
-        const year =
-            date.getFullYear();
-
-
-        const month =
-            String(
-                date.getMonth() + 1
-            ).padStart(2, "0");
-
-
-        return `${year}-${month}`;
-
-    },
-
-
-    /* =====================================================
-       11. DEFAULT DATE FOR MONTH
-       ===================================================== */
-
-    getDefaultDateForMonth(
-        monthKey = this.getSelectedMonthKey()
-    ) {
-
-        const [
-            year,
-            month
-        ] = monthKey.split("-");
-
-
-        return `${year}-${month}-01`;
-
-    },
-
-
-    /* =====================================================
-       12. GET MONTH
-       ===================================================== */
-
     getMonth(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const data =
             this.load();
 
 
-        if (!data.months[monthKey]) {
+        if (
+            !data.months[
+                monthKey
+            ]
+        ) {
 
-            data.months[monthKey] =
+            data.months[
+                monthKey
+            ] =
                 this.createDefaultMonth(
                     monthKey
                 );
 
 
-            this.save(data);
+            this.save(
+                data
+            );
 
         }
 
 
-        data.months[monthKey] =
+        data.months[
+            monthKey
+        ] =
             this.normalizeMonth(
-                data.months[monthKey],
+
+                data.months[
+                    monthKey
+                ],
+
                 monthKey
+
             );
 
 
@@ -664,10 +1605,6 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       13. GET SELECTED MONTH
-       ===================================================== */
-
     getSelectedMonth() {
 
         return this.getMonth(
@@ -676,10 +1613,6 @@ const BudgetStorage = {
 
     },
 
-
-    /* =====================================================
-       14. SAVE MONTH
-       ===================================================== */
 
     saveMonth(
         monthKey,
@@ -690,92 +1623,53 @@ const BudgetStorage = {
             this.load();
 
 
-        monthData =
+        const normalizedMonth =
             this.normalizeMonth(
                 monthData,
                 monthKey
             );
 
 
-        monthData.updatedAt =
-            new Date().toISOString();
+        normalizedMonth.updatedAt =
+            this.now();
 
 
-        data.months[monthKey] =
-            monthData;
+        data.months[
+            monthKey
+        ] =
+            normalizedMonth;
 
 
-        this.save(data);
-
-
-        return monthData;
-
-    },
-
-
-    /* =====================================================
-       15. GENERATE UNIQUE ID
-       ===================================================== */
-
-    generateId(prefix = "item") {
-
-        if (
-            window.crypto &&
-            typeof window.crypto.randomUUID ===
-                "function"
-        ) {
-
-            return (
-                `${prefix}-` +
-                crypto.randomUUID()
-            );
-
-        }
-
-
-        return (
-            `${prefix}-` +
-            `${Date.now()}-` +
-            `${Math.random()
-                .toString(16)
-                .slice(2)}`
+        this.save(
+            data
         );
 
-    },
 
-
-    /* =====================================================
-       16. GET ID FROM MONEY.JS RECORD
-       ===================================================== */
-
-    getRecordId(
-        item,
-        prefix
-    ) {
-
-        return (
-            item?.id ||
-            this.generateId(prefix)
-        );
+        return normalizedMonth;
 
     },
 
 
     /* =====================================================
-       17. STARTING BALANCE
+       5. STARTING BALANCE
        ===================================================== */
 
     setStartingBalance(
         amount,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
 
 
         month.startingBalance =
-            Number(amount) || 0;
+            this.toNumber(
+                amount
+            );
 
 
         this.saveMonth(
@@ -790,29 +1684,786 @@ const BudgetStorage = {
 
 
     getStartingBalance(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
-        return Number(
+        return this.toNumber(
+
             this.getMonth(
                 monthKey
             ).startingBalance
-        ) || 0;
+
+        );
 
     },
 
 
     /* =====================================================
-       18. PAYCHECKS
+       6. INCOME
+       ===================================================== */
+
+    addIncome(income) {
+
+        const data =
+            this.load();
+
+
+        const newIncome =
+            this.normalizeIncome({
+
+                ...income,
+
+                id:
+                    income?.id ||
+                    this.generateId(
+                        "income"
+                    ),
+
+                createdAt:
+                    income?.createdAt ||
+                    this.now(),
+
+                updatedAt:
+                    this.now()
+
+            });
+
+
+        data.income.push(
+            newIncome
+        );
+
+
+        this.save(
+            data
+        );
+
+
+        return newIncome;
+
+    },
+
+
+    getIncome() {
+
+        return [
+            ...this.load().income
+        ];
+
+    },
+
+
+    getIncomeById(
+        incomeId
+    ) {
+
+        return (
+            this.load()
+                .income
+                .find(
+                    item =>
+                        item.id ===
+                        incomeId
+                )
+            ||
+            null
+        );
+
+    },
+
+
+    updateIncome(
+        incomeId,
+        updates
+    ) {
+
+        const data =
+            this.load();
+
+
+        const index =
+            data.income.findIndex(
+                item =>
+                    item.id ===
+                    incomeId
+            );
+
+
+        if (
+            index === -1
+        ) {
+
+            return null;
+
+        }
+
+
+        const existing =
+            data.income[
+                index
+            ];
+
+
+        const updated =
+            this.normalizeIncome({
+
+                ...existing,
+
+                ...updates,
+
+                id:
+                    existing.id,
+
+                createdAt:
+                    existing.createdAt,
+
+                legacyPaycheckId:
+                    existing
+                        .legacyPaycheckId,
+
+                legacyMonthKey:
+                    existing
+                        .legacyMonthKey,
+
+                updatedAt:
+                    this.now()
+
+            });
+
+
+        data.income[
+            index
+        ] =
+            updated;
+
+
+        this.save(
+            data
+        );
+
+
+        return updated;
+
+    },
+
+
+    deleteIncome(
+        incomeId
+    ) {
+
+        const data =
+            this.load();
+
+
+        const before =
+            data.income.length;
+
+
+        data.income =
+            data.income.filter(
+                item =>
+                    item.id !==
+                    incomeId
+            );
+
+
+        this.save(
+            data
+        );
+
+
+        return (
+            data.income.length !==
+            before
+        );
+
+    },
+
+
+    makeIncomeOccurrence(
+        income,
+        date
+    ) {
+
+        return {
+
+            ...income,
+
+            id:
+                income.id,
+
+            sourceId:
+                income.id,
+
+            occurrenceId:
+                `${income.id}@${date}`,
+
+            date,
+
+            isOccurrence:
+                income.recurring ||
+                date !== income.date
+
+        };
+
+    },
+
+
+    getCustomNextDate(
+        currentDate,
+        interval,
+        unit
+    ) {
+
+        const amount =
+            Math.max(
+                1,
+                Number(
+                    interval
+                ) || 1
+            );
+
+
+        switch (
+            unit
+        ) {
+
+            case "days":
+
+                return this.addDays(
+                    currentDate,
+                    amount
+                );
+
+
+            case "weeks":
+
+                return this.addDays(
+                    currentDate,
+                    amount * 7
+                );
+
+
+            case "years":
+
+                return this.addYearsClamped(
+                    currentDate,
+                    amount
+                );
+
+
+            case "months":
+
+            default:
+
+                return this.addMonthsClamped(
+                    currentDate,
+                    amount
+                );
+
+        }
+
+    },
+
+
+    getTwiceMonthlyIncomeOccurrences(
+        income,
+        rangeStart,
+        rangeEnd
+    ) {
+
+        const results =
+            [];
+
+
+        const [
+            startYear,
+            startMonth
+        ] =
+            rangeStart
+                .slice(
+                    0,
+                    7
+                )
+                .split("-")
+                .map(Number);
+
+
+        const [
+            endYear,
+            endMonth
+        ] =
+            rangeEnd
+                .slice(
+                    0,
+                    7
+                )
+                .split("-")
+                .map(Number);
+
+
+        const firstMonthIndex =
+            (
+                startYear * 12
+            ) +
+            startMonth -
+            1;
+
+
+        const lastMonthIndex =
+            (
+                endYear * 12
+            ) +
+            endMonth -
+            1;
+
+
+        const days =
+            Array.isArray(
+                income.twiceMonthlyDays
+            )
+
+                ? income.twiceMonthlyDays
+
+                : [
+                    1,
+                    15
+                ];
+
+
+        for (
+            let monthIndex =
+                firstMonthIndex;
+
+            monthIndex <=
+                lastMonthIndex;
+
+            monthIndex +=
+                1
+        ) {
+
+            const year =
+                Math.floor(
+                    monthIndex / 12
+                );
+
+
+            const month =
+                (
+                    monthIndex %
+                    12
+                ) + 1;
+
+
+            const maxDay =
+                this.daysInMonth(
+                    year,
+                    month
+                );
+
+
+            days.forEach(
+                dayValue => {
+
+                    const day =
+                        Math.min(
+
+                            maxDay,
+
+                            Math.max(
+                                1,
+                                Number(
+                                    dayValue
+                                ) || 1
+                            )
+
+                        );
+
+
+                    const date =
+
+                        `${year}-` +
+
+                        `${String(
+                            month
+                        ).padStart(
+                            2,
+                            "0"
+                        )}-` +
+
+                        `${String(
+                            day
+                        ).padStart(
+                            2,
+                            "0"
+                        )}`;
+
+
+                    if (
+                        date <
+                        income.date
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (
+                        income.endDate &&
+                        date >
+                            income.endDate
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (
+                        !this.isDateInRange(
+                            date,
+                            rangeStart,
+                            rangeEnd
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    results.push(
+
+                        this.makeIncomeOccurrence(
+                            income,
+                            date
+                        )
+
+                    );
+
+                }
+            );
+
+        }
+
+
+        return results;
+
+    },
+
+
+    getIncomeOccurrencesForRange(
+        rangeStart,
+        rangeEnd
+    ) {
+
+        const results =
+            [];
+
+
+        this.getIncome()
+            .forEach(
+                income => {
+
+                    if (
+                        !income.recurring
+                    ) {
+
+                        if (
+                            this.isDateInRange(
+                                income.date,
+                                rangeStart,
+                                rangeEnd
+                            )
+                        ) {
+
+                            results.push(
+
+                                this.makeIncomeOccurrence(
+                                    income,
+                                    income.date
+                                )
+
+                            );
+
+                        }
+
+
+                        return;
+
+                    }
+
+
+                    if (
+                        income.frequency ===
+                        "twice-monthly"
+                    ) {
+
+                        results.push(
+
+                            ...this
+                                .getTwiceMonthlyIncomeOccurrences(
+                                    income,
+                                    rangeStart,
+                                    rangeEnd
+                                )
+
+                        );
+
+
+                        return;
+
+                    }
+
+
+                    let date =
+                        income.date;
+
+
+                    let safety =
+                        0;
+
+
+                    while (
+                        date <=
+                            rangeEnd &&
+
+                        safety <
+                            20000
+                    ) {
+
+                        if (
+                            (
+                                !income.endDate ||
+                                date <=
+                                    income.endDate
+                            )
+                            &&
+                            date >=
+                                rangeStart
+                        ) {
+
+                            results.push(
+
+                                this.makeIncomeOccurrence(
+                                    income,
+                                    date
+                                )
+
+                            );
+
+                        }
+
+
+                        if (
+                            income.endDate &&
+                            date >=
+                                income.endDate
+                        ) {
+
+                            break;
+
+                        }
+
+
+                        switch (
+                            income.frequency
+                        ) {
+
+                            case "weekly":
+
+                                date =
+                                    this.addDays(
+                                        date,
+                                        7
+                                    );
+
+                                break;
+
+
+                            case "biweekly":
+
+                                date =
+                                    this.addDays(
+                                        date,
+                                        14
+                                    );
+
+                                break;
+
+
+                            case "monthly":
+
+                                date =
+                                    this.addMonthsClamped(
+                                        date,
+                                        1
+                                    );
+
+                                break;
+
+
+                            case "custom":
+
+                                date =
+                                    this.getCustomNextDate(
+
+                                        date,
+
+                                        income.customInterval,
+
+                                        income.customUnit
+
+                                    );
+
+                                break;
+
+
+                            default:
+
+                                date =
+                                    this.addMonthsClamped(
+                                        date,
+                                        1
+                                    );
+
+                        }
+
+
+                        safety +=
+                            1;
+
+                    }
+
+                }
+            );
+
+
+        return results.sort(
+            (
+                a,
+                b
+            ) =>
+                String(
+                    a.date
+                ).localeCompare(
+                    String(
+                        b.date
+                    )
+                )
+        );
+
+    },
+
+
+    getIncomeForMonth(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return this
+            .getIncomeOccurrencesForRange(
+
+                this.getMonthStart(
+                    monthKey
+                ),
+
+                this.getMonthEnd(
+                    monthKey
+                )
+
+            );
+
+    },
+
+
+    getIncomeForYear(
+        year
+    ) {
+
+        return this
+            .getIncomeOccurrencesForRange(
+
+                this.getYearStart(
+                    year
+                ),
+
+                this.getYearEnd(
+                    year
+                )
+
+            );
+
+    },
+
+
+    getMonthlyIncomeTotal(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return this
+            .getIncomeForMonth(
+                monthKey
+            )
+            .reduce(
+                (
+                    total,
+                    income
+                ) =>
+
+                    total +
+                    this.toNumber(
+                        income.amount
+                    ),
+
+                0
+            );
+
+    },
+
+
+    getYearlyIncomeTotal(
+        year
+    ) {
+
+        return this
+            .getIncomeForYear(
+                year
+            )
+            .reduce(
+                (
+                    total,
+                    income
+                ) =>
+
+                    total +
+                    this.toNumber(
+                        income.amount
+                    ),
+
+                0
+            );
+
+    },
+
+
+    /* =====================================================
+       7. LEGACY PAYCHECK COMPATIBILITY
        ===================================================== */
 
     addPaycheck(
         paycheck,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
 
 
         const newPaycheck = {
@@ -834,21 +2485,22 @@ const BudgetStorage = {
                 ),
 
             hours:
-                Number(
+                this.toNumber(
                     paycheck.hours
-                ) || 0,
+                ),
 
             amount:
-                Number(
+                this.toPositiveNumber(
                     paycheck.amount
-                ) || 0,
+                ),
 
             notes:
-                paycheck.notes || "",
+                paycheck.notes ||
+                "",
 
             createdAt:
                 paycheck.createdAt ||
-                new Date().toISOString()
+                this.now()
 
         };
 
@@ -864,13 +2516,67 @@ const BudgetStorage = {
         );
 
 
+        const linked =
+            this.getIncome()
+                .find(
+                    item =>
+                        item.legacyPaycheckId ===
+                        newPaycheck.id
+                );
+
+
+        if (
+            !linked
+        ) {
+
+            this.addIncome({
+
+                name:
+                    newPaycheck.name,
+
+                source:
+                    newPaycheck.name,
+
+                amount:
+                    newPaycheck.amount,
+
+                date:
+                    newPaycheck.payDate,
+
+                category:
+                    "Employment",
+
+                incomeType:
+                    "paycheck",
+
+                recurring:
+                    false,
+
+                notes:
+                    newPaycheck.notes,
+
+                legacyPaycheckId:
+                    newPaycheck.id,
+
+                legacyMonthKey:
+                    monthKey,
+
+                createdAt:
+                    newPaycheck.createdAt
+
+            });
+
+        }
+
+
         return newPaycheck;
 
     },
 
 
     getPaychecks(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         return [
@@ -885,11 +2591,14 @@ const BudgetStorage = {
     updatePaycheck(
         paycheckId,
         updates,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
 
 
         const paycheck =
@@ -900,8 +2609,12 @@ const BudgetStorage = {
             );
 
 
-        if (!paycheck) {
+        if (
+            !paycheck
+        ) {
+
             return null;
+
         }
 
 
@@ -911,34 +2624,63 @@ const BudgetStorage = {
         );
 
 
-        if (
-            updates.hours !== undefined
-        ) {
-
-            paycheck.hours =
-                Number(
-                    updates.hours
-                ) || 0;
-
-        }
+        paycheck.hours =
+            this.toNumber(
+                paycheck.hours
+            );
 
 
-        if (
-            updates.amount !== undefined
-        ) {
-
-            paycheck.amount =
-                Number(
-                    updates.amount
-                ) || 0;
-
-        }
+        paycheck.amount =
+            this.toPositiveNumber(
+                paycheck.amount
+            );
 
 
         this.saveMonth(
             monthKey,
             month
         );
+
+
+        const linkedIncome =
+            this.getIncome()
+                .find(
+                    item =>
+                        item.legacyPaycheckId ===
+                        paycheckId
+                );
+
+
+        if (
+            linkedIncome
+        ) {
+
+            this.updateIncome(
+
+                linkedIncome.id,
+
+                {
+
+                    name:
+                        paycheck.name,
+
+                    source:
+                        paycheck.name,
+
+                    amount:
+                        paycheck.amount,
+
+                    date:
+                        paycheck.payDate,
+
+                    notes:
+                        paycheck.notes
+
+                }
+
+            );
+
+        }
 
 
         return paycheck;
@@ -948,17 +2690,24 @@ const BudgetStorage = {
 
     deletePaycheck(
         paycheckId,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
+
+
+        const before =
+            month.paychecks.length;
 
 
         month.paychecks =
             month.paychecks.filter(
-                paycheck =>
-                    paycheck.id !==
+                item =>
+                    item.id !==
                     paycheckId
             );
 
@@ -969,22 +2718,74 @@ const BudgetStorage = {
         );
 
 
-        return true;
+        const linkedIncome =
+            this.getIncome()
+                .find(
+                    item =>
+                        item.legacyPaycheckId ===
+                        paycheckId
+                );
+
+
+        if (
+            linkedIncome
+        ) {
+
+            this.deleteIncome(
+                linkedIncome.id
+            );
+
+        }
+
+
+        return (
+            month.paychecks.length !==
+            before
+        );
+
+    },
+
+
+    getPaycheckIncome(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return this
+            .getPaychecks(
+                monthKey
+            )
+            .reduce(
+                (
+                    total,
+                    paycheck
+                ) =>
+
+                    total +
+                    this.toNumber(
+                        paycheck.amount
+                    ),
+
+                0
+            );
 
     },
 
 
     /* =====================================================
-       19. BILLS
+       8. BILLS
        ===================================================== */
 
     addBill(
         bill,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
 
 
         const newBill = {
@@ -996,8 +2797,10 @@ const BudgetStorage = {
                 ),
 
             name:
-                bill.name ||
-                "Bill",
+                this.normalizeString(
+                    bill.name,
+                    "Bill"
+                ),
 
             dueDate:
                 bill.dueDate ||
@@ -1006,13 +2809,25 @@ const BudgetStorage = {
                 ),
 
             amount:
-                Number(
+                this.toPositiveNumber(
                     bill.amount
-                ) || 0,
+                ),
 
             category:
-                bill.category ||
-                "Other",
+                this.normalizeString(
+                    bill.category,
+                    "Other"
+                ),
+
+            subcategory:
+                this.normalizeString(
+                    bill.subcategory
+                ),
+
+            merchant:
+                this.normalizeString(
+                    bill.merchant
+                ),
 
             paid:
                 Boolean(
@@ -1020,19 +2835,36 @@ const BudgetStorage = {
                 ),
 
             paidDate:
-                bill.paidDate || "",
+                bill.paidDate ||
+                "",
 
             recurring:
                 Boolean(
                     bill.recurring
                 ),
 
+            frequency:
+                this.normalizeString(
+
+                    bill.frequency,
+
+                    bill.recurring
+                        ? "monthly"
+                        : ""
+
+                ),
+
             notes:
-                bill.notes || "",
+                this.normalizeString(
+                    bill.notes
+                ),
 
             createdAt:
                 bill.createdAt ||
-                new Date().toISOString()
+                this.now(),
+
+            updatedAt:
+                this.now()
 
         };
 
@@ -1054,7 +2886,8 @@ const BudgetStorage = {
 
 
     getBills(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         return [
@@ -1069,22 +2902,30 @@ const BudgetStorage = {
     updateBill(
         billId,
         updates,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
 
 
         const bill =
             month.bills.find(
                 item =>
-                    item.id === billId
+                    item.id ===
+                    billId
             );
 
 
-        if (!bill) {
+        if (
+            !bill
+        ) {
+
             return null;
+
         }
 
 
@@ -1094,28 +2935,20 @@ const BudgetStorage = {
         );
 
 
-        if (
-            updates.amount !== undefined
-        ) {
-
-            bill.amount =
-                Number(
-                    updates.amount
-                ) || 0;
-
-        }
+        bill.amount =
+            this.toPositiveNumber(
+                bill.amount
+            );
 
 
-        if (
-            updates.recurring !== undefined
-        ) {
+        bill.recurring =
+            Boolean(
+                bill.recurring
+            );
 
-            bill.recurring =
-                Boolean(
-                    updates.recurring
-                );
 
-        }
+        bill.updatedAt =
+            this.now();
 
 
         this.saveMonth(
@@ -1132,35 +2965,50 @@ const BudgetStorage = {
     markBillPaid(
         billId,
         paid = true,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
 
 
         const bill =
             month.bills.find(
                 item =>
-                    item.id === billId
+                    item.id ===
+                    billId
             );
 
 
-        if (!bill) {
+        if (
+            !bill
+        ) {
+
             return null;
+
         }
 
 
         bill.paid =
-            Boolean(paid);
+            Boolean(
+                paid
+            );
 
 
         bill.paidDate =
             paid
-                ? new Date()
-                    .toISOString()
+
+                ? this.now()
                     .split("T")[0]
+
                 : "";
+
+
+        bill.updatedAt =
+            this.now();
 
 
         this.saveMonth(
@@ -1176,17 +3024,24 @@ const BudgetStorage = {
 
     deleteBill(
         billId,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
+
+
+        const before =
+            month.bills.length;
 
 
         month.bills =
             month.bills.filter(
-                bill =>
-                    bill.id !==
+                item =>
+                    item.id !==
                     billId
             );
 
@@ -1197,75 +3052,54 @@ const BudgetStorage = {
         );
 
 
-        return true;
+        return (
+            month.bills.length !==
+            before
+        );
 
     },
 
 
     /* =====================================================
-       20. EXPENSES
+       9. EXPENSES - P2.2
        ===================================================== */
 
     addExpense(
-        expense,
-        monthKey = this.getSelectedMonthKey()
+        expense
     ) {
 
-        const month =
-            this.getMonth(monthKey);
+        const data =
+            this.load();
 
 
-        const newExpense = {
+        const newExpense =
+            this.normalizeExpense({
 
-            id:
-                this.getRecordId(
-                    expense,
-                    "expense"
-                ),
+                ...expense,
 
-            name:
-                expense.name ||
-                "Expense",
+                id:
+                    expense?.id ||
+                    this.generateId(
+                        "expense"
+                    ),
 
-            date:
-                expense.date ||
-                this.getDefaultDateForMonth(
-                    monthKey
-                ),
+                createdAt:
+                    expense?.createdAt ||
+                    this.now(),
 
-            amount:
-                Math.abs(
-                    Number(
-                        expense.amount
-                    ) || 0
-                ),
+                updatedAt:
+                    this.now()
 
-            category:
-                expense.category ||
-                "Other",
-
-            paymentMethod:
-                expense.paymentMethod ||
-                "Checking",
-
-            notes:
-                expense.notes || "",
-
-            createdAt:
-                expense.createdAt ||
-                new Date().toISOString()
-
-        };
+            });
 
 
-        month.expenses.push(
+        data.expenses.push(
             newExpense
         );
 
 
-        this.saveMonth(
-            monthKey,
-            month
+        this.save(
+            data
         );
 
 
@@ -1274,93 +3108,167 @@ const BudgetStorage = {
     },
 
 
-    getExpenses(
-        monthKey = this.getSelectedMonthKey()
-    ) {
+    getExpenseRecords() {
 
         return [
-            ...this.getMonth(
-                monthKey
-            ).expenses
+            ...this.load().expenses
         ];
+
+    },
+
+
+    getExpenseById(
+        expenseId
+    ) {
+
+        return (
+            this.load()
+                .expenses
+                .find(
+                    item =>
+                        item.id ===
+                        expenseId
+                )
+            ||
+            null
+        );
 
     },
 
 
     updateExpense(
         expenseId,
-        updates,
-        monthKey = this.getSelectedMonthKey()
+        updates
     ) {
 
-        const month =
-            this.getMonth(monthKey);
+        const data =
+            this.load();
 
 
-        const expense =
-            month.expenses.find(
+        const index =
+            data.expenses.findIndex(
                 item =>
                     item.id ===
                     expenseId
             );
 
 
-        if (!expense) {
-            return null;
-        }
-
-
-        Object.assign(
-            expense,
-            updates
-        );
-
-
         if (
-            updates.amount !== undefined
+            index === -1
         ) {
 
-            expense.amount =
-                Math.abs(
-                    Number(
-                        updates.amount
-                    ) || 0
-                );
+            return null;
 
         }
 
 
-        this.saveMonth(
-            monthKey,
-            month
+        const existing =
+            data.expenses[
+                index
+            ];
+
+
+        const updated =
+            this.normalizeExpense({
+
+                ...existing,
+
+                ...updates,
+
+                id:
+                    existing.id,
+
+                createdAt:
+                    existing.createdAt,
+
+                legacyExpenseId:
+                    existing
+                        .legacyExpenseId,
+
+                legacyMonthKey:
+                    existing
+                        .legacyMonthKey,
+
+                updatedAt:
+                    this.now()
+
+            });
+
+
+        data.expenses[
+            index
+        ] =
+            updated;
+
+
+        this.save(
+            data
         );
 
 
-        return expense;
+        return updated;
 
     },
 
 
     deleteExpense(
-        expenseId,
-        monthKey = this.getSelectedMonthKey()
+        expenseId
     ) {
 
-        const month =
-            this.getMonth(monthKey);
+        const data =
+            this.load();
 
 
-        month.expenses =
-            month.expenses.filter(
-                expense =>
-                    expense.id !==
+        const expense =
+            data.expenses.find(
+                item =>
+                    item.id ===
                     expenseId
             );
 
 
-        this.saveMonth(
-            monthKey,
-            month
+        if (
+            !expense
+        ) {
+
+            return false;
+
+        }
+
+
+        data.expenses =
+            data.expenses.filter(
+                item =>
+                    item.id !==
+                    expenseId
+            );
+
+
+        if (
+            expense.legacyExpenseId &&
+            expense.legacyMonthKey &&
+            data.months[
+                expense.legacyMonthKey
+            ]
+        ) {
+
+            data.months[
+                expense.legacyMonthKey
+            ].expenses =
+
+                data.months[
+                    expense.legacyMonthKey
+                ].expenses.filter(
+                    item =>
+                        item.id !==
+                        expense.legacyExpenseId
+                );
+
+        }
+
+
+        this.save(
+            data
         );
 
 
@@ -1369,24 +3277,345 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       21. MANUAL TRANSACTIONS
-       ===================================================== */
+    makeExpenseOccurrence(
+        expense,
+        date
+    ) {
+
+        return {
+
+            ...expense,
+
+            id:
+                expense.id,
+
+            sourceId:
+                expense.id,
+
+            occurrenceId:
+                `${expense.id}@${date}`,
+
+            date,
+
+            isOccurrence:
+                expense.recurring ||
+                date !== expense.date
+
+        };
+
+    },
+
+
+    getExpenseOccurrencesForRange(
+        rangeStart,
+        rangeEnd
+    ) {
+
+        const results =
+            [];
+
+
+        this.getExpenseRecords()
+            .forEach(
+                expense => {
+
+                    if (
+                        !expense.recurring
+                    ) {
+
+                        if (
+                            this.isDateInRange(
+                                expense.date,
+                                rangeStart,
+                                rangeEnd
+                            )
+                        ) {
+
+                            results.push(
+
+                                this.makeExpenseOccurrence(
+                                    expense,
+                                    expense.date
+                                )
+
+                            );
+
+                        }
+
+
+                        return;
+
+                    }
+
+
+                    let date =
+                        expense.date;
+
+
+                    let safety =
+                        0;
+
+
+                    while (
+                        date <=
+                            rangeEnd &&
+
+                        safety <
+                            20000
+                    ) {
+
+                        if (
+                            (
+                                !expense.endDate ||
+                                date <=
+                                    expense.endDate
+                            )
+                            &&
+                            date >=
+                                rangeStart
+                        ) {
+
+                            results.push(
+
+                                this.makeExpenseOccurrence(
+                                    expense,
+                                    date
+                                )
+
+                            );
+
+                        }
+
+
+                        if (
+                            expense.endDate &&
+                            date >=
+                                expense.endDate
+                        ) {
+
+                            break;
+
+                        }
+
+
+                        switch (
+                            expense.frequency
+                        ) {
+
+                            case "weekly":
+
+                                date =
+                                    this.addDays(
+                                        date,
+                                        7
+                                    );
+
+                                break;
+
+
+                            case "biweekly":
+
+                                date =
+                                    this.addDays(
+                                        date,
+                                        14
+                                    );
+
+                                break;
+
+
+                            case "yearly":
+
+                                date =
+                                    this.addYearsClamped(
+                                        date,
+                                        1
+                                    );
+
+                                break;
+
+
+                            case "custom":
+
+                                date =
+                                    this.getCustomNextDate(
+
+                                        date,
+
+                                        expense.customInterval,
+
+                                        expense.customUnit
+
+                                    );
+
+                                break;
+
+
+                            case "monthly":
+
+                            default:
+
+                                date =
+                                    this.addMonthsClamped(
+                                        date,
+                                        1
+                                    );
+
+                                break;
+
+                        }
+
+
+                        safety +=
+                            1;
+
+                    }
+
+                }
+            );
+
+
+        return results.sort(
+            (
+                a,
+                b
+            ) =>
+                String(
+                    a.date
+                ).localeCompare(
+                    String(
+                        b.date
+                    )
+                )
+        );
+
+    },
+
+
+    getExpensesForMonth(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return this
+            .getExpenseOccurrencesForRange(
+
+                this.getMonthStart(
+                    monthKey
+                ),
+
+                this.getMonthEnd(
+                    monthKey
+                )
+
+            );
+
+    },
+
+
+    getExpensesForYear(
+        year
+    ) {
+
+        return this
+            .getExpenseOccurrencesForRange(
+
+                this.getYearStart(
+                    year
+                ),
+
+                this.getYearEnd(
+                    year
+                )
+
+            );
+
+    },
+
 
     /*
-        Manual transactions allow:
-
-            +500.00 = money in
-            -25.00  = money out
+        Compatibility:
+        app.js already calls getExpenses().
     */
+
+    getExpenses(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return this
+            .getExpensesForMonth(
+                monthKey
+            );
+
+    },
+
+
+    getMonthlyExpenseTotal(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return this
+            .getExpensesForMonth(
+                monthKey
+            )
+            .reduce(
+                (
+                    total,
+                    expense
+                ) =>
+
+                    total +
+                    this.toNumber(
+                        expense.amount
+                    ),
+
+                0
+            );
+
+    },
+
+
+    getYearlyExpenseTotal(
+        year
+    ) {
+
+        return this
+            .getExpensesForYear(
+                year
+            )
+            .reduce(
+                (
+                    total,
+                    expense
+                ) =>
+
+                    total +
+                    this.toNumber(
+                        expense.amount
+                    ),
+
+                0
+            );
+
+    },
+
+
+    /* =====================================================
+       10. MANUAL TRANSACTIONS
+       ===================================================== */
 
     addTransaction(
         transaction,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
 
 
         const newTransaction = {
@@ -1413,16 +3642,20 @@ const BudgetStorage = {
                 "Other",
 
             amount:
-                Number(
+                this.toNumber(
                     transaction.amount
-                ) || 0,
+                ),
 
             notes:
-                transaction.notes || "",
+                transaction.notes ||
+                "",
 
             createdAt:
                 transaction.createdAt ||
-                new Date().toISOString()
+                this.now(),
+
+            updatedAt:
+                this.now()
 
         };
 
@@ -1444,7 +3677,8 @@ const BudgetStorage = {
 
 
     getManualTransactions(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         return [
@@ -1459,11 +3693,14 @@ const BudgetStorage = {
     updateTransaction(
         transactionId,
         updates,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
 
 
         const transaction =
@@ -1474,8 +3711,12 @@ const BudgetStorage = {
             );
 
 
-        if (!transaction) {
+        if (
+            !transaction
+        ) {
+
             return null;
+
         }
 
 
@@ -1485,16 +3726,14 @@ const BudgetStorage = {
         );
 
 
-        if (
-            updates.amount !== undefined
-        ) {
+        transaction.amount =
+            this.toNumber(
+                transaction.amount
+            );
 
-            transaction.amount =
-                Number(
-                    updates.amount
-                ) || 0;
 
-        }
+        transaction.updatedAt =
+            this.now();
 
 
         this.saveMonth(
@@ -1510,17 +3749,24 @@ const BudgetStorage = {
 
     deleteTransaction(
         transactionId,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
+
+
+        const before =
+            month.transactions.length;
 
 
         month.transactions =
             month.transactions.filter(
-                transaction =>
-                    transaction.id !==
+                item =>
+                    item.id !==
                     transactionId
             );
 
@@ -1531,35 +3777,97 @@ const BudgetStorage = {
         );
 
 
-        return true;
+        return (
+            month.transactions.length !==
+            before
+        );
+
+    },
+
+
+    getManualTransactionIncome(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return this
+            .getManualTransactions(
+                monthKey
+            )
+            .filter(
+                transaction =>
+                    this.toNumber(
+                        transaction.amount
+                    ) > 0
+            )
+            .reduce(
+                (
+                    total,
+                    transaction
+                ) =>
+
+                    total +
+                    this.toNumber(
+                        transaction.amount
+                    ),
+
+                0
+            );
+
+    },
+
+
+    getManualTransactionExpenses(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        return this
+            .getManualTransactions(
+                monthKey
+            )
+            .filter(
+                transaction =>
+                    this.toNumber(
+                        transaction.amount
+                    ) < 0
+            )
+            .reduce(
+                (
+                    total,
+                    transaction
+                ) =>
+
+                    total +
+                    Math.abs(
+                        this.toNumber(
+                            transaction.amount
+                        )
+                    ),
+
+                0
+            );
 
     },
 
 
     /* =====================================================
-       22. SAVINGS GOALS
+       11. SAVINGS GOALS
        ===================================================== */
 
     getSavingsGoals() {
 
-        const data =
-            this.load();
-
-
         return [
-            ...data.savingsGoals
+            ...this.load()
+                .savingsGoals
         ];
 
     },
 
 
-    /*
-        Optional helper if later we want to see only goals
-        that were CREATED during a specific month.
-    */
-
     getSavingsGoalsCreatedInMonth(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         return this
@@ -1575,7 +3883,8 @@ const BudgetStorage = {
 
     addSavingsGoal(
         goal,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const data =
@@ -1583,15 +3892,15 @@ const BudgetStorage = {
 
 
         const targetAmount =
-            Number(
+            this.toPositiveNumber(
                 goal.targetAmount
-            ) || 0;
+            );
 
 
         const currentAmount =
-            Number(
+            this.toPositiveNumber(
                 goal.currentAmount
-            ) || 0;
+            );
 
 
         const newGoal = {
@@ -1615,10 +3924,12 @@ const BudgetStorage = {
                 monthKey,
 
             targetDate:
-                goal.targetDate || "",
+                goal.targetDate ||
+                "",
 
             notes:
-                goal.notes || "",
+                goal.notes ||
+                "",
 
             completed:
                 targetAmount > 0 &&
@@ -1627,10 +3938,10 @@ const BudgetStorage = {
 
             createdAt:
                 goal.createdAt ||
-                new Date().toISOString(),
+                this.now(),
 
             updatedAt:
-                new Date().toISOString()
+                this.now()
 
         };
 
@@ -1640,7 +3951,9 @@ const BudgetStorage = {
         );
 
 
-        this.save(data);
+        this.save(
+            data
+        );
 
 
         return newGoal;
@@ -1660,12 +3973,17 @@ const BudgetStorage = {
         const goal =
             data.savingsGoals.find(
                 item =>
-                    item.id === goalId
+                    item.id ===
+                    goalId
             );
 
 
-        if (!goal) {
+        if (
+            !goal
+        ) {
+
             return null;
+
         }
 
 
@@ -1675,28 +3993,16 @@ const BudgetStorage = {
         );
 
 
-        if (
-            updates.targetAmount !== undefined
-        ) {
-
-            goal.targetAmount =
-                Number(
-                    updates.targetAmount
-                ) || 0;
-
-        }
+        goal.targetAmount =
+            this.toPositiveNumber(
+                goal.targetAmount
+            );
 
 
-        if (
-            updates.currentAmount !== undefined
-        ) {
-
-            goal.currentAmount =
-                Number(
-                    updates.currentAmount
-                ) || 0;
-
-        }
+        goal.currentAmount =
+            this.toPositiveNumber(
+                goal.currentAmount
+            );
 
 
         goal.completed =
@@ -1706,10 +4012,12 @@ const BudgetStorage = {
 
 
         goal.updatedAt =
-            new Date().toISOString();
+            this.now();
 
 
-        this.save(data);
+        this.save(
+            data
+        );
 
 
         return goal;
@@ -1729,17 +4037,24 @@ const BudgetStorage = {
         const goal =
             data.savingsGoals.find(
                 item =>
-                    item.id === goalId
+                    item.id ===
+                    goalId
             );
 
 
-        if (!goal) {
+        if (
+            !goal
+        ) {
+
             return null;
+
         }
 
 
         goal.currentAmount +=
-            Number(amount) || 0;
+            this.toNumber(
+                amount
+            );
 
 
         goal.completed =
@@ -1749,10 +4064,12 @@ const BudgetStorage = {
 
 
         goal.updatedAt =
-            new Date().toISOString();
+            this.now();
 
 
-        this.save(data);
+        this.save(
+            data
+        );
 
 
         return goal;
@@ -1760,45 +4077,58 @@ const BudgetStorage = {
     },
 
 
-    deleteSavingsGoal(goalId) {
+    deleteSavingsGoal(
+        goalId
+    ) {
 
         const data =
             this.load();
 
 
+        const before =
+            data.savingsGoals.length;
+
+
         data.savingsGoals =
             data.savingsGoals.filter(
                 goal =>
-                    goal.id !== goalId
+                    goal.id !==
+                    goalId
             );
 
 
-        this.save(data);
+        this.save(
+            data
+        );
 
 
-        return true;
+        return (
+            data.savingsGoals.length !==
+            before
+        );
 
     },
 
 
     /* =====================================================
-       23. SAVINGS DEPOSITS
+       12. SAVINGS DEPOSITS
        ===================================================== */
 
     addSavingsDeposit(
         deposit,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
 
 
         const amount =
-            Math.abs(
-                Number(
-                    deposit.amount
-                ) || 0
+            this.toPositiveNumber(
+                deposit.amount
             );
 
 
@@ -1827,11 +4157,12 @@ const BudgetStorage = {
             amount,
 
             notes:
-                deposit.notes || "",
+                deposit.notes ||
+                "",
 
             createdAt:
                 deposit.createdAt ||
-                new Date().toISOString()
+                this.now()
 
         };
 
@@ -1840,10 +4171,6 @@ const BudgetStorage = {
             newDeposit
         );
 
-
-        /*
-            Keep backwards-compatible alias synced.
-        */
 
         month.savingsTransfers =
             month.savingsDeposits;
@@ -1855,16 +4182,16 @@ const BudgetStorage = {
         );
 
 
-        /*
-            If this deposit is attached to a savings goal,
-            update that goal too.
-        */
-
-        if (newDeposit.goalId) {
+        if (
+            newDeposit.goalId
+        ) {
 
             this.addToSavingsGoal(
+
                 newDeposit.goalId,
+
                 amount
+
             );
 
         }
@@ -1876,7 +4203,8 @@ const BudgetStorage = {
 
 
     getSavingsDeposits(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         return [
@@ -1890,17 +4218,25 @@ const BudgetStorage = {
 
     deleteSavingsDeposit(
         depositId,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
-            this.getMonth(monthKey);
+            this.getMonth(
+                monthKey
+            );
+
+
+        const before =
+            month.savingsDeposits
+                .length;
 
 
         month.savingsDeposits =
             month.savingsDeposits.filter(
-                deposit =>
-                    deposit.id !==
+                item =>
+                    item.id !==
                     depositId
             );
 
@@ -1915,76 +4251,55 @@ const BudgetStorage = {
         );
 
 
-        return true;
+        return (
+            month.savingsDeposits
+                .length !==
+            before
+        );
 
     },
 
 
-    /* -----------------------------------------------------
-       OLD NAME COMPATIBILITY
-
-       Existing code can still call:
-
-           addSavingsTransfer()
-           deleteSavingsTransfer()
-       ----------------------------------------------------- */
-
     addSavingsTransfer(
         transfer,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
-        return this.addSavingsDeposit(
-            transfer,
-            monthKey
-        );
+        return this
+            .addSavingsDeposit(
+                transfer,
+                monthKey
+            );
 
     },
 
 
     deleteSavingsTransfer(
         transferId,
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
-        return this.deleteSavingsDeposit(
-            transferId,
-            monthKey
-        );
+        return this
+            .deleteSavingsDeposit(
+                transferId,
+                monthKey
+            );
 
     },
 
 
     /* =====================================================
-       24. MONEY.JS SAVE ROUTER
+       13. MONEY.JS SAVE ROUTER
        ===================================================== */
 
-    /*
-        THIS IS THE MAIN CONNECTION BETWEEN:
-
-            money.js
-                ↓
-            storage.js
-
-
-        money.js sends a record such as:
-
-        {
-            type: "paycheck",
-            monthKey: "2026-08",
-            name: "Amazon",
-            amount: 750
-        }
-
-        saveMoneyEntry() decides which storage function
-        should handle it.
-    */
-
-    saveMoneyEntry(record) {
+    saveMoneyEntry(
+        record
+    ) {
 
         if (
-            !record ||
-            !record.type
+            !record?.type
         ) {
 
             throw new Error(
@@ -1999,10 +4314,16 @@ const BudgetStorage = {
             this.getSelectedMonthKey();
 
 
-        switch (record.type) {
+        switch (
+            record.type
+        ) {
 
+            case "income":
 
-            /* PAYCHECK */
+                return this.addIncome(
+                    record
+                );
+
 
             case "paycheck":
 
@@ -2012,8 +4333,6 @@ const BudgetStorage = {
                 );
 
 
-            /* BILL */
-
             case "bill":
 
                 return this.addBill(
@@ -2022,17 +4341,12 @@ const BudgetStorage = {
                 );
 
 
-            /* EXPENSE */
-
             case "expense":
 
                 return this.addExpense(
-                    record,
-                    monthKey
+                    record
                 );
 
-
-            /* MANUAL TRANSACTION */
 
             case "transaction":
 
@@ -2042,8 +4356,6 @@ const BudgetStorage = {
                 );
 
 
-            /* SAVINGS GOAL */
-
             case "savings-goal":
 
                 return this.addSavingsGoal(
@@ -2052,8 +4364,6 @@ const BudgetStorage = {
                 );
 
 
-            /* SAVINGS DEPOSIT */
-
             case "savings-deposit":
 
                 return this.addSavingsDeposit(
@@ -2061,8 +4371,6 @@ const BudgetStorage = {
                     monthKey
                 );
 
-
-            /* STARTING BALANCE */
 
             case "starting-balance":
 
@@ -2084,105 +4392,17 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       25. TOTAL PAYCHECK INCOME
-       ===================================================== */
-
-    getPaycheckIncome(
-        monthKey = this.getSelectedMonthKey()
-    ) {
-
-        return this
-            .getPaychecks(monthKey)
-            .reduce(
-                (total, paycheck) =>
-
-                    total +
-                    Number(
-                        paycheck.amount
-                    ),
-
-                0
-            );
-
-    },
-
-
-    /* =====================================================
-       26. POSITIVE MANUAL TRANSACTIONS
-       ===================================================== */
-
-    getManualTransactionIncome(
-        monthKey = this.getSelectedMonthKey()
-    ) {
-
-        return this
-            .getManualTransactions(
-                monthKey
-            )
-            .filter(
-                transaction =>
-                    Number(
-                        transaction.amount
-                    ) > 0
-            )
-            .reduce(
-                (total, transaction) =>
-
-                    total +
-                    Number(
-                        transaction.amount
-                    ),
-
-                0
-            );
-
-    },
-
-
-    /* =====================================================
-       27. NEGATIVE MANUAL TRANSACTIONS
-       ===================================================== */
-
-    getManualTransactionExpenses(
-        monthKey = this.getSelectedMonthKey()
-    ) {
-
-        return this
-            .getManualTransactions(
-                monthKey
-            )
-            .filter(
-                transaction =>
-                    Number(
-                        transaction.amount
-                    ) < 0
-            )
-            .reduce(
-                (total, transaction) =>
-
-                    total +
-                    Math.abs(
-                        Number(
-                            transaction.amount
-                        )
-                    ),
-
-                0
-            );
-
-    },
-
-
-    /* =====================================================
-       28. TOTAL INCOME
+       14. TOTALS
        ===================================================== */
 
     getTotalIncome(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         return (
-            this.getPaycheckIncome(
+
+            this.getMonthlyIncomeTotal(
                 monthKey
             )
 
@@ -2191,26 +4411,29 @@ const BudgetStorage = {
             this.getManualTransactionIncome(
                 monthKey
             )
+
         );
 
     },
 
 
-    /* =====================================================
-       29. TOTAL BILLS
-       ===================================================== */
-
     getTotalBills(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         return this
-            .getBills(monthKey)
+            .getBills(
+                monthKey
+            )
             .reduce(
-                (total, bill) =>
+                (
+                    total,
+                    bill
+                ) =>
 
                     total +
-                    Number(
+                    this.toNumber(
                         bill.amount
                     ),
 
@@ -2220,54 +4443,31 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       30. TOTAL EXPENSES
-       ===================================================== */
-
     getTotalExpenses(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
-        const normalExpenses =
-            this
-                .getExpenses(
-                    monthKey
-                )
-                .reduce(
-                    (
-                        total,
-                        expense
-                    ) =>
+        return (
 
-                        total +
-                        Number(
-                            expense.amount
-                        ),
+            this.getMonthlyExpenseTotal(
+                monthKey
+            )
 
-                    0
-                );
+            +
 
-
-        const manualExpenses =
             this.getManualTransactionExpenses(
                 monthKey
-            );
+            )
 
-
-        return (
-            normalExpenses +
-            manualExpenses
         );
 
     },
 
 
-    /* =====================================================
-       31. TOTAL SAVINGS DEPOSITS
-       ===================================================== */
-
     getTotalSavingsDeposits(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         return this
@@ -2281,7 +4481,7 @@ const BudgetStorage = {
                 ) =>
 
                     total +
-                    Number(
+                    this.toNumber(
                         deposit.amount
                     ),
 
@@ -2291,27 +4491,22 @@ const BudgetStorage = {
     },
 
 
-    /*
-        Original method name kept for compatibility.
-    */
-
     getTotalSavingsTransfers(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
-        return this.getTotalSavingsDeposits(
-            monthKey
-        );
+        return this
+            .getTotalSavingsDeposits(
+                monthKey
+            );
 
     },
 
 
-    /* =====================================================
-       32. CALCULATE ENDING BALANCE
-       ===================================================== */
-
     calculateEndingBalance(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
@@ -2320,43 +4515,35 @@ const BudgetStorage = {
             );
 
 
-        const income =
-            this.getTotalIncome(
-                monthKey
-            );
-
-
-        const bills =
-            this.getTotalBills(
-                monthKey
-            );
-
-
-        const expenses =
-            this.getTotalExpenses(
-                monthKey
-            );
-
-
-        const savings =
-            this.getTotalSavingsDeposits(
-                monthKey
-            );
-
-
         const endingBalance =
 
-            Number(
+            this.toNumber(
                 month.startingBalance
             )
 
-            + income
+            +
 
-            - bills
+            this.getTotalIncome(
+                monthKey
+            )
 
-            - expenses
+            -
 
-            - savings;
+            this.getTotalBills(
+                monthKey
+            )
+
+            -
+
+            this.getTotalExpenses(
+                monthKey
+            )
+
+            -
+
+            this.getTotalSavingsDeposits(
+                monthKey
+            );
 
 
         month.endingBalance =
@@ -2374,17 +4561,20 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       33. MONTHLY SUMMARY
-       ===================================================== */
-
     getMonthlySummary(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
             this.getMonth(
                 monthKey
+            );
+
+
+        const startingBalance =
+            this.toNumber(
+                month.startingBalance
             );
 
 
@@ -2410,12 +4600,6 @@ const BudgetStorage = {
             this.getTotalSavingsDeposits(
                 monthKey
             );
-
-
-        const startingBalance =
-            Number(
-                month.startingBalance
-            ) || 0;
 
 
         const endingBalance =
@@ -2447,12 +4631,6 @@ const BudgetStorage = {
 
             endingBalance,
 
-
-            /*
-                Remaining money from this month's
-                income after planned spending.
-            */
-
             remaining:
 
                 income
@@ -2469,11 +4647,12 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       34. COMBINED ACTIVITY / TRANSACTIONS
+       15. COMBINED ACTIVITY
        ===================================================== */
 
     getTransactions(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
@@ -2482,45 +4661,57 @@ const BudgetStorage = {
             );
 
 
-        const transactions = [];
+        const transactions =
+            [];
 
 
-        /* -------------------------------------------------
-           PAYCHECKS
-           ------------------------------------------------- */
+        /* INCOME */
 
-        month.paychecks.forEach(
-            paycheck => {
+        this.getIncomeForMonth(
+            monthKey
+        ).forEach(
+            income => {
 
                 transactions.push({
 
                     id:
-                        paycheck.id,
+                        income.occurrenceId ||
+                        income.id,
+
+                    sourceId:
+                        income.sourceId ||
+                        income.id,
 
                     sourceType:
-                        "paycheck",
+                        "income",
 
                     type:
                         "income",
 
                     name:
-                        paycheck.name,
+                        income.name ||
+                        income.source,
 
                     description:
-                        paycheck.name,
+                        income.name ||
+                        income.source,
 
                     date:
-                        paycheck.payDate,
+                        income.date,
 
                     amount:
-                        Math.abs(
-                            Number(
-                                paycheck.amount
-                            )
+                        this.toPositiveNumber(
+                            income.amount
                         ),
 
                     category:
-                        "Income"
+                        income.category,
+
+                    recurring:
+                        income.recurring,
+
+                    frequency:
+                        income.frequency
 
                 });
 
@@ -2528,9 +4719,7 @@ const BudgetStorage = {
         );
 
 
-        /* -------------------------------------------------
-           BILLS
-           ------------------------------------------------- */
+        /* BILLS */
 
         month.bills.forEach(
             bill => {
@@ -2556,14 +4745,20 @@ const BudgetStorage = {
                         bill.dueDate,
 
                     amount:
-                        -Math.abs(
-                            Number(
-                                bill.amount
-                            )
+                        -this.toPositiveNumber(
+                            bill.amount
                         ),
 
                     category:
                         bill.category,
+
+                    subcategory:
+                        bill.subcategory ||
+                        "",
+
+                    merchant:
+                        bill.merchant ||
+                        "",
 
                     paid:
                         bill.paid
@@ -2574,16 +4769,21 @@ const BudgetStorage = {
         );
 
 
-        /* -------------------------------------------------
-           EXPENSES
-           ------------------------------------------------- */
+        /* EXPENSES */
 
-        month.expenses.forEach(
+        this.getExpensesForMonth(
+            monthKey
+        ).forEach(
             expense => {
 
                 transactions.push({
 
                     id:
+                        expense.occurrenceId ||
+                        expense.id,
+
+                    sourceId:
+                        expense.sourceId ||
                         expense.id,
 
                     sourceType:
@@ -2602,14 +4802,27 @@ const BudgetStorage = {
                         expense.date,
 
                     amount:
-                        -Math.abs(
-                            Number(
-                                expense.amount
-                            )
+                        -this.toPositiveNumber(
+                            expense.amount
                         ),
 
+                    merchant:
+                        expense.merchant,
+
                     category:
-                        expense.category
+                        expense.category,
+
+                    subcategory:
+                        expense.subcategory,
+
+                    recurring:
+                        expense.recurring,
+
+                    frequency:
+                        expense.frequency,
+
+                    notes:
+                        expense.notes
 
                 });
 
@@ -2617,17 +4830,15 @@ const BudgetStorage = {
         );
 
 
-        /* -------------------------------------------------
-           MANUAL TRANSACTIONS
-           ------------------------------------------------- */
+        /* MANUAL TRANSACTIONS */
 
         month.transactions.forEach(
             transaction => {
 
                 const amount =
-                    Number(
+                    this.toNumber(
                         transaction.amount
-                    ) || 0;
+                    );
 
 
                 transactions.push({
@@ -2663,9 +4874,7 @@ const BudgetStorage = {
         );
 
 
-        /* -------------------------------------------------
-           SAVINGS
-           ------------------------------------------------- */
+        /* SAVINGS */
 
         month.savingsDeposits.forEach(
             deposit => {
@@ -2691,10 +4900,8 @@ const BudgetStorage = {
                         deposit.date,
 
                     amount:
-                        -Math.abs(
-                            Number(
-                                deposit.amount
-                            )
+                        -this.toPositiveNumber(
+                            deposit.amount
                         ),
 
                     category:
@@ -2706,37 +4913,19 @@ const BudgetStorage = {
         );
 
 
-        /*
-            Newest first.
-
-            If a record has no date, put it last.
-        */
-
         transactions.sort(
-            (a, b) => {
+            (
+                a,
+                b
+            ) =>
 
-                const aDate =
-                    a.date
-                        ? new Date(
-                            `${a.date}T00:00:00`
-                        )
-                        : new Date(0);
-
-
-                const bDate =
-                    b.date
-                        ? new Date(
-                            `${b.date}T00:00:00`
-                        )
-                        : new Date(0);
-
-
-                return (
-                    bDate -
-                    aDate
-                );
-
-            }
+                String(
+                    b.date || ""
+                ).localeCompare(
+                    String(
+                        a.date || ""
+                    )
+                )
         );
 
 
@@ -2745,62 +4934,34 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       35. RUNNING BALANCE
-       ===================================================== */
-
     getRunningBalance(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
-        const month =
-            this.getMonth(
+        let balance =
+            this.getStartingBalance(
                 monthKey
             );
-
-
-        let balance =
-            Number(
-                month.startingBalance
-            ) || 0;
 
 
         const transactions =
             this.getTransactions(
                 monthKey
+            ).sort(
+                (
+                    a,
+                    b
+                ) =>
+
+                    String(
+                        a.date || ""
+                    ).localeCompare(
+                        String(
+                            b.date || ""
+                        )
+                    )
             );
-
-
-        /*
-            Oldest → newest.
-        */
-
-        transactions.sort(
-            (a, b) => {
-
-                const aDate =
-                    a.date
-                        ? new Date(
-                            `${a.date}T00:00:00`
-                        )
-                        : new Date(0);
-
-
-                const bDate =
-                    b.date
-                        ? new Date(
-                            `${b.date}T00:00:00`
-                        )
-                        : new Date(0);
-
-
-                return (
-                    aDate -
-                    bDate
-                );
-
-            }
-        );
 
 
         return transactions.map(
@@ -2811,7 +4972,7 @@ const BudgetStorage = {
 
 
                 balance +=
-                    Number(
+                    this.toNumber(
                         transaction.amount
                     );
 
@@ -2834,27 +4995,12 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       36. GET EVERYTHING FOR ONE MONTH
+       16. MONTH SNAPSHOT
        ===================================================== */
 
-    /*
-        app.js can call ONE function when the user
-        changes months.
-
-        Example:
-
-            BudgetStorage.getMonthSnapshot("2026-09")
-
-        or simply:
-
-            BudgetStorage.getMonthSnapshot()
-
-        The second version automatically uses the month
-        selected in the header.
-    */
-
     getMonthSnapshot(
-        monthKey = this.getSelectedMonthKey()
+        monthKey =
+            this.getSelectedMonthKey()
     ) {
 
         const month =
@@ -2867,43 +5013,58 @@ const BudgetStorage = {
 
             monthKey,
 
+
             startingBalance:
-                Number(
+                this.toNumber(
                     month.startingBalance
-                ) || 0,
+                ),
+
+
+            income:
+                this.getIncomeForMonth(
+                    monthKey
+                ),
+
 
             paychecks:
                 this.getPaychecks(
                     monthKey
                 ),
 
+
             bills:
                 this.getBills(
                     monthKey
                 ),
 
+
             expenses:
-                this.getExpenses(
+                this.getExpensesForMonth(
                     monthKey
                 ),
+
 
             manualTransactions:
                 this.getManualTransactions(
                     monthKey
                 ),
 
+
             savingsDeposits:
                 this.getSavingsDeposits(
                     monthKey
                 ),
 
+
             savingsGoals:
                 this.getSavingsGoals(),
+
 
             transactions:
                 this.getTransactions(
                     monthKey
                 ),
+
 
             summary:
                 this.getMonthlySummary(
@@ -2916,7 +5077,7 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       37. MONTH ROLLOVER
+       17. MONTH ROLLOVER
        ===================================================== */
 
     rolloverMonth(
@@ -2939,10 +5100,6 @@ const BudgetStorage = {
         const data =
             this.load();
 
-
-        /*
-            Never overwrite existing month data.
-        */
 
         if (
             data.months[
@@ -2968,10 +5125,14 @@ const BudgetStorage = {
 
 
         /*
-            Copy recurring bills.
+            Income and expenses now recur dynamically,
+            so they are NOT copied month-to-month.
+
+            Bills still use the original rollover system.
         */
 
         newMonth.bills =
+
             previousMonth.bills
 
                 .filter(
@@ -2982,15 +5143,34 @@ const BudgetStorage = {
                 .map(
                     bill => {
 
-                        const newDueDate =
+                        const originalDay =
                             bill.dueDate
-                                ? (
-                                    `${newMonthKey}-` +
-                                    `${bill.dueDate.slice(-2)}`
+                                ?.slice(-2) ||
+                            "01";
+
+
+                        const [
+                            year,
+                            month
+                        ] =
+                            newMonthKey
+                                .split("-")
+                                .map(Number);
+
+
+                        const safeDay =
+                            Math.min(
+
+                                Number(
+                                    originalDay
+                                ),
+
+                                this.daysInMonth(
+                                    year,
+                                    month
                                 )
-                                : this.getDefaultDateForMonth(
-                                    newMonthKey
-                                );
+
+                            );
 
 
                         return {
@@ -3003,7 +5183,13 @@ const BudgetStorage = {
                                 ),
 
                             dueDate:
-                                newDueDate,
+                                `${newMonthKey}-` +
+                                `${String(
+                                    safeDay
+                                ).padStart(
+                                    2,
+                                    "0"
+                                )}`,
 
                             paid:
                                 false,
@@ -3012,8 +5198,10 @@ const BudgetStorage = {
                                 "",
 
                             createdAt:
-                                new Date()
-                                    .toISOString()
+                                this.now(),
+
+                            updatedAt:
+                                this.now()
 
                         };
 
@@ -3023,10 +5211,13 @@ const BudgetStorage = {
 
         data.months[
             newMonthKey
-        ] = newMonth;
+        ] =
+            newMonth;
 
 
-        this.save(data);
+        this.save(
+            data
+        );
 
 
         return newMonth;
@@ -3035,53 +5226,40 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       38. CHECK IF MONTH EXISTS
+       18. MONTH UTILITIES
        ===================================================== */
 
-    monthExists(monthKey) {
-
-        const data =
-            this.load();
-
+    monthExists(
+        monthKey
+    ) {
 
         return Boolean(
-            data.months[
-                monthKey
-            ]
+            this.load()
+                .months[
+                    monthKey
+                ]
         );
 
     },
 
 
-    /* =====================================================
-       39. GET ALL MONTH KEYS
-       ===================================================== */
-
     getMonthKeys() {
 
-        const data =
-            this.load();
-
-
         return Object.keys(
-            data.months
+            this.load().months
         ).sort();
 
     },
 
 
     /* =====================================================
-       40. EXPORT DATA
+       19. EXPORT / IMPORT / RESET
        ===================================================== */
 
     exportData() {
 
-        const data =
-            this.load();
-
-
         return JSON.stringify(
-            data,
+            this.load(),
             null,
             2
         );
@@ -3089,11 +5267,9 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       41. IMPORT DATA
-       ===================================================== */
-
-    importData(jsonData) {
+    importData(
+        jsonData
+    ) {
 
         try {
 
@@ -3111,11 +5287,12 @@ const BudgetStorage = {
 
             if (
                 !parsedData ||
-                !parsedData.months
+                typeof parsedData !==
+                    "object"
             ) {
 
                 throw new Error(
-                    "Invalid Budget Tracker data."
+                    "Invalid M-Wallet data."
                 );
 
             }
@@ -3136,10 +5313,12 @@ const BudgetStorage = {
 
         }
 
-        catch (error) {
+        catch (
+            error
+        ) {
 
             console.error(
-                "Unable to import Budget Tracker data:",
+                "Unable to import M-Wallet data:",
                 error
             );
 
@@ -3151,10 +5330,6 @@ const BudgetStorage = {
     },
 
 
-    /* =====================================================
-       42. CLEAR ALL DATA
-       ===================================================== */
-
     clearAllData() {
 
         localStorage.removeItem(
@@ -3162,14 +5337,25 @@ const BudgetStorage = {
         );
 
 
-        /*
-            Remove temporary money.js storage created
-            during development before this version of
-            storage.js existed.
-        */
+        this.legacyStorageKeys
+            .forEach(
+                key => {
+
+                    localStorage.removeItem(
+                        key
+                    );
+
+                }
+            );
+
 
         localStorage.removeItem(
             "budgetTrackerMoneyEntries"
+        );
+
+
+        localStorage.removeItem(
+            "mWalletMoneyEntries"
         );
 
 
@@ -3190,38 +5376,23 @@ const BudgetStorage = {
 
 
 /* =========================================================
-   43. EXPOSE STORAGE GLOBALLY
+   20. GLOBAL CONNECTIONS
    ========================================================= */
-
-/*
-    money.js specifically checks:
-
-        window.BudgetStorage
-
-    Declaring:
-
-        const BudgetStorage = ...
-
-    by itself is not enough for that check.
-
-    This explicitly connects the two files.
-*/
 
 window.BudgetStorage =
     BudgetStorage;
 
 
+window.MWalletStorage =
+    BudgetStorage;
+
 /* =========================================================
-   44. INITIALIZE STORAGE
+   21. INITIALIZE STORAGE
    ========================================================= */
 
 BudgetStorage.load();
 
 
-/* =========================================================
-   45. DEVELOPMENT HELPER
-   ========================================================= */
-
 console.log(
-    "Budget Tracker storage v2 loaded."
+    "M-Wallet storage v4 loaded - P2.2 Expense Management ready."
 );
