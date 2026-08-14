@@ -2027,6 +2027,10 @@ const BudgetStorage = {
             );
 
 
+        let sourceKey =
+            this.storageKey;
+
+
         if (
             !savedData
         ) {
@@ -2048,6 +2052,9 @@ const BudgetStorage = {
 
                     savedData =
                         legacyData;
+
+                    sourceKey =
+                        legacyKey;
 
                     break;
 
@@ -2109,16 +2116,147 @@ const BudgetStorage = {
             );
 
 
-            const defaultData =
+            /*
+                IMPORTANT:
+                Never overwrite corrupted user data.
+
+                Preserve the raw storage contents first so
+                they can potentially be recovered later.
+            */
+
+            try {
+
+                const recoveryPrefix =
+                    `${this.storageKey}-recovery-`;
+
+
+                let existingBackupKey =
+                    null;
+
+
+                /*
+                    Check whether this exact corrupted dataset
+                    has already been preserved.
+                */
+
+                for (
+                    let index = 0;
+                    index < localStorage.length;
+                    index += 1
+                ) {
+
+                    const key =
+                        localStorage.key(
+                            index
+                        );
+
+
+                    if (
+                        key &&
+                        key.startsWith(
+                            recoveryPrefix
+                        ) &&
+                        !key.endsWith(
+                            "-source"
+                        )
+                    ) {
+
+                        const existingData =
+                            localStorage.getItem(
+                                key
+                            );
+
+
+                        if (
+                            existingData ===
+                            savedData
+                        ) {
+
+                            existingBackupKey =
+                                key;
+
+                            break;
+
+                        }
+
+                    }
+
+                }
+
+
+                if (
+                    existingBackupKey
+                ) {
+
+                    console.warn(
+                        "M-Wallet corrupted data was already preserved:",
+                        existingBackupKey
+                    );
+
+                }
+
+                else {
+
+                    const backupKey =
+                        `${recoveryPrefix}${Date.now()}`;
+
+
+                    localStorage.setItem(
+                        backupKey,
+                        savedData
+                    );
+
+
+                    localStorage.setItem(
+                        `${backupKey}-source`,
+                        sourceKey
+                    );
+
+
+                    console.warn(
+                        "M-Wallet preserved corrupted data for recovery:",
+                        backupKey
+                    );
+
+                }
+
+            }
+
+            catch (
+                backupError
+            ) {
+
+                console.error(
+                    "M-Wallet could not create a recovery backup:",
+                    backupError
+                );
+
+            }
+
+
+            /*
+                Return a temporary clean dataset so the app
+                can continue loading.
+
+                DO NOT save it here.
+
+                Saving would overwrite the user's original
+                corrupted data.
+            */
+
+            const recoveryData =
                 this.createDefaultData();
 
 
-            this.save(
-                defaultData
-            );
+            recoveryData.recoveryMode =
+                true;
 
 
-            return defaultData;
+            recoveryData.recoveryError =
+                "Saved M-Wallet data could not be read. The original data was preserved for recovery.";
+
+
+            return recoveryData;
 
         }
 
@@ -2126,6 +2264,28 @@ const BudgetStorage = {
 
 
     save(data) {
+
+        /*
+            RECOVERY MODE SAFETY LOCK
+
+            Never allow temporary recovery data to overwrite
+            the user's original stored M-Wallet data.
+        */
+
+        if (
+            data?.recoveryMode ===
+            true
+        ) {
+
+            console.warn(
+                "M-Wallet save blocked because recovery mode is active. Original stored data was preserved."
+            );
+
+
+            return false;
+
+        }
+
 
         try {
 
