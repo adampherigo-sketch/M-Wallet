@@ -1,5 +1,5 @@
 /* =========================================================
-   BUDGET TRACKER
+   M-WALLET
    Money Management + Universal Popup
    money.js
    ========================================================= */
@@ -9,46 +9,19 @@
    1. MONEY FORM DEFINITIONS
    ========================================================= */
 
-/*
-    Each Money Management action points to one of these
-    form configurations.
-
-    money.js uses these definitions to build the popup
-    dynamically instead of keeping seven separate modals.
-*/
-
 const MONEY_FORMS = {
 
-    /* -----------------------------------------------------
-       PAYCHECK
-       ----------------------------------------------------- */
-    paycheck: {
-        title: "Add Paycheck",
+    income: {
+
+        title: "Add Income",
 
         fields: [
+
             {
                 type: "text",
                 name: "name",
-                label: "Paycheck Name",
+                label: "Income Name / Source",
                 placeholder: "Example: Amazon Paycheck",
-                required: true
-            },
-
-            {
-                type: "date",
-                name: "payDate",
-                label: "Pay Date",
-                required: true,
-                useSelectedMonth: true
-            },
-
-            {
-                type: "number",
-                name: "hours",
-                label: "Hours Worked",
-                placeholder: "0",
-                min: "0",
-                step: "0.1",
                 required: true
             },
 
@@ -57,22 +30,201 @@ const MONEY_FORMS = {
                 name: "amount",
                 label: "Amount",
                 placeholder: "0.00",
-                min: "0",
+                min: "0.01",
                 step: "0.01",
                 money: true,
                 required: true
+            },
+
+            {
+                type: "date",
+                name: "date",
+                label: "Income Date",
+                required: true,
+                useSelectedMonth: true
+            },
+
+            {
+                type: "select",
+                name: "category",
+                label: "Income Type",
+                placeholder: "Select income type",
+                required: true,
+
+                options: [
+                    "Employment",
+                    "Self-Employment",
+                    "Freelance",
+                    "Side Gig",
+                    "Tips",
+                    "Benefits",
+                    "Investment Income",
+                    "Refund / Reimbursement",
+                    "Gift",
+                    "Other Income"
+                ]
+            },
+
+            {
+                type: "checkbox",
+                name: "recurring",
+                label: "Recurring Income"
+            },
+
+            {
+                type: "select",
+                name: "frequency",
+                label: "Income Frequency",
+                placeholder: "Select frequency",
+                required: true,
+
+                options: [
+                    {
+                        value: "weekly",
+                        label: "Weekly"
+                    },
+                    {
+                        value: "biweekly",
+                        label: "Biweekly"
+                    },
+                    {
+                        value: "twice-monthly",
+                        label: "Twice Monthly"
+                    },
+                    {
+                        value: "monthly",
+                        label: "Monthly"
+                    },
+                    {
+                        value: "custom",
+                        label: "Custom"
+                    }
+                ],
+
+                showWhen: {
+                    field: "recurring",
+                    equals: true
+                }
+            },
+
+            {
+                type: "number",
+                name: "twiceMonthlyDay1",
+                label: "First Pay Day",
+                min: "1",
+                max: "31",
+                step: "1",
+                value: "1",
+                required: true,
+
+                help:
+                    "Day of the month for the first payment.",
+
+                showWhen: {
+                    field: "frequency",
+                    equals: "twice-monthly"
+                }
+            },
+
+            {
+                type: "number",
+                name: "twiceMonthlyDay2",
+                label: "Second Pay Day",
+                min: "1",
+                max: "31",
+                step: "1",
+                value: "15",
+                required: true,
+
+                help:
+                    "Day of the month for the second payment.",
+
+                showWhen: {
+                    field: "frequency",
+                    equals: "twice-monthly"
+                }
+            },
+
+            {
+                type: "number",
+                name: "customInterval",
+                label: "Repeat Every",
+                min: "1",
+                step: "1",
+                value: "1",
+                required: true,
+
+                showWhen: {
+                    field: "frequency",
+                    equals: "custom"
+                }
+            },
+
+            {
+                type: "select",
+                name: "customUnit",
+                label: "Custom Frequency Unit",
+                placeholder: "Select unit",
+                required: true,
+
+                options: [
+                    {
+                        value: "days",
+                        label: "Day(s)"
+                    },
+                    {
+                        value: "weeks",
+                        label: "Week(s)"
+                    },
+                    {
+                        value: "months",
+                        label: "Month(s)"
+                    },
+                    {
+                        value: "years",
+                        label: "Year(s)"
+                    }
+                ],
+
+                showWhen: {
+                    field: "frequency",
+                    equals: "custom"
+                }
+            },
+
+            {
+                type: "date",
+                name: "endDate",
+                label: "Recurring End Date",
+
+                help:
+                    "Optional. Leave blank if this income continues indefinitely.",
+
+                showWhen: {
+                    field: "recurring",
+                    equals: true
+                }
+            },
+
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about this income"
             }
+
         ]
+
     },
 
 
-    /* -----------------------------------------------------
-       BILL
-       ----------------------------------------------------- */
     bill: {
+
         title: "Add Bill",
 
         fields: [
+
             {
                 type: "text",
                 name: "name",
@@ -104,6 +256,7 @@ const MONEY_FORMS = {
                 type: "select",
                 name: "category",
                 label: "Category",
+                placeholder: "Select a category",
                 required: true,
 
                 options: [
@@ -126,17 +279,18 @@ const MONEY_FORMS = {
                 name: "recurring",
                 label: "Repeats every month"
             }
+
         ]
+
     },
 
 
-    /* -----------------------------------------------------
-       EXPENSE
-       ----------------------------------------------------- */
     expense: {
+
         title: "Add Expense",
 
         fields: [
+
             {
                 type: "text",
                 name: "name",
@@ -157,6 +311,7 @@ const MONEY_FORMS = {
                 type: "select",
                 name: "category",
                 label: "Category",
+                placeholder: "Select a category",
                 required: true,
 
                 options: [
@@ -184,17 +339,18 @@ const MONEY_FORMS = {
                 money: true,
                 required: true
             }
+
         ]
+
     },
 
 
-    /* -----------------------------------------------------
-       TRANSACTION
-       ----------------------------------------------------- */
     transaction: {
+
         title: "Add Transaction",
 
         fields: [
+
             {
                 type: "text",
                 name: "description",
@@ -215,6 +371,7 @@ const MONEY_FORMS = {
                 type: "select",
                 name: "category",
                 label: "Category",
+                placeholder: "Select a category",
                 required: true,
 
                 options: [
@@ -242,19 +399,21 @@ const MONEY_FORMS = {
                 money: true,
                 required: true,
 
-                help: "Use a negative number for money going out. Example: -25.50"
+                help:
+                    "Use a negative number for money going out. Example: -25.50"
             }
+
         ]
+
     },
 
 
-    /* -----------------------------------------------------
-       SAVINGS GOAL
-       ----------------------------------------------------- */
     "savings-goal": {
+
         title: "Add Savings Goal",
 
         fields: [
+
             {
                 type: "text",
                 name: "name",
@@ -285,17 +444,18 @@ const MONEY_FORMS = {
                 value: "0",
                 required: true
             }
+
         ]
+
     },
 
 
-    /* -----------------------------------------------------
-       ADD MONEY TO SAVINGS
-       ----------------------------------------------------- */
     "savings-deposit": {
+
         title: "Add Money to Savings",
 
         fields: [
+
             {
                 type: "number",
                 name: "amount",
@@ -306,17 +466,18 @@ const MONEY_FORMS = {
                 money: true,
                 required: true
             }
+
         ]
+
     },
 
 
-    /* -----------------------------------------------------
-       STARTING BALANCE
-       ----------------------------------------------------- */
     "starting-balance": {
+
         title: "Change Starting Balance",
 
         fields: [
+
             {
                 type: "number",
                 name: "balance",
@@ -326,9 +487,12 @@ const MONEY_FORMS = {
                 money: true,
                 required: true,
 
-                help: "This is the checking balance you are starting the selected month with."
+                help:
+                    "This is the checking balance you are starting the selected month with."
             }
+
         ]
+
     }
 
 };
@@ -340,18 +504,10 @@ const MONEY_FORMS = {
 
 let currentMoneyAction = null;
 
-/*
-    Stores what was inside the form when the popup opened.
+let currentEditingIncomeId = null;
 
-    Undo uses this to restore everything.
-*/
 let originalFormState = null;
 
-
-/*
-    Remember which button opened the popup so keyboard
-    focus can return to it after closing.
-*/
 let lastFocusedElement = null;
 
 
@@ -360,71 +516,140 @@ let lastFocusedElement = null;
    ========================================================= */
 
 const moneyModal =
-    document.getElementById("money-modal");
+    document.getElementById(
+        "money-modal"
+    );
 
 const moneyModalTitle =
-    document.getElementById("money-modal-title");
+    document.getElementById(
+        "money-modal-title"
+    );
 
 const moneyModalBody =
-    document.getElementById("money-modal-body");
+    document.getElementById(
+        "money-modal-body"
+    );
 
 const moneyModalForm =
-    document.getElementById("money-modal-form");
+    document.getElementById(
+        "money-modal-form"
+    );
 
 const moneyModalUndo =
-    document.getElementById("money-modal-undo");
+    document.getElementById(
+        "money-modal-undo"
+    );
+
+const moneyModalSave =
+    document.getElementById(
+        "money-modal-save"
+    );
 
 const moneyModalStatus =
-    document.getElementById("money-modal-status");
+    document.getElementById(
+        "money-modal-status"
+    );
 
 
 /* =========================================================
-   4. GET SELECTED BUDGET MONTH
+   4. STORAGE
+   ========================================================= */
+
+function getMoneyStorage() {
+
+    return (
+        window.MWalletStorage ||
+        window.BudgetStorage ||
+        null
+    );
+
+}
+
+
+/* =========================================================
+   5. ACTION ALIASES
+   ========================================================= */
+
+function normalizeMoneyAction(
+    action
+) {
+
+    if (
+        action === "paycheck"
+    ) {
+
+        return "income";
+
+    }
+
+
+    return action;
+
+}
+
+
+/* =========================================================
+   6. SELECTED MONTH / YEAR
    ========================================================= */
 
 function getSelectedBudgetPeriod() {
 
     const monthSelect =
-        document.getElementById("month-select");
+        document.getElementById(
+            "month-select"
+        );
 
     const yearSelect =
-        document.getElementById("year-select");
+        document.getElementById(
+            "year-select"
+        );
 
 
-    const now = new Date();
+    const now =
+        new Date();
 
 
     const month =
         monthSelect?.value ||
-        String(now.getMonth() + 1).padStart(2, "0");
+        String(
+            now.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
 
 
     const year =
         yearSelect?.value ||
-        String(now.getFullYear());
+        String(
+            now.getFullYear()
+        );
 
 
     return {
+
         month,
+
         year,
-        key: `${year}-${month}`
+
+        key:
+            `${year}-${month}`
+
     };
 
 }
 
 
 /* =========================================================
-   5. DEFAULT DATE
+   7. DEFAULT DATE
    ========================================================= */
-
-/*
-    Gives date fields a sensible date inside whatever
-    month/year the user currently has selected.
-*/
 
 function getDefaultDateForSelectedMonth() {
 
-    const { month, year } =
+    const {
+        month,
+        year
+    } =
         getSelectedBudgetPeriod();
 
 
@@ -432,36 +657,35 @@ function getDefaultDateForSelectedMonth() {
         new Date();
 
 
-    let day = 1;
-
-
-    /*
-        If the user is looking at the current month,
-        default to today's day.
-    */
-
     const currentMonth =
-        String(now.getMonth() + 1).padStart(2, "0");
+        String(
+            now.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
 
     const currentYear =
-        String(now.getFullYear());
+        String(
+            now.getFullYear()
+        );
+
+
+    let day =
+        1;
 
 
     if (
         month === currentMonth &&
         year === currentYear
     ) {
-        day = now.getDate();
+
+        day =
+            now.getDate();
+
     }
 
-
-    /*
-        Protect against impossible dates.
-
-        Example:
-        selected month = February
-        today = August 31
-    */
 
     const finalDayOfMonth =
         new Date(
@@ -488,26 +712,64 @@ function getDefaultDateForSelectedMonth() {
 
 
 /* =========================================================
-   6. BUILD FORM FIELD
+   8. CREATE FIELD WRAPPER
    ========================================================= */
 
-function createMoneyField(field) {
+function createFieldWrapper(
+    field
+) {
 
-    /* -----------------------------------------------------
-       CHECKBOX
-       ----------------------------------------------------- */
+    const wrapper =
+        document.createElement(
+            "div"
+        );
 
-    if (field.type === "checkbox") {
 
-        const wrapper =
-            document.createElement("div");
+    wrapper.className =
+        field.type === "checkbox"
+            ? "form-group checkbox"
+            : "form-group";
 
-        wrapper.className =
-            "form-group checkbox";
 
+    wrapper.dataset.moneyField =
+        field.name;
+
+
+    wrapper._moneyFieldConfig =
+        field;
+
+
+    return wrapper;
+
+}
+
+
+/* =========================================================
+   9. CREATE MONEY FIELD
+   ========================================================= */
+
+function createMoneyField(
+    field
+) {
+
+    const wrapper =
+        createFieldWrapper(
+            field
+        );
+
+
+    /* CHECKBOX */
+
+    if (
+        field.type ===
+        "checkbox"
+    ) {
 
         const input =
-            document.createElement("input");
+            document.createElement(
+                "input"
+            );
+
 
         input.type =
             "checkbox";
@@ -518,9 +780,17 @@ function createMoneyField(field) {
         input.name =
             field.name;
 
+        input.checked =
+            Boolean(
+                field.checked
+            );
+
 
         const label =
-            document.createElement("label");
+            document.createElement(
+                "label"
+            );
+
 
         label.htmlFor =
             input.id;
@@ -536,22 +806,17 @@ function createMoneyField(field) {
 
 
         return wrapper;
+
     }
 
 
-    /* -----------------------------------------------------
-       NORMAL FIELD WRAPPER
-       ----------------------------------------------------- */
-
-    const wrapper =
-        document.createElement("div");
-
-    wrapper.className =
-        "form-group";
-
+    /* LABEL */
 
     const label =
-        document.createElement("label");
+        document.createElement(
+            "label"
+        );
+
 
     label.htmlFor =
         `money-${field.name}`;
@@ -560,100 +825,66 @@ function createMoneyField(field) {
         field.label;
 
 
-    wrapper.appendChild(label);
+    wrapper.appendChild(
+        label
+    );
 
 
-    /* -----------------------------------------------------
-       DROPDOWN
-       ----------------------------------------------------- */
+    /* SELECT */
 
-    if (field.type === "select") {
-
-        const select =
-            document.createElement("select");
-
-        select.id =
-            `money-${field.name}`;
-
-        select.name =
-            field.name;
-
-
-        if (field.required) {
-            select.required = true;
-        }
-
-
-        /*
-            Empty option
-        */
-
-        const placeholderOption =
-            document.createElement("option");
-
-        placeholderOption.value = "";
-        placeholderOption.textContent =
-            "Select a category";
-
-        placeholderOption.disabled = true;
-        placeholderOption.selected = true;
-
-
-        select.appendChild(
-            placeholderOption
-        );
-
-
-        /*
-            Category options
-        */
-
-        field.options.forEach(optionText => {
-
-            const option =
-                document.createElement("option");
-
-            option.value =
-                optionText;
-
-            option.textContent =
-                optionText;
-
-
-            select.appendChild(
-                option
-            );
-
-        });
-
+    if (
+        field.type ===
+        "select"
+    ) {
 
         wrapper.appendChild(
-            select
+            buildSelect(
+                field
+            )
         );
+
     }
 
 
-    /* -----------------------------------------------------
-       INPUT
-       ----------------------------------------------------- */
+    /* TEXTAREA */
+
+    else if (
+        field.type ===
+        "textarea"
+    ) {
+
+        wrapper.appendChild(
+            buildTextarea(
+                field
+            )
+        );
+
+    }
+
+
+    /* NORMAL INPUT */
 
     else {
 
-        /*
-            Money inputs receive a dollar-sign wrapper.
-        */
-
-        if (field.money) {
+        if (
+            field.money
+        ) {
 
             const moneyWrapper =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
+
 
             moneyWrapper.className =
                 "money-input-wrapper";
 
 
             const symbol =
-                document.createElement("span");
+                document.createElement(
+                    "span"
+                );
+
 
             symbol.className =
                 "money-input-symbol";
@@ -662,13 +893,9 @@ function createMoneyField(field) {
                 "$";
 
 
-            const input =
-                buildInput(field);
-
-
             moneyWrapper.append(
                 symbol,
-                input
+                buildInput(field)
             );
 
 
@@ -689,14 +916,17 @@ function createMoneyField(field) {
     }
 
 
-    /* -----------------------------------------------------
-       HELP TEXT
-       ----------------------------------------------------- */
+    /* HELP TEXT */
 
-    if (field.help) {
+    if (
+        field.help
+    ) {
 
         const help =
-            document.createElement("small");
+            document.createElement(
+                "small"
+            );
+
 
         help.className =
             "form-help";
@@ -718,13 +948,17 @@ function createMoneyField(field) {
 
 
 /* =========================================================
-   7. BUILD INPUT
+   10. BUILD INPUT
    ========================================================= */
 
-function buildInput(field) {
+function buildInput(
+    field
+) {
 
     const input =
-        document.createElement("input");
+        document.createElement(
+            "input"
+        );
 
 
     input.type =
@@ -737,7 +971,9 @@ function buildInput(field) {
         field.name;
 
 
-    if (field.placeholder) {
+    if (
+        field.placeholder
+    ) {
 
         input.placeholder =
             field.placeholder;
@@ -745,7 +981,9 @@ function buildInput(field) {
     }
 
 
-    if (field.required) {
+    if (
+        field.required
+    ) {
 
         input.required =
             true;
@@ -753,7 +991,9 @@ function buildInput(field) {
     }
 
 
-    if (field.min !== undefined) {
+    if (
+        field.min !== undefined
+    ) {
 
         input.min =
             field.min;
@@ -761,7 +1001,9 @@ function buildInput(field) {
     }
 
 
-    if (field.max !== undefined) {
+    if (
+        field.max !== undefined
+    ) {
 
         input.max =
             field.max;
@@ -769,7 +1011,9 @@ function buildInput(field) {
     }
 
 
-    if (field.step !== undefined) {
+    if (
+        field.step !== undefined
+    ) {
 
         input.step =
             field.step;
@@ -777,18 +1021,15 @@ function buildInput(field) {
     }
 
 
-    if (field.value !== undefined) {
+    if (
+        field.value !== undefined
+    ) {
 
         input.value =
             field.value;
 
     }
 
-
-    /*
-        Automatically fill date fields using the
-        selected month.
-    */
 
     if (
         field.type === "date" &&
@@ -807,55 +1048,358 @@ function buildInput(field) {
 
 
 /* =========================================================
-   8. BUILD FULL FORM
+   11. BUILD SELECT
    ========================================================= */
 
-function renderMoneyForm(action) {
+function buildSelect(
+    field
+) {
+
+    const select =
+        document.createElement(
+            "select"
+        );
+
+
+    select.id =
+        `money-${field.name}`;
+
+    select.name =
+        field.name;
+
+
+    if (
+        field.required
+    ) {
+
+        select.required =
+            true;
+
+    }
+
+
+    const placeholderOption =
+        document.createElement(
+            "option"
+        );
+
+
+    placeholderOption.value =
+        "";
+
+    placeholderOption.textContent =
+        field.placeholder ||
+        "Select an option";
+
+    placeholderOption.disabled =
+        true;
+
+    placeholderOption.selected =
+        true;
+
+
+    select.appendChild(
+        placeholderOption
+    );
+
+
+    field.options.forEach(
+        optionDefinition => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            if (
+                typeof optionDefinition ===
+                "object"
+            ) {
+
+                option.value =
+                    optionDefinition.value;
+
+                option.textContent =
+                    optionDefinition.label;
+
+            }
+
+            else {
+
+                option.value =
+                    optionDefinition;
+
+                option.textContent =
+                    optionDefinition;
+
+            }
+
+
+            if (
+                field.value !== undefined &&
+                String(field.value) ===
+                    String(option.value)
+            ) {
+
+                option.selected =
+                    true;
+
+                placeholderOption.selected =
+                    false;
+
+            }
+
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    return select;
+
+}
+
+
+/* =========================================================
+   12. BUILD TEXTAREA
+   ========================================================= */
+
+function buildTextarea(
+    field
+) {
+
+    const textarea =
+        document.createElement(
+            "textarea"
+        );
+
+
+    textarea.id =
+        `money-${field.name}`;
+
+    textarea.name =
+        field.name;
+
+
+    if (
+        field.placeholder
+    ) {
+
+        textarea.placeholder =
+            field.placeholder;
+
+    }
+
+
+    if (
+        field.required
+    ) {
+
+        textarea.required =
+            true;
+
+    }
+
+
+    if (
+        field.value !== undefined
+    ) {
+
+        textarea.value =
+            field.value;
+
+    }
+
+
+    return textarea;
+
+}
+
+
+/* =========================================================
+   13. GET FIELD VALUE
+   ========================================================= */
+
+function getMoneyFieldValue(
+    fieldName
+) {
+
+    const field =
+        moneyModalBody.querySelector(
+            `[name="${fieldName}"]`
+        );
+
+
+    if (
+        !field
+    ) {
+
+        return undefined;
+
+    }
+
+
+    if (
+        field.type ===
+        "checkbox"
+    ) {
+
+        return field.checked;
+
+    }
+
+
+    return field.value;
+
+}
+
+
+/* =========================================================
+   14. CONDITIONAL FIELDS
+   ========================================================= */
+
+function shouldShowMoneyField(
+    field
+) {
+
+    if (
+        !field.showWhen
+    ) {
+
+        return true;
+
+    }
+
+
+    const controllingValue =
+        getMoneyFieldValue(
+            field.showWhen.field
+        );
+
+
+    return (
+        controllingValue ===
+        field.showWhen.equals
+    );
+
+}
+
+
+function updateConditionalMoneyFields() {
+
+    const wrappers =
+        moneyModalBody.querySelectorAll(
+            "[data-money-field]"
+        );
+
+
+    wrappers.forEach(
+        wrapper => {
+
+            const field =
+                wrapper
+                    ._moneyFieldConfig;
+
+
+            if (
+                !field
+            ) {
+
+                return;
+
+            }
+
+
+            const visible =
+                shouldShowMoneyField(
+                    field
+                );
+
+
+            wrapper.hidden =
+                !visible;
+
+
+            wrapper
+                .querySelectorAll(
+                    "input, select, textarea"
+                )
+                .forEach(
+                    control => {
+
+                        control.disabled =
+                            !visible;
+
+
+                        control.required =
+                            Boolean(
+                                visible &&
+                                field.required
+                            );
+
+                    }
+                );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   15. RENDER MONEY FORM
+   ========================================================= */
+
+function renderMoneyForm(
+    action
+) {
 
     const config =
-        MONEY_FORMS[action];
+        MONEY_FORMS[
+            action
+        ];
 
 
-    if (!config) {
+    if (
+        !config
+    ) {
 
         console.error(
             `Unknown money action: ${action}`
         );
 
+
         return false;
+
     }
 
 
-    /*
-        Clear the previous form.
-    */
+    moneyModalBody.innerHTML =
+        "";
 
-    moneyModalBody.innerHTML = "";
-
-
-    /*
-        Change popup title.
-    */
 
     moneyModalTitle.textContent =
         config.title;
 
 
-    /*
-        Build each field.
-    */
+    config.fields.forEach(
+        field => {
 
-    config.fields.forEach(field => {
+            moneyModalBody.appendChild(
+                createMoneyField(
+                    field
+                )
+            );
 
-        const element =
-            createMoneyField(field);
+        }
+    );
 
 
-        moneyModalBody.appendChild(
-            element
-        );
-
-    });
+    updateConditionalMoneyFields();
 
 
     return true;
@@ -864,56 +1408,221 @@ function renderMoneyForm(action) {
 
 
 /* =========================================================
-   9. OPEN MONEY POPUP
+   16. POPULATE FORM
    ========================================================= */
 
-function openMoneyModal(action) {
+function populateMoneyForm(
+    record
+) {
+
+    if (
+        !record
+    ) {
+
+        return;
+
+    }
+
+
+    const values = {
+
+        ...record,
+
+        twiceMonthlyDay1:
+            Array.isArray(
+                record.twiceMonthlyDays
+            )
+                ? record.twiceMonthlyDays[0]
+                : 1,
+
+        twiceMonthlyDay2:
+            Array.isArray(
+                record.twiceMonthlyDays
+            )
+                ? record.twiceMonthlyDays[1]
+                : 15
+
+    };
+
+
+    moneyModalBody
+        .querySelectorAll(
+            "input, select, textarea"
+        )
+        .forEach(
+            field => {
+
+                if (
+                    !field.name
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    !Object.prototype
+                        .hasOwnProperty
+                        .call(
+                            values,
+                            field.name
+                        )
+                ) {
+
+                    return;
+
+                }
+
+
+                const value =
+                    values[
+                        field.name
+                    ];
+
+
+                if (
+                    field.type ===
+                    "checkbox"
+                ) {
+
+                    field.checked =
+                        Boolean(
+                            value
+                        );
+
+                }
+
+                else {
+
+                    field.value =
+                        value ?? "";
+
+                }
+
+            }
+        );
+
+
+    updateConditionalMoneyFields();
+
+}
+
+
+/* =========================================================
+   17. OPEN MONEY MODAL
+   ========================================================= */
+
+function openMoneyModal(
+    action,
+    options = {}
+) {
+
+    const normalizedAction =
+        normalizeMoneyAction(
+            action
+        );
+
 
     const config =
-        MONEY_FORMS[action];
+        MONEY_FORMS[
+            normalizedAction
+        ];
 
 
-    if (!config) {
+    if (
+        !config
+    ) {
 
         console.error(
             `Cannot open unknown money form: ${action}`
         );
 
+
         return;
+
     }
 
 
     currentMoneyAction =
-        action;
+        normalizedAction;
+
+
+    currentEditingIncomeId =
+        (
+            normalizedAction ===
+                "income" &&
+            options.editingId
+        )
+            ? options.editingId
+            : null;
 
 
     lastFocusedElement =
         document.activeElement;
 
 
-    /*
-        Build the requested form.
-    */
+    if (
+        !renderMoneyForm(
+            normalizedAction
+        )
+    ) {
 
-    const rendered =
-        renderMoneyForm(action);
-
-
-    if (!rendered) {
         return;
+
     }
 
 
-    /*
-        Clear previous status.
-    */
+    /* EDIT MODE */
+
+    if (
+        currentEditingIncomeId &&
+        options.record
+    ) {
+
+        populateMoneyForm(
+            options.record
+        );
+
+
+        moneyModalTitle.textContent =
+            "Edit Income";
+
+
+        if (
+            moneyModalSave
+        ) {
+
+            moneyModalSave.textContent =
+                "💾 Save Changes";
+
+        }
+
+    }
+
+
+    /* ADD MODE */
+
+    else {
+
+        moneyModalTitle.textContent =
+            config.title;
+
+
+        if (
+            moneyModalSave
+        ) {
+
+            moneyModalSave.textContent =
+                "💾 Save";
+
+        }
+
+    }
+
 
     clearMoneyStatus();
 
-
-    /*
-        Show popup.
-    */
 
     moneyModal.classList.add(
         "active"
@@ -931,43 +1640,109 @@ function openMoneyModal(action) {
     );
 
 
-    /*
-        Save original state AFTER defaults have been created.
-    */
-
     originalFormState =
         captureMoneyFormState();
 
 
-    /*
-        Focus first input.
-    */
+    requestAnimationFrame(
+        () => {
 
-    requestAnimationFrame(() => {
-
-        const firstInput =
-            moneyModalBody.querySelector(
-                "input, select, textarea"
-            );
+            const firstInput =
+                moneyModalBody.querySelector(
+                    "input:not(:disabled), select:not(:disabled), textarea:not(:disabled)"
+                );
 
 
-        if (firstInput) {
-            firstInput.focus();
+            if (
+                firstInput
+            ) {
+
+                firstInput.focus();
+
+            }
+
         }
-
-    });
+    );
 
 }
 
 
 /* =========================================================
-   10. CLOSE MONEY POPUP
+   18. OPEN INCOME EDITOR
+   ========================================================= */
+
+function openIncomeEditor(
+    incomeId
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getIncomeById !==
+            "function"
+    ) {
+
+        console.error(
+            "Income editing is not available."
+        );
+
+
+        return;
+
+    }
+
+
+    const income =
+        storage.getIncomeById(
+            incomeId
+        );
+
+
+    if (
+        !income
+    ) {
+
+        console.warn(
+            `Income record not found: ${incomeId}`
+        );
+
+
+        return;
+
+    }
+
+
+    openMoneyModal(
+        "income",
+        {
+
+            editingId:
+                income.id,
+
+            record:
+                income
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   19. CLOSE MONEY MODAL
    ========================================================= */
 
 function closeMoneyModal() {
 
-    if (!moneyModal) {
+    if (
+        !moneyModal
+    ) {
+
         return;
+
     }
 
 
@@ -993,17 +1768,29 @@ function closeMoneyModal() {
     currentMoneyAction =
         null;
 
+
+    currentEditingIncomeId =
+        null;
+
+
     originalFormState =
         null;
 
 
-    /*
-        Return keyboard focus to the button that opened it.
-    */
+    if (
+        moneyModalSave
+    ) {
+
+        moneyModalSave.textContent =
+            "💾 Save";
+
+    }
+
 
     if (
         lastFocusedElement &&
-        typeof lastFocusedElement.focus === "function"
+        typeof lastFocusedElement.focus ===
+            "function"
     ) {
 
         lastFocusedElement.focus();
@@ -1018,14 +1805,8 @@ function closeMoneyModal() {
 
 
 /* =========================================================
-   11. CAPTURE FORM STATE
+   20. CAPTURE FORM STATE
    ========================================================= */
-
-/*
-    This creates a snapshot of every form field.
-
-    Undo restores this exact snapshot.
-*/
 
 function captureMoneyFormState() {
 
@@ -1035,28 +1816,31 @@ function captureMoneyFormState() {
         );
 
 
-    const state = [];
+    const state =
+        [];
 
 
-    fields.forEach(field => {
+    fields.forEach(
+        field => {
 
-        state.push({
+            state.push({
 
-            name:
-                field.name,
+                name:
+                    field.name,
 
-            type:
-                field.type,
+                type:
+                    field.type,
 
-            value:
-                field.value,
+                value:
+                    field.value,
 
-            checked:
-                field.checked
+                checked:
+                    field.checked
 
-        });
+            });
 
-    });
+        }
+    );
 
 
     return state;
@@ -1065,46 +1849,60 @@ function captureMoneyFormState() {
 
 
 /* =========================================================
-   12. UNDO FORM CHANGES
+   21. UNDO FORM CHANGES
    ========================================================= */
 
 function undoMoneyForm() {
 
-    if (!originalFormState) {
+    if (
+        !originalFormState
+    ) {
+
         return;
+
     }
 
 
-    originalFormState.forEach(savedField => {
+    originalFormState.forEach(
+        savedField => {
 
-        const field =
-            moneyModalBody.querySelector(
-                `[name="${savedField.name}"]`
-            );
+            const field =
+                moneyModalBody.querySelector(
+                    `[name="${savedField.name}"]`
+                );
 
 
-        if (!field) {
-            return;
+            if (
+                !field
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                savedField.type ===
+                "checkbox"
+            ) {
+
+                field.checked =
+                    savedField.checked;
+
+            }
+
+            else {
+
+                field.value =
+                    savedField.value;
+
+            }
+
         }
+    );
 
 
-        if (
-            savedField.type === "checkbox"
-        ) {
-
-            field.checked =
-                savedField.checked;
-
-        }
-
-        else {
-
-            field.value =
-                savedField.value;
-
-        }
-
-    });
+    updateConditionalMoneyFields();
 
 
     showMoneyStatus(
@@ -1116,7 +1914,7 @@ function undoMoneyForm() {
 
 
 /* =========================================================
-   13. READ FORM DATA
+   22. GET FORM DATA
    ========================================================= */
 
 function getMoneyFormData() {
@@ -1127,15 +1925,15 @@ function getMoneyFormData() {
         );
 
 
-    const data = {};
+    const data =
+        {};
 
-
-    /*
-        Standard inputs.
-    */
 
     formData.forEach(
-        (value, key) => {
+        (
+            value,
+            key
+        ) => {
 
             data[key] =
                 value;
@@ -1144,43 +1942,54 @@ function getMoneyFormData() {
     );
 
 
-    /*
-        Checkboxes don't appear in FormData when unchecked,
-        so handle them manually.
-    */
-
     moneyModalBody
         .querySelectorAll(
             'input[type="checkbox"]'
         )
-        .forEach(checkbox => {
+        .forEach(
+            checkbox => {
 
-            data[checkbox.name] =
-                checkbox.checked;
+                data[
+                    checkbox.name
+                ] =
+                    checkbox.checked;
 
-        });
+            }
+        );
 
-
-    /*
-        Convert number fields into actual numbers.
-    */
 
     moneyModalBody
         .querySelectorAll(
             'input[type="number"]'
         )
-        .forEach(input => {
+        .forEach(
+            input => {
 
-            if (
-                input.value !== ""
-            ) {
+                if (
+                    input.disabled
+                ) {
 
-                data[input.name] =
-                    Number(input.value);
+                    return;
+
+                }
+
+
+                if (
+                    input.value !==
+                    ""
+                ) {
+
+                    data[
+                        input.name
+                    ] =
+                        Number(
+                            input.value
+                        );
+
+                }
 
             }
-
-        });
+        );
 
 
     return data;
@@ -1189,7 +1998,7 @@ function getMoneyFormData() {
 
 
 /* =========================================================
-   14. CREATE MONEY RECORD
+   23. CREATE MONEY RECORD
    ========================================================= */
 
 function createMoneyRecord() {
@@ -1202,9 +2011,10 @@ function createMoneyRecord() {
         getMoneyFormData();
 
 
-    return {
+    const record = {
 
         id:
+            currentEditingIncomeId ||
             createMoneyId(),
 
         type:
@@ -1220,65 +2030,164 @@ function createMoneyRecord() {
             period.year,
 
         createdAt:
-            new Date().toISOString(),
+            new Date()
+                .toISOString(),
 
         ...formData
 
     };
 
-}
 
-
-/* =========================================================
-   15. CREATE UNIQUE ID
-   ========================================================= */
-
-function createMoneyId() {
-
-    /*
-        Modern browser method.
-    */
+    /* -----------------------------------------------------
+       INCOME CLEANUP
+       ----------------------------------------------------- */
 
     if (
-        window.crypto &&
-        typeof window.crypto.randomUUID === "function"
+        currentMoneyAction ===
+        "income"
     ) {
 
-        return crypto.randomUUID();
+        record.incomeType =
+            "income";
+
+
+        if (
+            !record.recurring
+        ) {
+
+            record.frequency =
+                "";
+
+            record.endDate =
+                "";
+
+            record.customInterval =
+                1;
+
+            record.customUnit =
+                "months";
+
+            record.twiceMonthlyDays =
+                [
+                    1,
+                    15
+                ];
+
+        }
+
+        else {
+
+            if (
+                record.frequency ===
+                "twice-monthly"
+            ) {
+
+                record.twiceMonthlyDays =
+                    [
+
+                        Number(
+                            record.twiceMonthlyDay1
+                        ) || 1,
+
+                        Number(
+                            record.twiceMonthlyDay2
+                        ) || 15
+
+                    ];
+
+            }
+
+            else {
+
+                record.twiceMonthlyDays =
+                    [
+                        1,
+                        15
+                    ];
+
+            }
+
+
+            if (
+                record.frequency !==
+                "custom"
+            ) {
+
+                record.customInterval =
+                    1;
+
+                record.customUnit =
+                    "months";
+
+            }
+
+        }
+
+
+        delete record.twiceMonthlyDay1;
+
+        delete record.twiceMonthlyDay2;
 
     }
 
 
-    /*
-        Fallback.
-    */
+    return record;
+
+}
+
+
+/* =========================================================
+   24. CREATE UNIQUE ID
+   ========================================================= */
+
+function createMoneyId() {
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+            "function"
+    ) {
+
+        return window.crypto
+            .randomUUID();
+
+    }
+
 
     return (
-        Date.now().toString(36) +
-        "-" +
+        Date.now()
+            .toString(36)
+        +
+        "-"
+        +
         Math.random()
             .toString(36)
-            .slice(2, 9)
+            .slice(
+                2,
+                9
+            )
     );
 
 }
 
 
 /* =========================================================
-   16. SAVE MONEY FORM
+   25. SAVE MONEY FORM
    ========================================================= */
 
-function saveMoneyForm(event) {
+function saveMoneyForm(
+    event
+) {
 
     event.preventDefault();
 
 
-    /*
-        Make sure browser validation passes.
-    */
+    updateConditionalMoneyFields();
+
 
     if (
-        !moneyModalForm.reportValidity()
+        !moneyModalForm
+            .reportValidity()
     ) {
 
         showMoneyStatus(
@@ -1286,83 +2195,115 @@ function saveMoneyForm(event) {
             "error"
         );
 
+
         return;
+
     }
 
 
-    if (!currentMoneyAction) {
+    if (
+        !currentMoneyAction
+    ) {
 
         showMoneyStatus(
             "Unable to determine what you are saving.",
             "error"
         );
 
+
         return;
+
     }
+
+
+    const wasEditingIncome =
+        Boolean(
+            currentEditingIncomeId
+        );
 
 
     const record =
         createMoneyRecord();
 
 
-    /*
-        Save the record.
-
-        Once storage.js is upgraded, that file can expose
-        BudgetStorage.saveMoneyEntry() and money.js will
-        automatically use it.
-
-        Until then we have a safe localStorage fallback.
-    */
-
     try {
 
-        saveMoneyRecord(
-            record
-        );
+        const savedRecord =
+            saveMoneyRecord(
+                record
+            );
 
 
-        /*
-            Let the rest of the app know money changed.
+        const detail =
+            savedRecord ||
+            record;
 
-            app.js can listen to this later and refresh
-            the Dashboard immediately.
-        */
 
         document.dispatchEvent(
 
             new CustomEvent(
                 "budget:money-saved",
                 {
-                    detail: record
+                    detail
                 }
             )
 
         );
 
 
+        document.dispatchEvent(
+
+            new CustomEvent(
+                "mwallet:money-saved",
+                {
+                    detail
+                }
+            )
+
+        );
+
+
+        if (
+            wasEditingIncome
+        ) {
+
+            document.dispatchEvent(
+
+                new CustomEvent(
+                    "mwallet:income-updated",
+                    {
+                        detail
+                    }
+                )
+
+            );
+
+        }
+
+
         showMoneyStatus(
-            "✓ Saved",
+            wasEditingIncome
+                ? "✓ Changes Saved"
+                : "✓ Saved",
             "success"
         );
 
 
-        /*
-            Close shortly after showing confirmation.
-        */
+        window.setTimeout(
+            () => {
 
-        window.setTimeout(() => {
+                closeMoneyModal();
 
-            closeMoneyModal();
-
-        }, 450);
+            },
+            450
+        );
 
     }
 
     catch (error) {
 
         console.error(
-            "Unable to save money entry:",
+            "Unable to save M-Wallet money entry:",
             error
         );
 
@@ -1378,42 +2319,62 @@ function saveMoneyForm(event) {
 
 
 /* =========================================================
-   17. SAVE RECORD
+   26. SAVE MONEY RECORD
    ========================================================= */
 
-function saveMoneyRecord(record) {
+function saveMoneyRecord(
+    record
+) {
 
-    /*
-        FUTURE STORAGE.JS CONNECTION
+    const storage =
+        getMoneyStorage();
 
-        If storage.js exposes this function,
-        use it instead of our fallback.
-    */
+
+    /* EDIT EXISTING INCOME */
 
     if (
-        window.BudgetStorage &&
-        typeof window.BudgetStorage.saveMoneyEntry === "function"
+        currentMoneyAction ===
+            "income" &&
+        currentEditingIncomeId
     ) {
 
-        window.BudgetStorage.saveMoneyEntry(
+        if (
+            !storage ||
+            typeof storage.updateIncome !==
+                "function"
+        ) {
+
+            throw new Error(
+                "Income editing is not available in storage.js."
+            );
+
+        }
+
+
+        return storage.updateIncome(
+            currentEditingIncomeId,
             record
         );
 
-        return;
     }
 
 
-    /*
-        Temporary fallback.
+    /* CREATE NEW MONEY RECORD */
 
-        This means the Save button ALREADY works before
-        we update storage.js.
+    if (
+        storage &&
+        typeof storage.saveMoneyEntry ===
+            "function"
+    ) {
 
-        storage.js will become the official owner of this
-        data in the next step.
-    */
+        return storage.saveMoneyEntry(
+            record
+        );
 
-    saveMoneyRecordFallback(
+    }
+
+
+    return saveMoneyRecordFallback(
         record
     );
 
@@ -1421,16 +2382,201 @@ function saveMoneyRecord(record) {
 
 
 /* =========================================================
-   18. LOCAL STORAGE FALLBACK
+   27. DELETE INCOME
+   ========================================================= */
+
+function deleteIncomeRecord(
+    incomeId
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getIncomeById !==
+            "function"
+    ) {
+
+        console.error(
+            "Income deletion is not available."
+        );
+
+
+        return false;
+
+    }
+
+
+    const income =
+        storage.getIncomeById(
+            incomeId
+        );
+
+
+    if (
+        !income
+    ) {
+
+        console.warn(
+            `Income record not found: ${incomeId}`
+        );
+
+
+        return false;
+
+    }
+
+
+    const confirmed =
+        window.confirm(
+            `Delete "${income.name || income.source || "this income"}"?`
+        );
+
+
+    if (
+        !confirmed
+    ) {
+
+        return false;
+
+    }
+
+
+    let deleted =
+        false;
+
+
+    /*
+        Older paycheck records were migrated to Income.
+
+        Remove the original paycheck too so storage.js
+        cannot recreate it on the next load.
+    */
+
+    if (
+        income.legacyPaycheckId &&
+        typeof storage.deletePaycheck ===
+            "function"
+    ) {
+
+        const monthKey =
+            income.date
+                ? income.date.slice(
+                    0,
+                    7
+                )
+                : storage
+                    .getSelectedMonthKey();
+
+
+        deleted =
+            Boolean(
+                storage.deletePaycheck(
+                    income.legacyPaycheckId,
+                    monthKey
+                )
+            );
+
+    }
+
+    else if (
+        typeof storage.deleteIncome ===
+            "function"
+    ) {
+
+        deleted =
+            Boolean(
+                storage.deleteIncome(
+                    incomeId
+                )
+            );
+
+    }
+
+
+    if (
+        !deleted
+    ) {
+
+        return false;
+
+    }
+
+
+    const detail = {
+
+        type:
+            "income",
+
+        action:
+            "delete",
+
+        id:
+            incomeId,
+
+        record:
+            income
+
+    };
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+            "budget:money-saved",
+            {
+                detail
+            }
+        )
+
+    );
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+            "mwallet:money-saved",
+            {
+                detail
+            }
+        )
+
+    );
+
+
+    document.dispatchEvent(
+
+        new CustomEvent(
+            "mwallet:income-deleted",
+            {
+                detail
+            }
+        )
+
+    );
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   28. LOCAL STORAGE FALLBACK
    ========================================================= */
 
 const MONEY_FALLBACK_STORAGE_KEY =
-    "budgetTrackerMoneyEntries";
+    "mWalletMoneyEntries";
 
 
-function saveMoneyRecordFallback(record) {
+function saveMoneyRecordFallback(
+    record
+) {
 
-    let records = [];
+    let records =
+        [];
 
 
     try {
@@ -1441,10 +2587,14 @@ function saveMoneyRecordFallback(record) {
             );
 
 
-        if (saved) {
+        if (
+            saved
+        ) {
 
             records =
-                JSON.parse(saved);
+                JSON.parse(
+                    saved
+                );
 
         }
 
@@ -1453,43 +2603,52 @@ function saveMoneyRecordFallback(record) {
     catch (error) {
 
         console.warn(
-            "Could not read existing money records.",
+            "Could not read existing M-Wallet money records.",
             error
         );
 
-        records = [];
+
+        records =
+            [];
 
     }
 
-
-    if (!Array.isArray(records)) {
-        records = [];
-    }
-
-
-    /*
-        Starting balance behaves differently.
-
-        There should only be one starting balance
-        for each month.
-    */
 
     if (
-        record.type === "starting-balance"
+        !Array.isArray(
+            records
+        )
     ) {
 
         records =
-            records.filter(existingRecord => {
+            [];
 
-                return !(
-                    existingRecord.type ===
-                        "starting-balance" &&
+    }
 
-                    existingRecord.monthKey ===
-                        record.monthKey
-                );
 
-            });
+    if (
+        record.type ===
+        "starting-balance"
+    ) {
+
+        records =
+            records.filter(
+                existingRecord => {
+
+                    return !(
+
+                        existingRecord.type ===
+                            "starting-balance"
+
+                        &&
+
+                        existingRecord.monthKey ===
+                            record.monthKey
+
+                    );
+
+                }
+            );
 
     }
 
@@ -1501,14 +2660,19 @@ function saveMoneyRecordFallback(record) {
 
     localStorage.setItem(
         MONEY_FALLBACK_STORAGE_KEY,
-        JSON.stringify(records)
+        JSON.stringify(
+            records
+        )
     );
+
+
+    return record;
 
 }
 
 
 /* =========================================================
-   19. STATUS MESSAGE
+   29. STATUS MESSAGE
    ========================================================= */
 
 function showMoneyStatus(
@@ -1516,8 +2680,12 @@ function showMoneyStatus(
     type = "success"
 ) {
 
-    if (!moneyModalStatus) {
+    if (
+        !moneyModalStatus
+    ) {
+
         return;
+
     }
 
 
@@ -1539,13 +2707,17 @@ function showMoneyStatus(
 
 
 /* =========================================================
-   20. CLEAR STATUS
+   30. CLEAR STATUS
    ========================================================= */
 
 function clearMoneyStatus() {
 
-    if (!moneyModalStatus) {
+    if (
+        !moneyModalStatus
+    ) {
+
         return;
+
     }
 
 
@@ -1562,23 +2734,87 @@ function clearMoneyStatus() {
 
 
 /* =========================================================
-   21. MONEY ACTION BUTTONS
+   31. INCOME EDIT / DELETE BUTTONS
    ========================================================= */
 
-/*
-    Event delegation means EVERY button containing:
+document.addEventListener(
+    "click",
+    event => {
 
-        data-money-action="paycheck"
+        const editButton =
+            event.target.closest(
+                "[data-income-edit]"
+            );
 
-    automatically works.
 
-    This includes:
-    - Money Management cards
-    - Budget +Add buttons
-    - Transaction button
-    - Savings buttons
-    - Settings Starting Balance
-*/
+        if (
+            editButton
+        ) {
+
+            event.preventDefault();
+
+
+            const incomeId =
+                editButton.dataset
+                    .incomeEdit;
+
+
+            if (
+                incomeId
+            ) {
+
+                openIncomeEditor(
+                    incomeId
+                );
+
+            }
+
+
+            return;
+
+        }
+
+
+        const deleteButton =
+            event.target.closest(
+                "[data-income-delete]"
+            );
+
+
+        if (
+            !deleteButton
+        ) {
+
+            return;
+
+        }
+
+
+        event.preventDefault();
+
+
+        const incomeId =
+            deleteButton.dataset
+                .incomeDelete;
+
+
+        if (
+            incomeId
+        ) {
+
+            deleteIncomeRecord(
+                incomeId
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   32. MONEY ACTION BUTTONS
+   ========================================================= */
 
 document.addEventListener(
     "click",
@@ -1590,22 +2826,39 @@ document.addEventListener(
             );
 
 
-        if (!actionButton) {
+        if (
+            !actionButton
+        ) {
+
             return;
+
         }
 
 
+        const requestedAction =
+            actionButton.dataset
+                .moneyAction;
+
+
         const action =
-            actionButton.dataset.moneyAction;
-
-
-        if (!MONEY_FORMS[action]) {
-
-            console.warn(
-                `No money form exists for: ${action}`
+            normalizeMoneyAction(
+                requestedAction
             );
 
+
+        if (
+            !MONEY_FORMS[
+                action
+            ]
+        ) {
+
+            console.warn(
+                `No money form exists for: ${requestedAction}`
+            );
+
+
             return;
+
         }
 
 
@@ -1618,14 +2871,46 @@ document.addEventListener(
 
 
 /* =========================================================
-   22. RED X + OVERLAY CLOSE
+   33. CONDITIONAL FIELD CHANGES
    ========================================================= */
 
-/*
-    Both the red X and the dark overlay contain:
+if (
+    moneyModalBody
+) {
 
-        data-money-modal-close
-*/
+    moneyModalBody.addEventListener(
+        "change",
+        event => {
+
+            const field =
+                event.target.closest(
+                    "input, select, textarea"
+                );
+
+
+            if (
+                !field
+            ) {
+
+                return;
+
+            }
+
+
+            updateConditionalMoneyFields();
+
+
+            clearMoneyStatus();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   34. CLOSE BUTTON / OVERLAY
+   ========================================================= */
 
 document.addEventListener(
     "click",
@@ -1637,8 +2922,12 @@ document.addEventListener(
             );
 
 
-        if (!closeButton) {
+        if (
+            !closeButton
+        ) {
+
             return;
+
         }
 
 
@@ -1649,7 +2938,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   23. ESCAPE KEY CLOSE
+   35. ESCAPE KEY
    ========================================================= */
 
 document.addEventListener(
@@ -1657,18 +2946,26 @@ document.addEventListener(
     event => {
 
         if (
-            event.key !== "Escape"
+            event.key !==
+            "Escape"
         ) {
+
             return;
+
         }
 
 
         if (
-            !moneyModal.classList.contains(
-                "active"
-            )
+            !moneyModal ||
+            !moneyModal
+                .classList
+                .contains(
+                    "active"
+                )
         ) {
+
             return;
+
         }
 
 
@@ -1679,10 +2976,12 @@ document.addEventListener(
 
 
 /* =========================================================
-   24. UNDO BUTTON
+   36. UNDO BUTTON
    ========================================================= */
 
-if (moneyModalUndo) {
+if (
+    moneyModalUndo
+) {
 
     moneyModalUndo.addEventListener(
         "click",
@@ -1693,10 +2992,12 @@ if (moneyModalUndo) {
 
 
 /* =========================================================
-   25. SAVE BUTTON / FORM SUBMIT
+   37. SAVE / FORM SUBMIT
    ========================================================= */
 
-if (moneyModalForm) {
+if (
+    moneyModalForm
+) {
 
     moneyModalForm.addEventListener(
         "submit",
@@ -1707,10 +3008,12 @@ if (moneyModalForm) {
 
 
 /* =========================================================
-   26. CLEAR STATUS WHEN USER TYPES
+   38. CLEAR STATUS WHILE TYPING
    ========================================================= */
 
-if (moneyModalBody) {
+if (
+    moneyModalBody
+) {
 
     moneyModalBody.addEventListener(
         "input",
@@ -1725,21 +3028,19 @@ if (moneyModalBody) {
 
 
 /* =========================================================
-   27. EXPOSE FUNCTIONS
+   39. EXPOSE MONEY MANAGER
    ========================================================= */
-
-/*
-    These are useful later when we add:
-    - editing transactions
-    - editing bills
-    - editing paychecks
-    - app.js refreshes
-*/
 
 window.MoneyManager = {
 
     open:
         openMoneyModal,
+
+    editIncome:
+        openIncomeEditor,
+
+    deleteIncome:
+        deleteIncomeRecord,
 
     close:
         closeMoneyModal,
@@ -1751,9 +3052,32 @@ window.MoneyManager = {
         getMoneyFormData,
 
     getSelectedPeriod:
-        getSelectedBudgetPeriod
+        getSelectedBudgetPeriod,
+
+    refreshConditionalFields:
+        updateConditionalMoneyFields,
+
+    normalizeAction:
+        normalizeMoneyAction,
+
+    isEditingIncome() {
+
+        return Boolean(
+            currentEditingIncomeId
+        );
+
+    }
 
 };
+
+
+/* =========================================================
+   40. DEVELOPMENT HELPER
+   ========================================================= */
+
+console.log(
+    "M-Wallet money manager with Income editing loaded."
+);
 
 
 /* =========================================================

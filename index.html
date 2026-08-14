@@ -23,7 +23,7 @@
 
     <meta
         name="description"
-        content="Personal budget and money management tracker."
+        content="Personal money management and budgeting app."
     >
 
 
@@ -88,7 +88,7 @@
 
     <link
         rel="stylesheet"
-        href="./css/style.css?v=2"
+        href="./css/style.css?v=3"
     >
 
 </head>
@@ -272,7 +272,7 @@
                         </h2>
 
                         <p>
-                            Your monthly budget overview.
+                            Your monthly money overview.
                         </p>
 
                     </div>
@@ -466,7 +466,7 @@
 
 
 
-                <!-- Next Paycheck -->
+                <!-- Next Income -->
 
                 <section class="dashboard-section">
 
@@ -474,7 +474,7 @@
                     <div class="section-header">
 
                         <h3>
-                            Next Paycheck
+                            Next Income
                         </h3>
 
                     </div>
@@ -487,8 +487,13 @@
                         <div>
 
                             <span>
-                                Pay Date
+                                Expected Date
                             </span>
+
+                            <!--
+                                Legacy ID kept temporarily so the
+                                current app.js does not break.
+                            -->
 
                             <strong id="next-pay-date">
                                 —
@@ -501,8 +506,13 @@
                         <div>
 
                             <span>
-                                Estimated Amount
+                                Expected Amount
                             </span>
+
+                            <!--
+                                Legacy ID kept temporarily so the
+                                current app.js does not break.
+                            -->
 
                             <strong id="next-pay-amount">
                                 $0.00
@@ -613,7 +623,7 @@
                             </h3>
 
                             <p>
-                                Add money coming into your budget.
+                                Record money coming into M-Wallet.
                             </p>
 
                         </div>
@@ -629,7 +639,7 @@
                         <button
                             type="button"
                             class="money-action-card"
-                            data-money-action="paycheck"
+                            data-money-action="income"
                         >
 
 
@@ -642,12 +652,12 @@
 
 
                                 <strong>
-                                    Add Paycheck
+                                    Add Income
                                 </strong>
 
 
                                 <small>
-                                    Record income from work or another paycheck.
+                                    Add work income, freelance money, benefits, gifts, or other income.
                                 </small>
 
 
@@ -1028,7 +1038,7 @@
                         </h2>
 
                         <p>
-                            Plan your income, bills and expenses.
+                            Plan your income, bills, expenses, and savings.
                         </p>
 
                     </div>
@@ -1095,7 +1105,7 @@
 
 
 
-                <!-- Paychecks -->
+                <!-- Income -->
 
                 <section class="budget-block">
 
@@ -1103,16 +1113,24 @@
                     <div class="section-header">
 
 
-                        <h3>
-                            Paychecks
-                        </h3>
+                        <div>
+
+                            <h3>
+                                Income
+                            </h3>
+
+                            <p>
+                                Income expected during this month.
+                            </p>
+
+                        </div>
 
 
                         <button
                             class="add-button"
-                            id="add-paycheck-button"
+                            id="add-income-button"
                             type="button"
-                            data-money-action="paycheck"
+                            data-money-action="income"
                         >
                             + Add
                         </button>
@@ -1122,13 +1140,51 @@
 
 
 
+                    <!-- Income Totals -->
+
+                    <div class="summary-grid">
+
+
+                        <article class="summary-card">
+
+                            <span>
+                                Monthly Income
+                            </span>
+
+                            <strong id="monthly-income-total">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+
+                        <article class="summary-card">
+
+                            <span>
+                                Yearly Income
+                            </span>
+
+                            <strong id="yearly-income-total">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                    </div>
+
+
+
+                    <!-- Income List -->
+
                     <div
                         class="table-container"
-                        id="paycheck-list"
+                        id="income-list"
                     >
 
                         <p class="empty-message">
-                            No paychecks added.
+                            No income added.
                         </p>
 
                     </div>
@@ -1603,7 +1659,7 @@
                         class="settings-item"
                         id="export-data"
                     >
-                        Export Budget Data
+                        Export M-Wallet Data
                     </button>
 
 
@@ -1612,7 +1668,7 @@
                         class="settings-item danger-settings-item"
                         id="clear-data"
                     >
-                        Reset Budget Data
+                        Reset M-Wallet Data
                     </button>
 
 
@@ -1908,15 +1964,15 @@
          JAVASCRIPT
     ========================================= -->
 
-    <script src="./js/storage.js"></script>
+    <script src="./js/storage.js?v=3"></script>
 
-    <script src="./js/nav.js"></script>
+    <script src="./js/nav.js?v=3"></script>
 
-    <script src="./js/app.js"></script>
+    <script src="./js/app.js?v=3"></script>
 
-    <script src="./js/money.js"></script>
+    <script src="./js/money.js?v=3"></script>
 
-    <script src="./js/pwa.js"></script>
+    <script src="./js/pwa.js?v=3"></script>
 
 
 </body>

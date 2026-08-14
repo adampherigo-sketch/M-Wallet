@@ -1,5 +1,5 @@
 /* =========================================================
-   BUDGET TRACKER
+   M-WALLET
    Main Application / Rendering
    app.js
    ========================================================= */
@@ -15,7 +15,22 @@ const BudgetApp = {
 
 
     /* =====================================================
-       2. INITIALIZE APP
+       2. GET STORAGE SYSTEM
+       ===================================================== */
+
+    getStorage() {
+
+        return (
+            window.MWalletStorage ||
+            window.BudgetStorage ||
+            null
+        );
+
+    },
+
+
+    /* =====================================================
+       3. INITIALIZE APP
        ===================================================== */
 
     init() {
@@ -24,16 +39,22 @@ const BudgetApp = {
             return;
         }
 
+
         this.initialized = true;
 
 
-        if (!window.BudgetStorage) {
+        const storage =
+            this.getStorage();
+
+
+        if (!storage) {
 
             console.error(
-                "BudgetStorage is not available. Make sure storage.js loads before app.js."
+                "M-Wallet storage is not available. Make sure storage.js loads before app.js."
             );
 
             return;
+
         }
 
 
@@ -41,23 +62,29 @@ const BudgetApp = {
 
         this.refresh();
 
+
         console.log(
-            "Budget Tracker app loaded."
+            "M-Wallet app loaded."
         );
 
     },
 
 
     /* =====================================================
-       3. BIND APP EVENTS
+       4. BIND APP EVENTS
        ===================================================== */
 
     bindEvents() {
+
+        const storage =
+            this.getStorage();
+
 
         const monthSelect =
             document.getElementById(
                 "month-select"
             );
+
 
         const yearSelect =
             document.getElementById(
@@ -103,11 +130,6 @@ const BudgetApp = {
 
         /* -------------------------------------------------
            PREVIOUS / NEXT / TODAY
-
-           nav.js handles changing the selected month.
-
-           app.js waits until that change finishes,
-           then redraws the budget.
            ------------------------------------------------- */
 
         [
@@ -148,12 +170,6 @@ const BudgetApp = {
 
         /* -------------------------------------------------
            MONEY SAVED
-
-           money.js fires:
-
-               budget:money-saved
-
-           immediately after something is stored.
            ------------------------------------------------- */
 
         document.addEventListener(
@@ -166,8 +182,42 @@ const BudgetApp = {
         );
 
 
+        document.addEventListener(
+            "mwallet:money-saved",
+            () => {
+
+                this.refresh();
+
+            }
+        );
+
+
         /* -------------------------------------------------
-           OPTIONAL MONTH EVENT FROM NAV.JS
+           INCOME UPDATED / DELETED
+           ------------------------------------------------- */
+
+        document.addEventListener(
+            "mwallet:income-updated",
+            () => {
+
+                this.refresh();
+
+            }
+        );
+
+
+        document.addEventListener(
+            "mwallet:income-deleted",
+            () => {
+
+                this.refresh();
+
+            }
+        );
+
+
+        /* -------------------------------------------------
+           MONTH CHANGED EVENTS
            ------------------------------------------------- */
 
         document.addEventListener(
@@ -180,8 +230,18 @@ const BudgetApp = {
         );
 
 
+        document.addEventListener(
+            "mwallet:month-changed",
+            () => {
+
+                this.refresh();
+
+            }
+        );
+
+
         /* -------------------------------------------------
-           ANOTHER TAB CHANGED LOCAL STORAGE
+           ANOTHER TAB CHANGED STORAGE
            ------------------------------------------------- */
 
         window.addEventListener(
@@ -189,8 +249,9 @@ const BudgetApp = {
             event => {
 
                 if (
+                    storage &&
                     event.key ===
-                    BudgetStorage.storageKey
+                        storage.storageKey
                 ) {
 
                     this.refresh();
@@ -201,43 +262,35 @@ const BudgetApp = {
         );
 
 
-        /* -------------------------------------------------
-           SETTINGS BUTTONS
-           ------------------------------------------------- */
-
         this.bindSettingsActions();
 
     },
 
 
     /* =====================================================
-       4. REFRESH ENTIRE APP
+       5. REFRESH ENTIRE APP
        ===================================================== */
 
-    /*
-        This is now the master redraw function.
-
-        Anytime money changes:
-
-            Save
-            Month
-            Year
-            Reset
-
-        we call this one function.
-    */
-
     refresh() {
+
+        const storage =
+            this.getStorage();
+
+
+        if (!storage) {
+            return;
+        }
+
 
         try {
 
             const monthKey =
-                BudgetStorage
+                storage
                     .getSelectedMonthKey();
 
 
             const snapshot =
-                BudgetStorage
+                storage
                     .getMonthSnapshot(
                         monthKey
                     );
@@ -245,37 +298,41 @@ const BudgetApp = {
 
             this.updateCurrentMonthTitle();
 
+
             this.renderDashboard(
                 snapshot
             );
+
 
             this.renderBudget(
                 snapshot
             );
 
+
             this.renderTransactions(
                 snapshot
             );
+
 
             this.renderSavings(
                 snapshot
             );
 
 
-            /*
-                Future parts of the app can listen
-                for this if needed.
-            */
-
             document.dispatchEvent(
 
                 new CustomEvent(
-                    "budget:app-refreshed",
+                    "mwallet:app-refreshed",
                     {
+
                         detail: {
+
                             monthKey,
+
                             snapshot
+
                         }
+
                     }
                 )
 
@@ -286,7 +343,7 @@ const BudgetApp = {
         catch (error) {
 
             console.error(
-                "Budget Tracker could not refresh:",
+                "M-Wallet could not refresh:",
                 error
             );
 
@@ -296,7 +353,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       5. UPDATE CURRENT MONTH HEADING
+       6. UPDATE CURRENT MONTH TITLE
        ===================================================== */
 
     updateCurrentMonthTitle() {
@@ -306,10 +363,12 @@ const BudgetApp = {
                 "month-select"
             );
 
+
         const yearSelect =
             document.getElementById(
                 "year-select"
             );
+
 
         const title =
             document.getElementById(
@@ -322,7 +381,9 @@ const BudgetApp = {
             !yearSelect ||
             !title
         ) {
+
             return;
+
         }
 
 
@@ -345,7 +406,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       6. RENDER DASHBOARD
+       7. RENDER DASHBOARD
        ===================================================== */
 
     renderDashboard(snapshot) {
@@ -353,10 +414,6 @@ const BudgetApp = {
         const summary =
             snapshot.summary;
 
-
-        /* -------------------------------------------------
-           MAIN BALANCE
-           ------------------------------------------------- */
 
         this.setMoneyText(
             "checking-balance",
@@ -375,10 +432,6 @@ const BudgetApp = {
             summary.savings
         );
 
-
-        /* -------------------------------------------------
-           MONTH SUMMARY
-           ------------------------------------------------- */
 
         this.setMoneyText(
             "total-income",
@@ -404,16 +457,12 @@ const BudgetApp = {
         );
 
 
-        /* -------------------------------------------------
-           DASHBOARD SECTIONS
-           ------------------------------------------------- */
-
         this.renderUpcomingBills(
             snapshot
         );
 
 
-        this.renderNextPaycheck(
+        this.renderNextIncome(
             snapshot
         );
 
@@ -426,10 +475,14 @@ const BudgetApp = {
 
 
     /* =====================================================
-       7. UPCOMING BILLS
+       8. UPCOMING BILLS
        ===================================================== */
 
     renderUpcomingBills(snapshot) {
+
+        const storage =
+            this.getStorage();
+
 
         const container =
             document.getElementById(
@@ -437,8 +490,13 @@ const BudgetApp = {
             );
 
 
-        if (!container) {
+        if (
+            !container ||
+            !storage
+        ) {
+
             return;
+
         }
 
 
@@ -447,7 +505,7 @@ const BudgetApp = {
 
 
         const currentMonthKey =
-            BudgetStorage
+            storage
                 .getCurrentMonthKey();
 
 
@@ -489,6 +547,7 @@ const BudgetApp = {
 
             `;
 
+
             return;
 
         }
@@ -502,7 +561,9 @@ const BudgetApp = {
                         currentMonthKey &&
 
                     bill.dueDate &&
-                    bill.dueDate < today;
+
+                    bill.dueDate <
+                        today;
 
 
                 const status =
@@ -521,7 +582,6 @@ const BudgetApp = {
                             🧾
                         </div>
 
-
                         <div class="transaction-info">
 
                             <strong>
@@ -531,25 +591,32 @@ const BudgetApp = {
                             </strong>
 
                             <span>
+
                                 ${this.escapeHTML(
                                     bill.category ||
                                     "Bill"
                                 )}
+
                                 ·
-                                ${status}
+
+                                ${this.escapeHTML(
+                                    status
+                                )}
+
                             </span>
 
                         </div>
 
-
                         <div class="transaction-amount expense">
+
                             ${this.formatCurrency(
                                 -Math.abs(
                                     Number(
                                         bill.amount
-                                    )
+                                    ) || 0
                                 )
                             )}
+
                         </div>
 
                     </article>
@@ -562,15 +629,20 @@ const BudgetApp = {
 
 
     /* =====================================================
-       8. NEXT PAYCHECK
+       9. NEXT INCOME
        ===================================================== */
 
-    renderNextPaycheck(snapshot) {
+    renderNextIncome(snapshot) {
+
+        const storage =
+            this.getStorage();
+
 
         const dateElement =
             document.getElementById(
                 "next-pay-date"
             );
+
 
         const amountElement =
             document.getElementById(
@@ -580,66 +652,75 @@ const BudgetApp = {
 
         if (
             !dateElement ||
-            !amountElement
+            !amountElement ||
+            !storage
         ) {
+
             return;
+
         }
 
 
-        let paychecks =
-            [...snapshot.paychecks]
+        let income =
+            Array.isArray(
+                snapshot.income
+            )
+                ? [...snapshot.income]
+                : [];
+
+
+        income =
+            income
 
                 .filter(
-                    paycheck =>
-                        paycheck.payDate
+                    item =>
+                        item.date
                 )
 
                 .sort(
                     (a, b) =>
                         this.compareDates(
-                            a.payDate,
-                            b.payDate
+                            a.date,
+                            b.date
                         )
                 );
 
 
-        /*
-            When looking at the current month,
-            "Next Paycheck" should actually mean
-            today or later.
-        */
-
         if (
             snapshot.monthKey ===
-            BudgetStorage.getCurrentMonthKey()
+            storage.getCurrentMonthKey()
         ) {
 
             const today =
                 this.getTodayKey();
 
 
-            paychecks =
-                paychecks.filter(
-                    paycheck =>
-                        paycheck.payDate >=
+            income =
+                income.filter(
+                    item =>
+                        item.date >=
                         today
                 );
 
         }
 
 
-        const nextPaycheck =
-            paychecks[0];
+        const nextIncome =
+            income[0];
 
 
-        if (!nextPaycheck) {
+        if (
+            !nextIncome
+        ) {
 
             dateElement.textContent =
                 "—";
 
 
             amountElement.textContent =
-                this.formatCurrency(0);
+                this.formatCurrency(
+                    0
+                );
 
 
             return;
@@ -649,20 +730,20 @@ const BudgetApp = {
 
         dateElement.textContent =
             this.formatDate(
-                nextPaycheck.payDate
+                nextIncome.date
             );
 
 
         amountElement.textContent =
             this.formatCurrency(
-                nextPaycheck.amount
+                nextIncome.amount
             );
 
     },
 
 
     /* =====================================================
-       9. DASHBOARD SAVINGS OVERVIEW
+       10. DASHBOARD SAVINGS
        ===================================================== */
 
     renderDashboardSavings(snapshot) {
@@ -679,10 +760,12 @@ const BudgetApp = {
 
 
         const goals =
-            snapshot.savingsGoals.slice(
-                0,
-                3
-            );
+            snapshot
+                .savingsGoals
+                .slice(
+                    0,
+                    3
+                );
 
 
         if (
@@ -690,7 +773,8 @@ const BudgetApp = {
         ) {
 
             if (
-                snapshot.summary.savings > 0
+                snapshot.summary.savings >
+                0
             ) {
 
                 container.innerHTML = `
@@ -715,6 +799,7 @@ const BudgetApp = {
 
                 `;
 
+
                 return;
 
             }
@@ -727,6 +812,7 @@ const BudgetApp = {
                 </p>
 
             `;
+
 
             return;
 
@@ -745,10 +831,19 @@ const BudgetApp = {
 
 
     /* =====================================================
-       10. RENDER MONTHLY BUDGET PAGE
+       11. RENDER MONTHLY BUDGET
        ===================================================== */
 
     renderBudget(snapshot) {
+
+        const storage =
+            this.getStorage();
+
+
+        if (!storage) {
+            return;
+        }
+
 
         this.setMoneyText(
             "starting-balance",
@@ -756,8 +851,56 @@ const BudgetApp = {
         );
 
 
-        this.renderPaycheckTable(
-            snapshot.paychecks
+        /* -------------------------------------------------
+           INCOME TOTALS
+           ------------------------------------------------- */
+
+        const monthlyIncome =
+            typeof storage
+                .getMonthlyIncomeTotal ===
+                "function"
+
+                ? storage
+                    .getMonthlyIncomeTotal(
+                        snapshot.monthKey
+                    )
+
+                : 0;
+
+
+        const selectedYear =
+            snapshot
+                .monthKey
+                .split("-")[0];
+
+
+        const yearlyIncome =
+            typeof storage
+                .getYearlyIncomeTotal ===
+                "function"
+
+                ? storage
+                    .getYearlyIncomeTotal(
+                        selectedYear
+                    )
+
+                : 0;
+
+
+        this.setMoneyText(
+            "monthly-income-total",
+            monthlyIncome
+        );
+
+
+        this.setMoneyText(
+            "yearly-income-total",
+            yearlyIncome
+        );
+
+
+        this.renderIncomeTable(
+            snapshot.income || []
         );
 
 
@@ -774,14 +917,14 @@ const BudgetApp = {
 
 
     /* =====================================================
-       11. PAYCHECK TABLE
+       12. INCOME TABLE
        ===================================================== */
 
-    renderPaycheckTable(paychecks) {
+    renderIncomeTable(income) {
 
         const container =
             document.getElementById(
-                "paycheck-list"
+                "income-list"
             );
 
 
@@ -791,16 +934,18 @@ const BudgetApp = {
 
 
         if (
-            paychecks.length === 0
+            !Array.isArray(income) ||
+            income.length === 0
         ) {
 
             container.innerHTML = `
 
                 <p class="empty-message">
-                    No paychecks added.
+                    No income added.
                 </p>
 
             `;
+
 
             return;
 
@@ -808,11 +953,11 @@ const BudgetApp = {
 
 
         const sorted =
-            [...paychecks].sort(
+            [...income].sort(
                 (a, b) =>
                     this.compareDates(
-                        a.payDate,
-                        b.payDate
+                        a.date,
+                        b.date
                     )
             );
 
@@ -824,10 +969,19 @@ const BudgetApp = {
                 <thead>
 
                     <tr>
-                        <th>Paycheck</th>
-                        <th>Pay Date</th>
-                        <th>Hours</th>
+
+                        <th>Income</th>
+
+                        <th>Date</th>
+
+                        <th>Type</th>
+
+                        <th>Frequency</th>
+
                         <th>Amount</th>
+
+                        <th>Actions</th>
+
                     </tr>
 
                 </thead>
@@ -835,37 +989,114 @@ const BudgetApp = {
 
                 <tbody>
 
-                    ${sorted.map(paycheck => `
+                    ${sorted.map(item => {
 
-                        <tr>
+                        const incomeId =
+                            item.sourceId ||
+                            item.id ||
+                            "";
 
-                            <td>
-                                ${this.escapeHTML(
-                                    paycheck.name
-                                )}
-                            </td>
 
-                            <td>
-                                ${this.formatDate(
-                                    paycheck.payDate
-                                )}
-                            </td>
+                        return `
 
-                            <td>
-                                ${this.formatHours(
-                                    paycheck.hours
-                                )}
-                            </td>
+                            <tr>
 
-                            <td class="money-positive">
-                                ${this.formatCurrency(
-                                    paycheck.amount
-                                )}
-                            </td>
+                                <td>
 
-                        </tr>
+                                    <strong>
+                                        ${this.escapeHTML(
+                                            item.source ||
+                                            item.name ||
+                                            "Income"
+                                        )}
+                                    </strong>
 
-                    `).join("")}
+                                </td>
+
+
+                                <td>
+
+                                    ${this.formatDate(
+                                        item.date
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    ${this.escapeHTML(
+                                        item.category ||
+                                        "Other Income"
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    ${this.escapeHTML(
+                                        this.formatIncomeFrequency(
+                                            item
+                                        )
+                                    )}
+
+                                </td>
+
+
+                                <td class="money-positive">
+
+                                    ${this.formatCurrency(
+                                        item.amount
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    <div class="income-actions">
+
+                                        <button
+                                            type="button"
+                                            class="text-button"
+                                            data-income-edit="${this.escapeHTML(
+                                                incomeId
+                                            )}"
+                                            aria-label="Edit ${this.escapeHTML(
+                                                item.name ||
+                                                item.source ||
+                                                "income"
+                                            )}"
+                                        >
+                                            Edit
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="text-button money-negative"
+                                            data-income-delete="${this.escapeHTML(
+                                                incomeId
+                                            )}"
+                                            aria-label="Delete ${this.escapeHTML(
+                                                item.name ||
+                                                item.source ||
+                                                "income"
+                                            )}"
+                                        >
+                                            Delete
+                                        </button>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        `;
+
+                    }).join("")}
 
                 </tbody>
 
@@ -877,7 +1108,112 @@ const BudgetApp = {
 
 
     /* =====================================================
-       12. BILL TABLE
+       13. FORMAT INCOME FREQUENCY
+       ===================================================== */
+
+    formatIncomeFrequency(income) {
+
+        if (
+            !income.recurring
+        ) {
+
+            return "One-time";
+
+        }
+
+
+        switch (
+            income.frequency
+        ) {
+
+            case "weekly":
+
+                return "Weekly";
+
+
+            case "biweekly":
+
+                return "Biweekly";
+
+
+            case "twice-monthly":
+
+                return "Twice Monthly";
+
+
+            case "monthly":
+
+                return "Monthly";
+
+
+            case "custom":
+
+                return this
+                    .formatCustomIncomeFrequency(
+                        income
+                    );
+
+
+            default:
+
+                return "Recurring";
+
+        }
+
+    },
+
+
+    /* =====================================================
+       14. FORMAT CUSTOM INCOME FREQUENCY
+       ===================================================== */
+
+    formatCustomIncomeFrequency(income) {
+
+        const interval =
+            Number(
+                income.customInterval
+            ) || 1;
+
+
+        const unit =
+            income.customUnit ||
+            "months";
+
+
+        let label =
+            unit;
+
+
+        if (
+            interval === 1
+        ) {
+
+            label =
+                unit.endsWith("s")
+                    ? unit.slice(
+                        0,
+                        -1
+                    )
+                    : unit;
+
+        }
+
+
+        label =
+            label.charAt(0)
+                .toUpperCase() +
+            label.slice(1);
+
+
+        return (
+            `Every ${interval} ${label}`
+        );
+
+    },
+
+
+    /* =====================================================
+       15. BILL TABLE
        ===================================================== */
 
     renderBillTable(bills) {
@@ -894,6 +1230,7 @@ const BudgetApp = {
 
 
         if (
+            !Array.isArray(bills) ||
             bills.length === 0
         ) {
 
@@ -904,6 +1241,7 @@ const BudgetApp = {
                 </p>
 
             `;
+
 
             return;
 
@@ -927,11 +1265,17 @@ const BudgetApp = {
                 <thead>
 
                     <tr>
+
                         <th>Bill</th>
+
                         <th>Due</th>
+
                         <th>Category</th>
+
                         <th>Amount</th>
+
                         <th>Repeats</th>
+
                     </tr>
 
                 </thead>
@@ -944,34 +1288,48 @@ const BudgetApp = {
                         <tr>
 
                             <td>
+
                                 ${this.escapeHTML(
                                     bill.name
                                 )}
+
                             </td>
 
+
                             <td>
+
                                 ${this.formatDate(
                                     bill.dueDate
                                 )}
+
                             </td>
 
+
                             <td>
+
                                 ${this.escapeHTML(
                                     bill.category ||
                                     "Other"
                                 )}
+
                             </td>
 
+
                             <td class="money-negative">
+
                                 ${this.formatCurrency(
                                     bill.amount
                                 )}
+
                             </td>
 
+
                             <td>
+
                                 ${bill.recurring
                                     ? "Yes"
                                     : "No"}
+
                             </td>
 
                         </tr>
@@ -988,7 +1346,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       13. EXPENSE TABLE
+       16. EXPENSE TABLE
        ===================================================== */
 
     renderExpenseTable(expenses) {
@@ -1005,6 +1363,7 @@ const BudgetApp = {
 
 
         if (
+            !Array.isArray(expenses) ||
             expenses.length === 0
         ) {
 
@@ -1015,6 +1374,7 @@ const BudgetApp = {
                 </p>
 
             `;
+
 
             return;
 
@@ -1038,10 +1398,17 @@ const BudgetApp = {
                 <thead>
 
                     <tr>
+
                         <th>Expense</th>
+
                         <th>Date</th>
+
+                        <th>Merchant</th>
+
                         <th>Category</th>
+
                         <th>Amount</th>
+
                     </tr>
 
                 </thead>
@@ -1054,28 +1421,49 @@ const BudgetApp = {
                         <tr>
 
                             <td>
+
                                 ${this.escapeHTML(
                                     expense.name
                                 )}
+
                             </td>
 
+
                             <td>
+
                                 ${this.formatDate(
                                     expense.date
                                 )}
+
                             </td>
 
+
                             <td>
+
+                                ${this.escapeHTML(
+                                    expense.merchant ||
+                                    "—"
+                                )}
+
+                            </td>
+
+
+                            <td>
+
                                 ${this.escapeHTML(
                                     expense.category ||
                                     "Other"
                                 )}
+
                             </td>
 
+
                             <td class="money-negative">
+
                                 ${this.formatCurrency(
                                     expense.amount
                                 )}
+
                             </td>
 
                         </tr>
@@ -1092,7 +1480,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       14. TRANSACTION / ACTIVITY PAGE
+       17. TRANSACTION / ACTIVITY PAGE
        ===================================================== */
 
     renderTransactions(snapshot) {
@@ -1109,7 +1497,11 @@ const BudgetApp = {
 
 
         const transactions =
-            snapshot.transactions;
+            Array.isArray(
+                snapshot.transactions
+            )
+                ? snapshot.transactions
+                : [];
 
 
         if (
@@ -1123,6 +1515,7 @@ const BudgetApp = {
                 </p>
 
             `;
+
 
             return;
 
@@ -1160,22 +1553,27 @@ const BudgetApp = {
                         <article class="transaction-item">
 
                             <div class="transaction-icon">
+
                                 ${icon}
+
                             </div>
 
 
                             <div class="transaction-info">
 
                                 <strong>
+
                                     ${this.escapeHTML(
                                         transaction.description ||
                                         transaction.name ||
                                         "Transaction"
                                     )}
+
                                 </strong>
 
 
                                 <span>
+
                                     ${this.escapeHTML(
                                         subtitle
                                     )}
@@ -1186,6 +1584,7 @@ const BudgetApp = {
                                         )}`
                                         : ""
                                     }
+
                                 </span>
 
                             </div>
@@ -1197,9 +1596,11 @@ const BudgetApp = {
                                     ? "income"
                                     : "expense"}
                             ">
+
                                 ${this.formatSignedCurrency(
                                     amount
                                 )}
+
                             </div>
 
                         </article>
@@ -1213,7 +1614,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       15. TRANSACTION ICON
+       18. TRANSACTION ICON
        ===================================================== */
 
     getTransactionIcon(
@@ -1224,19 +1625,28 @@ const BudgetApp = {
             transaction.sourceType
         ) {
 
+            case "income":
+
+                return "💵";
+
+
             case "paycheck":
+
                 return "💵";
 
 
             case "bill":
+
                 return "🧾";
 
 
             case "expense":
+
                 return "🛒";
 
 
             case "savings-deposit":
+
                 return "🏦";
 
 
@@ -1252,6 +1662,7 @@ const BudgetApp = {
 
 
             default:
+
                 return "$";
 
         }
@@ -1260,7 +1671,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       16. TRANSACTION SUBTITLE
+       19. TRANSACTION SUBTITLE
        ===================================================== */
 
     getTransactionSubtitle(
@@ -1273,8 +1684,76 @@ const BudgetApp = {
         ) {
 
             return transaction.paid
-                ? `${transaction.category || "Bill"} · Paid`
-                : `${transaction.category || "Bill"} · Planned bill`;
+
+                ? (
+                    `${transaction.category || "Bill"} · Paid`
+                )
+
+                : (
+                    `${transaction.category || "Bill"} · Planned bill`
+                );
+
+        }
+
+
+        if (
+            transaction.sourceType ===
+            "income"
+        ) {
+
+            return (
+                transaction.category ||
+                "Income"
+            );
+
+        }
+
+
+        if (
+            transaction.sourceType ===
+            "savings-deposit"
+        ) {
+
+            return "Savings";
+
+        }
+
+
+        if (
+            transaction.sourceType ===
+            "expense"
+        ) {
+
+            const parts =
+                [];
+
+
+            if (
+                transaction.merchant
+            ) {
+
+                parts.push(
+                    transaction.merchant
+                );
+
+            }
+
+
+            if (
+                transaction.category
+            ) {
+
+                parts.push(
+                    transaction.category
+                );
+
+            }
+
+
+            return (
+                parts.join(" · ") ||
+                "Expense"
+            );
 
         }
 
@@ -1288,7 +1767,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       17. SAVINGS PAGE
+       20. SAVINGS PAGE
        ===================================================== */
 
     renderSavings(snapshot) {
@@ -1319,6 +1798,7 @@ const BudgetApp = {
 
 
         if (
+            !Array.isArray(goals) ||
             goals.length === 0
         ) {
 
@@ -1329,6 +1809,7 @@ const BudgetApp = {
                 </p>
 
             `;
+
 
             return;
 
@@ -1347,7 +1828,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       18. CREATE SAVINGS GOAL CARD
+       21. SAVINGS GOAL CARD
        ===================================================== */
 
     createSavingsGoalHTML(goal) {
@@ -1364,7 +1845,8 @@ const BudgetApp = {
             ) || 0;
 
 
-        let percent = 0;
+        let percent =
+            0;
 
 
         if (
@@ -1399,22 +1881,28 @@ const BudgetApp = {
                     <div>
 
                         <strong>
+
                             ${this.escapeHTML(
                                 goal.name
                             )}
+
                         </strong>
 
                     </div>
 
 
                     <strong>
+
                         ${this.formatCurrency(
                             current
                         )}
+
                         /
+
                         ${this.formatCurrency(
                             target
                         )}
+
                     </strong>
 
                 </div>
@@ -1443,36 +1931,44 @@ const BudgetApp = {
 
 
     /* =====================================================
-       19. CALCULATE OVERALL SAVINGS
+       22. CALCULATE OVERALL SAVINGS
        ===================================================== */
-
-    /*
-        Goal-linked deposits are already represented by
-        goal.currentAmount.
-
-        Therefore:
-
-        overall savings =
-            all goal current amounts
-            +
-            savings deposits NOT assigned to a goal
-
-        This prevents goal deposits from being counted twice.
-    */
 
     calculateOverallSavings() {
 
+        const storage =
+            this.getStorage();
+
+
+        if (!storage) {
+            return 0;
+        }
+
+
         const data =
-            BudgetStorage.load();
+            storage.load();
+
+
+        const savingsGoals =
+            Array.isArray(
+                data.savingsGoals
+            )
+                ? data.savingsGoals
+                : [];
 
 
         const goalTotal =
-            data.savingsGoals.reduce(
-                (total, goal) =>
+            savingsGoals.reduce(
+                (
+                    total,
+                    goal
+                ) =>
 
                     total +
-                    Number(
-                        goal.currentAmount
+                    (
+                        Number(
+                            goal.currentAmount
+                        ) || 0
                     ),
 
                 0
@@ -1484,7 +1980,8 @@ const BudgetApp = {
 
 
         Object.values(
-            data.months
+            data.months ||
+            {}
         ).forEach(month => {
 
             const deposits =
@@ -1498,7 +1995,9 @@ const BudgetApp = {
             deposits.forEach(
                 deposit => {
 
-                    if (!deposit.goalId) {
+                    if (
+                        !deposit.goalId
+                    ) {
 
                         generalSavings +=
                             Number(
@@ -1522,35 +2021,47 @@ const BudgetApp = {
 
 
     /* =====================================================
-       20. FORMAT CURRENCY
+       23. FORMAT CURRENCY
        ===================================================== */
 
     formatCurrency(value) {
 
+        const storage =
+            this.getStorage();
+
+
         const amount =
-            Number(value) || 0;
+            Number(
+                value
+            ) || 0;
 
 
         let currency =
             "USD";
 
 
-        try {
+        if (
+            storage
+        ) {
 
-            const data =
-                BudgetStorage.load();
+            try {
+
+                const data =
+                    storage.load();
 
 
-            currency =
-                data.settings?.currency ||
-                "USD";
+                currency =
+                    data.settings?.currency ||
+                    "USD";
 
-        }
+            }
 
-        catch (error) {
+            catch (error) {
 
-            currency =
-                "USD";
+                currency =
+                    "USD";
+
+            }
 
         }
 
@@ -1558,22 +2069,30 @@ const BudgetApp = {
         return new Intl.NumberFormat(
             "en-US",
             {
-                style: "currency",
+
+                style:
+                    "currency",
+
                 currency
+
             }
-        ).format(amount);
+        ).format(
+            amount
+        );
 
     },
 
 
     /* =====================================================
-       21. FORMAT SIGNED CURRENCY
+       24. FORMAT SIGNED CURRENCY
        ===================================================== */
 
     formatSignedCurrency(value) {
 
         const amount =
-            Number(value) || 0;
+            Number(
+                value
+            ) || 0;
 
 
         if (
@@ -1598,19 +2117,19 @@ const BudgetApp = {
 
 
     /* =====================================================
-       22. FORMAT DATE
+       25. FORMAT DATE
        ===================================================== */
 
     formatDate(dateValue) {
 
-        if (!dateValue) {
+        if (
+            !dateValue
+        ) {
+
             return "—";
+
         }
 
-
-        /*
-            Handle YYYY-MM-DD without UTC timezone shifting.
-        */
 
         const parts =
             String(
@@ -1626,7 +2145,8 @@ const BudgetApp = {
                 year,
                 month,
                 day
-            ] = parts;
+            ] =
+                parts;
 
 
             const date =
@@ -1646,44 +2166,35 @@ const BudgetApp = {
                 return new Intl.DateTimeFormat(
                     "en-US",
                     {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric"
+
+                        month:
+                            "short",
+
+                        day:
+                            "numeric",
+
+                        year:
+                            "numeric"
+
                     }
-                ).format(date);
+                ).format(
+                    date
+                );
 
             }
 
         }
 
 
-        return dateValue;
-
-    },
-
-
-    /* =====================================================
-       23. FORMAT HOURS
-       ===================================================== */
-
-    formatHours(value) {
-
-        const hours =
-            Number(value) || 0;
-
-
-        return hours.toLocaleString(
-            "en-US",
-            {
-                maximumFractionDigits: 2
-            }
+        return String(
+            dateValue
         );
 
     },
 
 
     /* =====================================================
-       24. DATE COMPARISON
+       26. DATE COMPARISON
        ===================================================== */
 
     compareDates(
@@ -1695,30 +2206,39 @@ const BudgetApp = {
             !first &&
             !second
         ) {
+
             return 0;
+
         }
 
 
         if (!first) {
+
             return 1;
+
         }
 
 
         if (!second) {
+
             return -1;
+
         }
 
 
-        return String(first)
-            .localeCompare(
-                String(second)
-            );
+        return String(
+            first
+        ).localeCompare(
+            String(
+                second
+            )
+        );
 
     },
 
 
     /* =====================================================
-       25. TODAY KEY
+       27. TODAY KEY
        ===================================================== */
 
     getTodayKey() {
@@ -1759,7 +2279,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       26. SET MONEY ELEMENT
+       28. SET MONEY ELEMENT
        ===================================================== */
 
     setMoneyText(
@@ -1787,13 +2307,8 @@ const BudgetApp = {
 
 
     /* =====================================================
-       27. ESCAPE HTML
+       29. ESCAPE HTML
        ===================================================== */
-
-    /*
-        Prevent user-entered names such as bill names
-        from accidentally becoming HTML.
-    */
 
     escapeHTML(value) {
 
@@ -1830,7 +2345,7 @@ const BudgetApp = {
 
 
     /* =====================================================
-       28. SETTINGS ACTIONS
+       30. SETTINGS ACTIONS
        ===================================================== */
 
     bindSettingsActions() {
@@ -1847,7 +2362,9 @@ const BudgetApp = {
             );
 
 
-        if (exportButton) {
+        if (
+            exportButton
+        ) {
 
             exportButton.addEventListener(
                 "click",
@@ -1861,7 +2378,9 @@ const BudgetApp = {
         }
 
 
-        if (clearButton) {
+        if (
+            clearButton
+        ) {
 
             clearButton.addEventListener(
                 "click",
@@ -1878,18 +2397,29 @@ const BudgetApp = {
 
 
     /* =====================================================
-       29. EXPORT BUDGET DATA
+       31. EXPORT M-WALLET DATA
        ===================================================== */
 
     exportBudgetData() {
 
+        const storage =
+            this.getStorage();
+
+
+        if (!storage) {
+            return;
+        }
+
+
         const json =
-            BudgetStorage.exportData();
+            storage.exportData();
 
 
         const blob =
             new Blob(
-                [json],
+                [
+                    json
+                ],
                 {
                     type:
                         "application/json"
@@ -1914,7 +2444,7 @@ const BudgetApp = {
 
 
         link.download =
-            `budget-tracker-${this.getTodayKey()}.json`;
+            `m-wallet-${this.getTodayKey()}.json`;
 
 
         document.body.appendChild(
@@ -1936,23 +2466,36 @@ const BudgetApp = {
 
 
     /* =====================================================
-       30. RESET BUDGET DATA
+       32. RESET M-WALLET DATA
        ===================================================== */
 
     resetBudgetData() {
 
-        const confirmed =
-            window.confirm(
-                "Reset all Budget Tracker data? This cannot be undone."
-            );
+        const storage =
+            this.getStorage();
 
 
-        if (!confirmed) {
+        if (!storage) {
             return;
         }
 
 
-        BudgetStorage.clearAllData();
+        const confirmed =
+            window.confirm(
+                "Reset all M-Wallet data? This cannot be undone."
+            );
+
+
+        if (
+            !confirmed
+        ) {
+
+            return;
+
+        }
+
+
+        storage.clearAllData();
 
 
         this.refresh();
@@ -1963,15 +2506,19 @@ const BudgetApp = {
 
 
 /* =========================================================
-   31. EXPOSE APP GLOBALLY
+   33. EXPOSE APP GLOBALLY
    ========================================================= */
 
 window.BudgetApp =
     BudgetApp;
 
 
+window.MWalletApp =
+    BudgetApp;
+
+
 /* =========================================================
-   32. START APP
+   34. START APP
    ========================================================= */
 
 if (
