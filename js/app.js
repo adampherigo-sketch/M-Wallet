@@ -23,6 +23,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
+       1B. MODAL MANAGEMENT SYSTEM
+       ===================================================== */
+
+    const ModalManager = {
+
+        currentEditId: null,
+
+        openModal(modalId) {
+
+            const modal = document.getElementById(modalId);
+            const overlay = document.getElementById("modal-overlay");
+
+            if (modal && overlay) {
+                modal.classList.add("active");
+                overlay.classList.add("active");
+                document.body.style.overflow = "hidden";
+            }
+
+        },
+
+        closeModal(modalId) {
+
+            const modal = document.getElementById(modalId);
+            const overlay = document.getElementById("modal-overlay");
+
+            if (modal) {
+                modal.classList.remove("active");
+            }
+
+            if (overlay && !document.querySelector(".modal.active")) {
+                overlay.classList.remove("active");
+                document.body.style.overflow = "";
+            }
+
+        },
+
+        closeAllModals() {
+
+            document.querySelectorAll(".modal").forEach(modal => {
+                modal.classList.remove("active");
+            });
+
+            const overlay = document.getElementById("modal-overlay");
+            if (overlay) {
+                overlay.classList.remove("active");
+                document.body.style.overflow = "";
+            }
+
+        },
+
+        setupModalControls() {
+
+            // Close button clicks
+            document.querySelectorAll("[data-modal-close]").forEach(button => {
+                button.addEventListener("click", (e) => {
+                    const modalId = e.target.dataset.modalClose;
+                    this.closeModal(modalId);
+                });
+            });
+
+            // Overlay clicks
+            document.getElementById("modal-overlay")?.addEventListener("click", () => {
+                this.closeAllModals();
+            });
+
+            // Escape key
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    this.closeAllModals();
+                }
+            });
+
+        }
+
+    };
+
+    ModalManager.setupModalControls();
+
+
+    /* =====================================================
        2. APP SETTINGS
        ===================================================== */
 
@@ -41,11 +121,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
             this.prepareCurrentMonth();
 
+            this.populateYearSelect();
+
+            this.connectMonthControls();
+
+            this.updateMonthControls();
+
             this.updateMonthHeading();
 
             this.connectButtons();
 
             this.connectDynamicActions();
+
+            this.setupFormHandlers();
 
             this.renderAll();
 
@@ -102,6 +190,427 @@ document.addEventListener("DOMContentLoaded", () => {
 
         },
 
+        /* =================================================
+           YEAR DROPDOWN
+           ================================================= */
+
+        populateYearSelect() {
+
+            const select =
+                document.getElementById(
+                    "year-select"
+                );
+
+
+            if (!select) {
+                return;
+            }
+
+
+            const data =
+                BudgetStorage.load();
+
+
+            const currentYear =
+                new Date().getFullYear();
+
+
+            /*
+                Default range:
+                5 years back
+                through
+                10 years forward
+            */
+
+            let minimumYear =
+                currentYear - 5;
+
+            let maximumYear =
+                currentYear + 10;
+
+
+            /*
+                If saved budgets exist outside that
+                range, include those too.
+            */
+
+            Object.keys(
+                data.months
+            ).forEach(monthKey => {
+
+                const year =
+                    Number(
+                        monthKey.split("-")[0]
+                    );
+
+
+                minimumYear =
+                    Math.min(
+                        minimumYear,
+                        year
+                    );
+
+
+                maximumYear =
+                    Math.max(
+                        maximumYear,
+                        year
+                    );
+
+            });
+
+
+            select.innerHTML = "";
+
+
+            for (
+                let year = minimumYear;
+                year <= maximumYear;
+                year++
+            ) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    year;
+
+
+                option.textContent =
+                    year;
+
+
+                select.appendChild(
+                    option
+                );
+
+            }
+
+        },
+
+        /* =================================================
+           CONNECT MONTH CONTROLS
+           ================================================= */
+
+        connectMonthControls() {
+
+            const monthSelect =
+                document.getElementById(
+                    "month-select"
+                );
+
+
+            const yearSelect =
+                document.getElementById(
+                    "year-select"
+                );
+
+
+            const previousButton =
+                document.getElementById(
+                    "previous-month"
+                );
+
+
+            const nextButton =
+                document.getElementById(
+                    "next-month"
+                );
+
+
+            const todayButton =
+                document.getElementById(
+                    "today-month"
+                );
+
+
+            /* ---------------------------------------------
+               Change Month Dropdown
+            --------------------------------------------- */
+
+            monthSelect
+                ?.addEventListener(
+                    "change",
+                    () => {
+
+                        this.goToSelectedMonth();
+
+                    }
+                );
+
+
+            /* ---------------------------------------------
+               Change Year Dropdown
+            --------------------------------------------- */
+
+            yearSelect
+                ?.addEventListener(
+                    "change",
+                    () => {
+
+                        this.goToSelectedMonth();
+
+                    }
+                );
+
+
+            /* ---------------------------------------------
+               Previous Month
+            --------------------------------------------- */
+
+            previousButton
+                ?.addEventListener(
+                    "click",
+                    () => {
+
+                        this.changeMonth(-1);
+
+                    }
+                );
+
+
+            /* ---------------------------------------------
+               Next Month
+            --------------------------------------------- */
+
+            nextButton
+                ?.addEventListener(
+                    "click",
+                    () => {
+
+                        this.changeMonth(1);
+
+                    }
+                );
+
+
+            /* ---------------------------------------------
+               Return to Actual Current Month
+            --------------------------------------------- */
+
+            todayButton
+                ?.addEventListener(
+                    "click",
+                    () => {
+
+                        this.currentMonthKey =
+                            BudgetStorage
+                                .getCurrentMonthKey();
+
+
+                        this.prepareMonth(
+                            this.currentMonthKey
+                        );
+
+
+                        this.refreshViewedMonth();
+
+                    }
+                );
+
+        },
+
+        /* =================================================
+           GO TO SELECTED MONTH
+           ================================================= */
+
+        goToSelectedMonth() {
+
+            const monthSelect =
+                document.getElementById(
+                    "month-select"
+                );
+
+
+            const yearSelect =
+                document.getElementById(
+                    "year-select"
+                );
+
+
+            if (
+                !monthSelect
+                ||
+                !yearSelect
+            ) {
+                return;
+            }
+
+
+            const month =
+                monthSelect.value;
+
+
+            const year =
+                yearSelect.value;
+
+
+            this.currentMonthKey =
+                `${year}-${month}`;
+
+
+            this.prepareMonth(
+                this.currentMonthKey
+            );
+
+
+            this.refreshViewedMonth();
+
+        },
+
+        /* =================================================
+           MOVE FORWARD / BACKWARD MONTH
+           ================================================= */
+
+        changeMonth(direction) {
+
+            const [year, month] =
+                this.currentMonthKey
+                    .split("-")
+                    .map(Number);
+
+
+            const date =
+                new Date(
+                    year,
+                    month - 1 + direction,
+                    1
+                );
+
+
+            this.currentMonthKey =
+                this.createMonthKey(
+                    date
+                );
+
+
+            this.prepareMonth(
+                this.currentMonthKey
+            );
+
+
+            /*
+                If we move outside the currently
+                generated year dropdown range,
+                rebuild it.
+            */
+
+            this.populateYearSelect();
+
+
+            this.refreshViewedMonth();
+
+        },
+
+        /* =================================================
+           REFRESH VIEWED MONTH
+           ================================================= */
+
+        refreshViewedMonth() {
+
+            this.updateMonthControls();
+
+            this.updateMonthHeading();
+
+            this.renderAll();
+
+        },
+
+        /* =================================================
+           UPDATE MONTH / YEAR CONTROLS
+           ================================================= */
+
+        updateMonthControls() {
+
+            const monthSelect =
+                document.getElementById(
+                    "month-select"
+                );
+
+
+            const yearSelect =
+                document.getElementById(
+                    "year-select"
+                );
+
+
+            const [year, month] =
+                this.currentMonthKey
+                    .split("-");
+
+
+            if (monthSelect) {
+
+                monthSelect.value =
+                    month;
+
+            }
+
+
+            if (yearSelect) {
+
+                yearSelect.value =
+                    year;
+
+            }
+
+        },
+
+/* =================================================
+   PREPARE ANY VIEWED MONTH
+   ================================================= */
+
+prepareMonth(monthKey) {
+
+    const data =
+        BudgetStorage.load();
+
+
+    /*
+        Month already exists.
+    */
+
+    if (data.months[monthKey]) {
+        return;
+    }
+
+
+    const previousMonthKey =
+        this.getPreviousMonthKey(
+            monthKey
+        );
+
+
+    /*
+        If the month before this one exists,
+        carry its ending balance forward.
+
+        This also copies recurring bills.
+    */
+
+    if (data.months[previousMonthKey]) {
+
+        BudgetStorage.rolloverMonth(
+            previousMonthKey,
+            monthKey
+        );
+
+    } else {
+
+        /*
+            Otherwise create a fresh empty month.
+        */
+
+        BudgetStorage.getMonth(
+            monthKey
+        );
+
+    }
+
+},
 
         /* =================================================
            5. GET PREVIOUS MONTH
@@ -1894,7 +2403,158 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /* =================================================
-           26. ASK FOR MONEY
+           25B. SETUP FORM HANDLERS
+           ================================================= */
+
+        setupFormHandlers() {
+
+            // Paycheck form submission
+            document.getElementById("paycheck-form")?.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const data = {
+                    name: form.name.value,
+                    payDate: form.payDate.value,
+                    hours: Number(form.hours.value) || 0,
+                    amount: Number(form.amount.value) || 0
+                };
+
+                if (ModalManager.currentEditId) {
+                    BudgetStorage.updatePaycheck(
+                        ModalManager.currentEditId,
+                        data,
+                        this.currentMonthKey
+                    );
+                } else {
+                    BudgetStorage.addPaycheck(data, this.currentMonthKey);
+                }
+
+                ModalManager.closeModal("paycheck-modal");
+                this.renderAll();
+            });
+
+            // Bill form submission
+            document.getElementById("bill-form")?.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const data = {
+                    name: form.name.value,
+                    dueDate: form.dueDate.value,
+                    amount: Number(form.amount.value) || 0,
+                    category: form.category.value,
+                    recurring: form.recurring.checked
+                };
+
+                if (ModalManager.currentEditId) {
+                    BudgetStorage.updateBill(
+                        ModalManager.currentEditId,
+                        data,
+                        this.currentMonthKey
+                    );
+                } else {
+                    data.paid = false;
+                    BudgetStorage.addBill(data, this.currentMonthKey);
+                }
+
+                ModalManager.closeModal("bill-modal");
+                this.renderAll();
+            });
+
+            // Expense form submission
+            document.getElementById("expense-form")?.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const data = {
+                    name: form.name.value,
+                    date: form.date.value,
+                    category: form.category.value,
+                    amount: Number(form.amount.value) || 0
+                };
+
+                if (ModalManager.currentEditId) {
+                    BudgetStorage.updateExpense(
+                        ModalManager.currentEditId,
+                        data,
+                        this.currentMonthKey
+                    );
+                } else {
+                    BudgetStorage.addExpense(data, this.currentMonthKey);
+                }
+
+                ModalManager.closeModal("expense-modal");
+                this.renderAll();
+            });
+
+            // Savings goal form submission
+            document.getElementById("savings-form")?.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const data = {
+                    name: form.name.value,
+                    targetAmount: Number(form.targetAmount.value) || 0,
+                    currentAmount: Number(form.currentAmount.value) || 0
+                };
+
+                if (ModalManager.currentEditId) {
+                    BudgetStorage.updateSavingsGoal(
+                        ModalManager.currentEditId,
+                        data
+                    );
+                } else {
+                    BudgetStorage.addSavingsGoal(data);
+                }
+
+                ModalManager.closeModal("savings-modal");
+                this.renderAll();
+            });
+
+            // Add money to savings goal form submission
+            document.getElementById("add-savings-money-form")?.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const amount = Number(form.amount.value) || 0;
+
+                if (ModalManager.currentEditId && amount > 0) {
+                    const goals = BudgetStorage.getSavingsGoals();
+                    const goal = goals.find(g => g.id === ModalManager.currentEditId);
+
+                    if (goal) {
+                        const newAmount = Number(goal.currentAmount) + amount;
+                        BudgetStorage.updateSavingsGoal(
+                            ModalManager.currentEditId,
+                            {
+                                name: goal.name,
+                                targetAmount: goal.targetAmount,
+                                currentAmount: newAmount
+                            }
+                        );
+                        this.renderAll();
+                    }
+                }
+
+                ModalManager.closeModal("add-savings-money-modal");
+            });
+
+            // Starting balance form submission
+            document.getElementById("starting-balance-form")?.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const amount = Number(form.balance.value) || 0;
+
+                BudgetStorage.setStartingBalance(
+                    amount,
+                    this.currentMonthKey
+                );
+
+                ModalManager.closeModal("starting-balance-modal");
+                this.renderAll();
+            });
+
+        },
+
+
+        /* =================================================
+           26. ASK FOR MONEY (Legacy - kept for reference)
            ================================================= */
 
         promptMoney(
@@ -1902,44 +2562,9 @@ document.addEventListener("DOMContentLoaded", () => {
             defaultValue = ""
         ) {
 
-            const response =
-                prompt(
-                    message,
-                    defaultValue
-                );
-
-
-            if (response === null) {
-                return null;
-            }
-
-
-            const cleaned =
-                response
-                    .replaceAll("$", "")
-                    .replaceAll(",", "")
-                    .trim();
-
-
-            const number =
-                Number(cleaned);
-
-
-            if (
-                Number.isNaN(number)
-                ||
-                number < 0
-            ) {
-
-                alert(
-                    "Please enter a valid dollar amount."
-                );
-
-                return null;
-
-            }
-
-
+            // This function is no longer used with modal forms
+            // Keeping for backward compatibility
+            const number = Number(defaultValue) || 0;
             return number;
 
         },
@@ -1951,74 +2576,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         addPaycheck() {
 
-            const name =
-                prompt(
-                    "Paycheck name:",
-                    "Paycheck"
-                );
+            ModalManager.currentEditId = null;
 
+            const form = document.getElementById("paycheck-form");
+            const modal = document.getElementById("paycheck-modal");
 
-            if (name === null) {
-                return;
+            // Reset form
+            if (form) {
+                form.reset();
+                document.getElementById("paycheck-date").value = this.getToday();
+                document.getElementById("paycheck-name").value = "Paycheck";
             }
 
+            // Update title for add mode
+            const title = document.getElementById("paycheck-modal-title");
+            if (title) title.textContent = "Add Paycheck";
 
-            const payDate =
-                prompt(
-                    "Pay date (YYYY-MM-DD):",
-                    this.getToday()
-                );
-
-
-            if (payDate === null) {
-                return;
-            }
-
-
-            const hoursInput =
-                prompt(
-                    "Hours worked:",
-                    "0"
-                );
-
-
-            if (hoursInput === null) {
-                return;
-            }
-
-
-            const amount =
-                this.promptMoney(
-                    "Paycheck amount:"
-                );
-
-
-            if (amount === null) {
-                return;
-            }
-
-
-            BudgetStorage.addPaycheck(
-                {
-
-                    name,
-
-                    payDate,
-
-                    hours:
-                        Number(
-                            hoursInput
-                        ) || 0,
-
-                    amount
-
-                },
-
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("paycheck-modal");
 
         },
 
@@ -2040,79 +2614,23 @@ document.addEventListener("DOMContentLoaded", () => {
                     item => item.id === id
                 );
 
-
             if (!paycheck) {
                 return;
             }
 
+            ModalManager.currentEditId = id;
 
-            const name =
-                prompt(
-                    "Paycheck name:",
-                    paycheck.name
-                );
+            // Populate form with existing data
+            document.getElementById("paycheck-name").value = paycheck.name;
+            document.getElementById("paycheck-date").value = paycheck.payDate;
+            document.getElementById("paycheck-hours").value = paycheck.hours;
+            document.getElementById("paycheck-amount").value = paycheck.amount;
 
+            // Update title for edit mode
+            const title = document.getElementById("paycheck-modal-title");
+            if (title) title.textContent = "Edit Paycheck";
 
-            if (name === null) {
-                return;
-            }
-
-
-            const payDate =
-                prompt(
-                    "Pay date:",
-                    paycheck.payDate
-                );
-
-
-            if (payDate === null) {
-                return;
-            }
-
-
-            const hours =
-                prompt(
-                    "Hours:",
-                    paycheck.hours
-                );
-
-
-            if (hours === null) {
-                return;
-            }
-
-
-            const amount =
-                this.promptMoney(
-                    "Amount:",
-                    paycheck.amount
-                );
-
-
-            if (amount === null) {
-                return;
-            }
-
-
-            BudgetStorage.updatePaycheck(
-                id,
-                {
-
-                    name,
-
-                    payDate,
-
-                    hours,
-
-                    amount
-
-                },
-
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("paycheck-modal");
 
         },
 
@@ -2149,80 +2667,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
         addBill() {
 
-            const name =
-                prompt(
-                    "Bill name:"
-                );
+            ModalManager.currentEditId = null;
 
-
-            if (!name) {
-                return;
+            // Reset form
+            const form = document.getElementById("bill-form");
+            if (form) {
+                form.reset();
+                document.getElementById("bill-date").value = this.getToday();
+                document.getElementById("bill-category").value = "Bills";
+                document.getElementById("bill-recurring").checked = false;
             }
 
+            // Update title for add mode
+            const title = document.getElementById("bill-modal-title");
+            if (title) title.textContent = "Add Bill";
 
-            const dueDate =
-                prompt(
-                    "Due date (YYYY-MM-DD):",
-                    this.getToday()
-                );
-
-
-            if (dueDate === null) {
-                return;
-            }
-
-
-            const amount =
-                this.promptMoney(
-                    "Bill amount:"
-                );
-
-
-            if (amount === null) {
-                return;
-            }
-
-
-            const category =
-                prompt(
-                    "Category:",
-                    "Bills"
-                );
-
-
-            if (category === null) {
-                return;
-            }
-
-
-            const recurring =
-                confirm(
-                    "Does this bill repeat every month?"
-                );
-
-
-            BudgetStorage.addBill(
-                {
-
-                    name,
-
-                    dueDate,
-
-                    amount,
-
-                    category,
-
-                    recurring,
-
-                    paid: false
-
-                },
-
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("bill-modal");
 
         },
 
@@ -2249,74 +2709,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            ModalManager.currentEditId = id;
 
-            const name =
-                prompt(
-                    "Bill name:",
-                    bill.name
-                );
+            // Populate form with existing data
+            document.getElementById("bill-name").value = bill.name;
+            document.getElementById("bill-date").value = bill.dueDate;
+            document.getElementById("bill-amount").value = bill.amount;
+            document.getElementById("bill-category").value = bill.category;
+            document.getElementById("bill-recurring").checked = bill.recurring;
 
+            // Update title for edit mode
+            const title = document.getElementById("bill-modal-title");
+            if (title) title.textContent = "Edit Bill";
 
-            if (name === null) {
-                return;
-            }
-
-
-            const dueDate =
-                prompt(
-                    "Due date:",
-                    bill.dueDate
-                );
-
-
-            if (dueDate === null) {
-                return;
-            }
-
-
-            const amount =
-                this.promptMoney(
-                    "Bill amount:",
-                    bill.amount
-                );
-
-
-            if (amount === null) {
-                return;
-            }
-
-
-            const category =
-                prompt(
-                    "Category:",
-                    bill.category
-                );
-
-
-            if (category === null) {
-                return;
-            }
-
-
-            BudgetStorage.updateBill(
-                id,
-                {
-
-                    name,
-
-                    dueDate,
-
-                    amount,
-
-                    category
-
-                },
-
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("bill-modal");
 
         },
 
@@ -2388,70 +2794,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         addExpense() {
 
-            const name =
-                prompt(
-                    "Expense name:"
-                );
+            ModalManager.currentEditId = null;
 
-
-            if (!name) {
-                return;
+            // Reset form
+            const form = document.getElementById("expense-form");
+            if (form) {
+                form.reset();
+                document.getElementById("expense-date").value = this.getToday();
             }
 
+            // Update title for add mode
+            const title = document.getElementById("expense-modal-title");
+            if (title) title.textContent = "Add Expense";
 
-            const date =
-                prompt(
-                    "Expense date (YYYY-MM-DD):",
-                    this.getToday()
-                );
-
-
-            if (date === null) {
-                return;
-            }
-
-
-            const amount =
-                this.promptMoney(
-                    "Expense amount:"
-                );
-
-
-            if (amount === null) {
-                return;
-            }
-
-
-            const category =
-                prompt(
-                    "Category:",
-                    "Other"
-                );
-
-
-            if (category === null) {
-                return;
-            }
-
-
-            BudgetStorage.addExpense(
-                {
-
-                    name,
-
-                    date,
-
-                    amount,
-
-                    category
-
-                },
-
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("expense-modal");
 
         },
 
@@ -2478,74 +2834,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            ModalManager.currentEditId = id;
 
-            const name =
-                prompt(
-                    "Expense name:",
-                    expense.name
-                );
+            // Populate form with existing data
+            document.getElementById("expense-name").value = expense.name;
+            document.getElementById("expense-date").value = expense.date;
+            document.getElementById("expense-amount").value = expense.amount;
+            document.getElementById("expense-category").value = expense.category;
 
+            // Update title for edit mode
+            const title = document.getElementById("expense-modal-title");
+            if (title) title.textContent = "Edit Expense";
 
-            if (name === null) {
-                return;
-            }
-
-
-            const date =
-                prompt(
-                    "Expense date:",
-                    expense.date
-                );
-
-
-            if (date === null) {
-                return;
-            }
-
-
-            const amount =
-                this.promptMoney(
-                    "Expense amount:",
-                    expense.amount
-                );
-
-
-            if (amount === null) {
-                return;
-            }
-
-
-            const category =
-                prompt(
-                    "Category:",
-                    expense.category
-                );
-
-
-            if (category === null) {
-                return;
-            }
-
-
-            BudgetStorage.updateExpense(
-                id,
-                {
-
-                    name,
-
-                    date,
-
-                    amount,
-
-                    category
-
-                },
-
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("expense-modal");
 
         },
 
@@ -2582,54 +2883,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         addSavingsGoal() {
 
-            const name =
-                prompt(
-                    "What are you saving for?"
-                );
+            ModalManager.currentEditId = null;
 
-
-            if (!name) {
-                return;
+            // Reset form
+            const form = document.getElementById("savings-form");
+            if (form) {
+                form.reset();
             }
 
+            // Update title for add mode
+            const title = document.getElementById("savings-modal-title");
+            if (title) title.textContent = "Add Savings Goal";
 
-            const targetAmount =
-                this.promptMoney(
-                    "How much do you need?"
-                );
-
-
-            if (targetAmount === null) {
-                return;
-            }
-
-
-            const currentAmount =
-                this.promptMoney(
-                    "How much have you already saved?",
-                    "0"
-                );
-
-
-            if (currentAmount === null) {
-                return;
-            }
-
-
-            BudgetStorage.addSavingsGoal(
-                {
-
-                    name,
-
-                    targetAmount,
-
-                    currentAmount
-
-                }
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("savings-modal");
 
         },
 
@@ -2640,61 +2906,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         addMoneyToGoal(id) {
 
-            const amount =
-                this.promptMoney(
-                    "How much are you adding?"
-                );
+            ModalManager.currentEditId = id;
 
-
-            if (
-                amount === null
-                ||
-                amount === 0
-            ) {
-                return;
+            // Reset form
+            const form = document.getElementById("add-savings-money-form");
+            if (form) {
+                form.reset();
             }
 
-
-            const goals =
-                BudgetStorage.getSavingsGoals();
-
-
-            const goal =
-                goals.find(
-                    item => item.id === id
-                );
-
-
-            if (!goal) {
-                return;
-            }
-
-
-            /*
-                Save the transfer in the current month.
-
-                storage.js will automatically increase
-                the savings goal too.
-            */
-
-            BudgetStorage.addSavingsTransfer(
-                {
-
-                    goalId: id,
-
-                    name: goal.name,
-
-                    date: this.getToday(),
-
-                    amount
-
-                },
-
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("add-savings-money-modal");
 
         },
 
@@ -2719,58 +2939,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            ModalManager.currentEditId = id;
 
-            const name =
-                prompt(
-                    "Savings goal name:",
-                    goal.name
-                );
+            // Populate form with existing data
+            document.getElementById("savings-name").value = goal.name;
+            document.getElementById("savings-target").value = goal.targetAmount;
+            document.getElementById("savings-current").value = goal.currentAmount;
 
+            // Update title for edit mode
+            const title = document.getElementById("savings-modal-title");
+            if (title) title.textContent = "Edit Savings Goal";
 
-            if (name === null) {
-                return;
-            }
-
-
-            const targetAmount =
-                this.promptMoney(
-                    "Goal amount:",
-                    goal.targetAmount
-                );
-
-
-            if (targetAmount === null) {
-                return;
-            }
-
-
-            const currentAmount =
-                this.promptMoney(
-                    "Current saved amount:",
-                    goal.currentAmount
-                );
-
-
-            if (currentAmount === null) {
-                return;
-            }
-
-
-            BudgetStorage.updateSavingsGoal(
-                id,
-                {
-
-                    name,
-
-                    targetAmount,
-
-                    currentAmount
-
-                }
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("savings-modal");
 
         },
 
@@ -2935,26 +3115,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     this.currentMonthKey
                 );
 
+            // Populate form with current balance
+            document.getElementById("starting-balance-input").value = month.startingBalance;
 
-            const amount =
-                this.promptMoney(
-                    "Starting checking balance:",
-                    month.startingBalance
-                );
-
-
-            if (amount === null) {
-                return;
-            }
-
-
-            BudgetStorage.setStartingBalance(
-                amount,
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
+            ModalManager.openModal("starting-balance-modal");
 
         },
 

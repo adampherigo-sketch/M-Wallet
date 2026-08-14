@@ -199,6 +199,151 @@ button {
 
 
 /* =========================================================
+   MONTH / YEAR NAVIGATION
+   ========================================================= */
+
+.header-month-area {
+    min-width: 0;
+}
+
+.month-navigation {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: 7px;
+}
+
+
+/* Month + Year Dropdowns */
+
+.month-select,
+.year-select {
+    width: auto;
+
+    padding: 8px 11px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    background: var(--surface);
+
+    color: var(--charcoal);
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow: var(--shadow-sm);
+}
+
+.month-select {
+    min-width: 125px;
+}
+
+.year-select {
+    min-width: 85px;
+}
+
+
+/* Previous / Next Buttons */
+
+.month-arrow {
+    width: 36px;
+    height: 36px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid var(--border);
+    border-radius: 50%;
+
+    background: var(--surface);
+
+    color: var(--green-dark);
+
+    font-size: 1.55rem;
+    line-height: 1;
+
+    transition:
+        background var(--transition),
+        transform var(--transition);
+}
+
+.month-arrow:hover {
+    background: var(--green-soft);
+    transform: translateY(-1px);
+}
+
+
+/* Today Button */
+
+.today-button {
+    padding: 8px 12px;
+
+    border: none;
+    border-radius: 999px;
+
+    background: var(--green-dark);
+
+    color: white;
+
+    font-size: 0.75rem;
+    font-weight: 750;
+
+    cursor: pointer;
+
+    transition:
+        background var(--transition),
+        transform var(--transition);
+}
+
+.today-button:hover {
+    background: var(--green);
+    transform: translateY(-1px);
+}
+
+
+/* Current Month Display */
+
+.current-month-title {
+    margin-top: 8px;
+
+    color: var(--charcoal);
+
+    font-size: 1.05rem !important;
+    font-weight: 700;
+
+    opacity: 0.7;
+}
+
+
+/* =========================================================
+   MOBILE MONTH NAVIGATION
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .month-navigation {
+        flex-wrap: wrap;
+    }
+
+    .month-select {
+        min-width: 115px;
+    }
+
+    .year-select {
+        min-width: 80px;
+    }
+
+    .today-button {
+        padding: 8px 10px;
+    }
+
+}
+
+
+/* =========================================================
    6. MAIN CONTENT
    ========================================================= */
 
@@ -745,10 +890,205 @@ tbody tr:hover {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
 
-    background: var(--surface-soft);
-
-    margin-bottom: 14px;
+    background: var(--surface);
 }
+
+
+/* =========================================================
+   19. MODALS & DIALOGS
+   ========================================================= */
+
+.modal-overlay {
+    display: none;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+
+    z-index: 999;
+}
+
+.modal-overlay.active {
+    display: block;
+}
+
+.modal {
+    display: none;
+
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    max-width: 480px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+
+    z-index: 1000;
+
+    animation: modalSlideIn 0.3s ease;
+}
+
+.modal.active {
+    display: block;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -48%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--charcoal);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+
+    font-size: 1.5rem;
+    color: var(--muted);
+
+    cursor: pointer;
+
+    padding: 0;
+    width: 32px;
+    height: 32px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: var(--radius-sm);
+
+    transition: all var(--transition);
+}
+
+.modal-close:hover {
+    background: var(--surface-soft);
+    color: var(--charcoal);
+}
+
+.modal form {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group select {
+    width: 100%;
+
+    padding: 10px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    font-family: inherit;
+    font-size: 1rem;
+
+    background: var(--surface-soft);
+    color: var(--text);
+
+    transition: all var(--transition);
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus,
+.form-group input[type="date"]:focus,
+.form-group select:focus {
+    outline: none;
+
+    border-color: var(--green);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--green-soft);
+}
+
+.form-group.checkbox {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 18px;
+}
+
+.form-group.checkbox input[type="checkbox"] {
+    width: auto;
+
+    margin: 0;
+}
+
+.form-group.checkbox label {
+    margin: 0;
+
+    font-weight: 500;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+
+    background: var(--surface-soft);
+}
+
+.modal-actions button {
+    padding: 10px 20px;
+
+    border-radius: var(--radius-sm);
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: all var(--transition);
+}
+
 
 .savings-goal-card:last-child {
     margin-bottom: 0;

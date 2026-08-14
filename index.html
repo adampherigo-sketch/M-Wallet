@@ -25,9 +25,86 @@
         <header class="app-header">
 
             <div class="header-content">
-                <div>
-                    <p class="header-label">Budget Tracker</p>
-                    <h1 id="current-month">August 2026</h1>
+                <div class="header-month-area">
+
+                    <p class="header-label">
+                        Budget Tracker
+                    </p>
+
+                    <div class="month-navigation">
+
+                        <!-- Previous Month -->
+                        <button
+                            class="month-arrow"
+                            id="previous-month"
+                            type="button"
+                            aria-label="Previous month"
+                        >
+                            ‹
+                        </button>
+
+
+                        <!-- Month -->
+                        <select
+                            id="month-select"
+                            class="month-select"
+                            aria-label="Select month"
+                        >
+                            <option value="01">January</option>
+                            <option value="02">February</option>
+                            <option value="03">March</option>
+                            <option value="04">April</option>
+                            <option value="05">May</option>
+                            <option value="06">June</option>
+                            <option value="07">July</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+
+
+                        <!-- Year -->
+                        <select
+                            id="year-select"
+                            class="year-select"
+                            aria-label="Select year"
+                        >
+                        </select>
+
+
+                        <!-- Next Month -->
+                        <button
+                            class="month-arrow"
+                            id="next-month"
+                            type="button"
+                            aria-label="Next month"
+                        >
+                            ›
+                        </button>
+
+
+                        <!-- Return to Current Month -->
+                        <button
+                            class="today-button"
+                            id="today-month"
+                            type="button"
+                        >
+                            Today
+                        </button>
+
+                    </div>
+
+
+                    <!-- Hidden/secondary heading used by app -->
+                    <h1
+                        id="current-month"
+                        class="current-month-title"
+                    >
+                        August 2026
+                    </h1>
+
                 </div>
 
                 <button
@@ -597,6 +674,214 @@
 
 
     </div>
+
+
+    <!-- ========================================
+         MODALS / DIALOGS
+    ========================================= -->
+
+    <!-- Paycheck Modal -->
+    <div class="modal" id="paycheck-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="paycheck-modal-title">Add Paycheck</h3>
+                <button class="modal-close" type="button" data-modal-close="paycheck-modal">×</button>
+            </div>
+            <form id="paycheck-form">
+                <div class="form-group">
+                    <label for="paycheck-name">Paycheck Name</label>
+                    <input type="text" id="paycheck-name" name="name" value="Paycheck" required>
+                </div>
+                <div class="form-group">
+                    <label for="paycheck-date">Pay Date</label>
+                    <input type="date" id="paycheck-date" name="payDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="paycheck-hours">Hours Worked</label>
+                    <input type="number" id="paycheck-hours" name="hours" step="0.1" min="0" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="paycheck-amount">Amount</label>
+                    <input type="number" id="paycheck-amount" name="amount" step="0.01" min="0" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-button" data-modal-close="paycheck-modal">Cancel</button>
+                    <button type="submit" class="primary-button">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bill Modal -->
+    <div class="modal" id="bill-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="bill-modal-title">Add Bill</h3>
+                <button class="modal-close" type="button" data-modal-close="bill-modal">×</button>
+            </div>
+            <form id="bill-form">
+                <div class="form-group">
+                    <label for="bill-name">Bill Name</label>
+                    <input type="text" id="bill-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="bill-date">Due Date</label>
+                    <input type="date" id="bill-date" name="dueDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="bill-amount">Amount</label>
+                    <input type="number" id="bill-amount" name="amount" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="bill-category">Category</label>
+                    <input type="text" id="bill-category" name="category" value="Bills">
+                </div>
+                <div class="form-group checkbox">
+                    <input type="checkbox" id="bill-recurring" name="recurring">
+                    <label for="bill-recurring">Repeats every month</label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-button" data-modal-close="bill-modal">Cancel</button>
+                    <button type="submit" class="primary-button">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Expense Modal -->
+    <div class="modal" id="expense-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="expense-modal-title">Add Expense</h3>
+                <button class="modal-close" type="button" data-modal-close="expense-modal">×</button>
+            </div>
+            <form id="expense-form">
+                <div class="form-group">
+                    <label for="expense-name">Expense Name</label>
+                    <input type="text" id="expense-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="expense-date">Date</label>
+                    <input type="date" id="expense-date" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="expense-category">Category</label>
+                    <input type="text" id="expense-category" name="category" required>
+                </div>
+                <div class="form-group">
+                    <label for="expense-amount">Amount</label>
+                    <input type="number" id="expense-amount" name="amount" step="0.01" min="0" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-button" data-modal-close="expense-modal">Cancel</button>
+                    <button type="submit" class="primary-button">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div class="modal" id="transaction-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="transaction-modal-title">Add Transaction</h3>
+                <button class="modal-close" type="button" data-modal-close="transaction-modal">×</button>
+            </div>
+            <form id="transaction-form">
+                <div class="form-group">
+                    <label for="transaction-name">Description</label>
+                    <input type="text" id="transaction-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-date">Date</label>
+                    <input type="date" id="transaction-date" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-category">Category</label>
+                    <input type="text" id="transaction-category" name="category" required>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-amount">Amount (negative for expenses)</label>
+                    <input type="number" id="transaction-amount" name="amount" step="0.01" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-button" data-modal-close="transaction-modal">Cancel</button>
+                    <button type="submit" class="primary-button">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Savings Goal Modal -->
+    <div class="modal" id="savings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="savings-modal-title">Add Savings Goal</h3>
+                <button class="modal-close" type="button" data-modal-close="savings-modal">×</button>
+            </div>
+            <form id="savings-form">
+                <div class="form-group">
+                    <label for="savings-name">Goal Name</label>
+                    <input type="text" id="savings-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="savings-target">Target Amount</label>
+                    <input type="number" id="savings-target" name="targetAmount" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="savings-current">Current Amount</label>
+                    <input type="number" id="savings-current" name="currentAmount" step="0.01" min="0" value="0" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-button" data-modal-close="savings-modal">Cancel</button>
+                    <button type="submit" class="primary-button">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Money to Savings Modal -->
+    <div class="modal" id="add-savings-money-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="add-savings-money-title">Add Money to Savings</h3>
+                <button class="modal-close" type="button" data-modal-close="add-savings-money-modal">×</button>
+            </div>
+            <form id="add-savings-money-form">
+                <div class="form-group">
+                    <label for="add-savings-amount">Amount to Add</label>
+                    <input type="number" id="add-savings-amount" name="amount" step="0.01" min="0" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-button" data-modal-close="add-savings-money-modal">Cancel</button>
+                    <button type="submit" class="primary-button">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Starting Balance Modal -->
+    <div class="modal" id="starting-balance-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Change Starting Balance</h3>
+                <button class="modal-close" type="button" data-modal-close="starting-balance-modal">×</button>
+            </div>
+            <form id="starting-balance-form">
+                <div class="form-group">
+                    <label for="starting-balance-input">Starting Balance</label>
+                    <input type="number" id="starting-balance-input" name="balance" step="0.01" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-button" data-modal-close="starting-balance-modal">Cancel</button>
+                    <button type="submit" class="primary-button">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modal-overlay" data-modal-overlay></div>
 
 
     <!-- ========================================
