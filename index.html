@@ -1,39 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
 
-    <!-- Makes the app display correctly on phones/tablets -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- =====================================================
+         MOBILE DISPLAY
+    ====================================================== -->
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    >
+
+
+    <!-- =====================================================
+         APP INFORMATION
+    ====================================================== -->
 
     <title>Budget Tracker</title>
 
-    <!-- Main CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <meta
+        name="description"
+        content="Personal budget and money management tracker."
+    >
+
+
+    <!-- =====================================================
+         PWA / INSTALLABLE APP
+    ====================================================== -->
+
+    <!-- PWA Manifest -->
+    <link
+        rel="manifest"
+        href="./manifest.json"
+    >
+
+
+    <!-- Browser / App Theme -->
+    <meta
+        name="theme-color"
+        content="#0f1714"
+    >
+
+
+    <!-- Android / General Mobile App Support -->
+    <meta
+        name="mobile-web-app-capable"
+        content="yes"
+    >
+
+
+    <!-- Apple Home Screen App Support -->
+    <meta
+        name="apple-mobile-web-app-capable"
+        content="yes"
+    >
+
+    <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent"
+    >
+
+    <meta
+        name="apple-mobile-web-app-title"
+        content="Budget Tracker"
+    >
+
+
+    <!-- Apple Home Screen Icon -->
+    <link
+        rel="apple-touch-icon"
+        href="./icons/apple-touch-icon.png"
+    >
+
+
+    <!-- Standard App Icon -->
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="192x192"
+        href="./icons/icon-192.png"
+    >
+
+
+    <!-- =====================================================
+         MAIN CSS
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/style.css"
+    >
+
 </head>
 
+
 <body>
+
 
     <!-- ========================================
          APP WRAPPER
     ========================================= -->
+
     <div class="app">
+
 
 
         <!-- ========================================
              TOP HEADER
         ========================================= -->
+
         <header class="app-header">
 
             <div class="header-content">
 
+
                 <div class="header-month-area">
+
 
                     <p class="header-label">
                         Budget Tracker
                     </p>
 
+
                     <div class="month-navigation">
+
 
                         <!-- Previous Month -->
                         <button
@@ -46,25 +139,64 @@
                         </button>
 
 
+
                         <!-- Month -->
                         <select
                             id="month-select"
                             class="month-select"
                             aria-label="Select month"
                         >
-                            <option value="01">January</option>
-                            <option value="02">February</option>
-                            <option value="03">March</option>
-                            <option value="04">April</option>
-                            <option value="05">May</option>
-                            <option value="06">June</option>
-                            <option value="07">July</option>
-                            <option value="08">August</option>
-                            <option value="09">September</option>
-                            <option value="10">October</option>
-                            <option value="11">November</option>
-                            <option value="12">December</option>
+
+                            <option value="01">
+                                January
+                            </option>
+
+                            <option value="02">
+                                February
+                            </option>
+
+                            <option value="03">
+                                March
+                            </option>
+
+                            <option value="04">
+                                April
+                            </option>
+
+                            <option value="05">
+                                May
+                            </option>
+
+                            <option value="06">
+                                June
+                            </option>
+
+                            <option value="07">
+                                July
+                            </option>
+
+                            <option value="08">
+                                August
+                            </option>
+
+                            <option value="09">
+                                September
+                            </option>
+
+                            <option value="10">
+                                October
+                            </option>
+
+                            <option value="11">
+                                November
+                            </option>
+
+                            <option value="12">
+                                December
+                            </option>
+
                         </select>
+
 
 
                         <!-- Year -->
@@ -76,6 +208,7 @@
                         </select>
 
 
+
                         <!-- Next Month -->
                         <button
                             class="month-arrow"
@@ -85,6 +218,7 @@
                         >
                             ›
                         </button>
+
 
 
                         <!-- Return to Current Month -->
@@ -99,6 +233,7 @@
                     </div>
 
 
+
                     <!-- Hidden/secondary heading used by app -->
                     <h1
                         id="current-month"
@@ -108,6 +243,7 @@
                     </h1>
 
                 </div>
+
 
 
                 <!-- Settings -->
@@ -121,15 +257,18 @@
                     ⚙
                 </button>
 
+
             </div>
 
         </header>
 
 
 
+
         <!-- ========================================
              MAIN APP CONTENT
         ========================================= -->
+
         <main class="app-content">
 
 
@@ -137,18 +276,29 @@
             <!-- ====================================
                  DASHBOARD PAGE
             ===================================== -->
+
             <section
                 class="page active"
                 id="home-page"
                 data-page-content="home"
             >
 
+
                 <div class="page-heading">
 
+
                     <div>
-                        <h2>Dashboard</h2>
-                        <p>Your monthly budget overview.</p>
+
+                        <h2>
+                            Dashboard
+                        </h2>
+
+                        <p>
+                            Your monthly budget overview.
+                        </p>
+
                     </div>
+
 
                     <button
                         type="button"
@@ -158,86 +308,135 @@
                         + Manage Money
                     </button>
 
+
                 </div>
 
 
 
+
                 <!-- Main Checking Balance -->
+
                 <section class="balance-card">
 
-                    <p>Current Checking Balance</p>
+                    <p>
+                        Current Checking Balance
+                    </p>
+
 
                     <h2 id="checking-balance">
                         $0.00
                     </h2>
 
+
                     <div class="balance-details">
 
+
                         <div>
-                            <span>Monthly Remaining</span>
+
+                            <span>
+                                Monthly Remaining
+                            </span>
 
                             <strong id="monthly-remaining">
                                 $0.00
                             </strong>
+
                         </div>
 
+
+
                         <div>
-                            <span>Monthly Savings</span>
+
+                            <span>
+                                Monthly Savings
+                            </span>
 
                             <strong id="monthly-savings">
                                 $0.00
                             </strong>
+
                         </div>
+
 
                     </div>
 
                 </section>
+
 
 
 
                 <!-- Monthly Summary -->
+
                 <section class="dashboard-section">
 
+
                     <div class="section-header">
-                        <h3>Monthly Summary</h3>
+
+                        <h3>
+                            Monthly Summary
+                        </h3>
+
                     </div>
+
+
 
                     <div class="summary-grid">
 
+
                         <article class="summary-card">
-                            <span>Income</span>
+
+                            <span>
+                                Income
+                            </span>
 
                             <strong id="total-income">
                                 $0.00
                             </strong>
+
                         </article>
 
 
+
                         <article class="summary-card">
-                            <span>Bills</span>
+
+                            <span>
+                                Bills
+                            </span>
 
                             <strong id="total-bills">
                                 $0.00
                             </strong>
+
                         </article>
 
 
+
                         <article class="summary-card">
-                            <span>Expenses</span>
+
+                            <span>
+                                Expenses
+                            </span>
 
                             <strong id="total-expenses">
                                 $0.00
                             </strong>
+
                         </article>
 
 
+
                         <article class="summary-card">
-                            <span>Savings</span>
+
+                            <span>
+                                Savings
+                            </span>
 
                             <strong id="total-savings">
                                 $0.00
                             </strong>
+
                         </article>
+
 
                     </div>
 
@@ -245,12 +444,19 @@
 
 
 
+
                 <!-- Upcoming Bills -->
+
                 <section class="dashboard-section">
+
 
                     <div class="section-header">
 
-                        <h3>Upcoming Bills</h3>
+
+                        <h3>
+                            Upcoming Bills
+                        </h3>
+
 
                         <button
                             type="button"
@@ -260,7 +466,9 @@
                             View All
                         </button>
 
+
                     </div>
+
 
 
                     <div
@@ -274,49 +482,77 @@
 
                     </div>
 
+
                 </section>
+
 
 
 
                 <!-- Next Paycheck -->
+
                 <section class="dashboard-section">
 
+
                     <div class="section-header">
-                        <h3>Next Paycheck</h3>
+
+                        <h3>
+                            Next Paycheck
+                        </h3>
+
                     </div>
+
 
 
                     <article class="info-card">
 
+
                         <div>
-                            <span>Pay Date</span>
+
+                            <span>
+                                Pay Date
+                            </span>
 
                             <strong id="next-pay-date">
                                 —
                             </strong>
+
                         </div>
 
 
+
                         <div>
-                            <span>Estimated Amount</span>
+
+                            <span>
+                                Estimated Amount
+                            </span>
 
                             <strong id="next-pay-amount">
                                 $0.00
                             </strong>
+
                         </div>
 
+
                     </article>
+
 
                 </section>
 
 
 
+
                 <!-- Savings Overview -->
+
                 <section class="dashboard-section">
+
 
                     <div class="section-header">
 
-                        <h3>Savings</h3>
+
+                        <h3>
+                            Savings
+                        </h3>
+
 
                         <button
                             type="button"
@@ -326,7 +562,9 @@
                             View Savings
                         </button>
 
+
                     </div>
+
 
 
                     <div
@@ -340,353 +578,505 @@
 
                     </div>
 
+
                 </section>
 
+
             </section>
+
+
 
 
 
             <!-- ====================================
                  MONEY MANAGEMENT PAGE
             ===================================== -->
+
             <section
                 class="page"
                 id="money-page"
                 data-page-content="money"
             >
 
+
                 <div class="page-heading">
 
+
                     <div>
-                        <h2>Money Management</h2>
-                        <p>Add, move, and update money for this month.</p>
+
+                        <h2>
+                            Money Management
+                        </h2>
+
+                        <p>
+                            Add, move, and update money for this month.
+                        </p>
+
                     </div>
 
+
                 </div>
+
 
 
 
                 <!-- ================================
                      INCOME
                 ================================= -->
+
                 <section class="money-management-section">
+
 
                     <div class="section-header">
 
+
                         <div>
-                            <h3>Income</h3>
-                            <p>Add money coming into your budget.</p>
+
+                            <h3>
+                                Income
+                            </h3>
+
+                            <p>
+                                Add money coming into your budget.
+                            </p>
+
                         </div>
+
 
                     </div>
 
 
+
                     <div class="money-action-grid">
 
+
                         <!-- Add Paycheck -->
+
                         <button
                             type="button"
                             class="money-action-card"
                             data-money-action="paycheck"
                         >
 
+
                             <span class="money-action-icon">
                                 💵
                             </span>
 
+
                             <span class="money-action-content">
+
 
                                 <strong>
                                     Add Paycheck
                                 </strong>
 
+
                                 <small>
                                     Record income from work or another paycheck.
                                 </small>
 
+
                             </span>
+
 
                             <span class="money-action-arrow">
                                 ›
                             </span>
 
+
                         </button>
+
 
                     </div>
 
+
                 </section>
+
 
 
 
                 <!-- ================================
                      BILLS & SPENDING
                 ================================= -->
+
                 <section class="money-management-section">
+
 
                     <div class="section-header">
 
+
                         <div>
-                            <h3>Bills & Spending</h3>
-                            <p>Record where your money is going.</p>
+
+                            <h3>
+                                Bills & Spending
+                            </h3>
+
+                            <p>
+                                Record where your money is going.
+                            </p>
+
                         </div>
 
+
                     </div>
+
 
 
                     <div class="money-action-grid">
 
 
+
                         <!-- Add Bill -->
+
                         <button
                             type="button"
                             class="money-action-card"
                             data-money-action="bill"
                         >
 
+
                             <span class="money-action-icon">
                                 🧾
                             </span>
 
+
                             <span class="money-action-content">
+
 
                                 <strong>
                                     Add Bill
                                 </strong>
 
+
                                 <small>
                                     Add a monthly or one-time bill.
                                 </small>
 
+
                             </span>
+
 
                             <span class="money-action-arrow">
                                 ›
                             </span>
 
+
                         </button>
 
 
 
+
                         <!-- Add Expense -->
+
                         <button
                             type="button"
                             class="money-action-card"
                             data-money-action="expense"
                         >
 
+
                             <span class="money-action-icon">
                                 🛒
                             </span>
 
+
                             <span class="money-action-content">
+
 
                                 <strong>
                                     Add Expense
                                 </strong>
 
+
                                 <small>
                                     Record everyday spending.
                                 </small>
 
+
                             </span>
+
 
                             <span class="money-action-arrow">
                                 ›
                             </span>
 
+
                         </button>
 
 
 
+
                         <!-- Add Transaction -->
+
                         <button
                             type="button"
                             class="money-action-card"
                             data-money-action="transaction"
                         >
 
+
                             <span class="money-action-icon">
                                 ⇄
                             </span>
 
+
                             <span class="money-action-content">
+
 
                                 <strong>
                                     Add Transaction
                                 </strong>
 
+
                                 <small>
                                     Manually record money in or out.
                                 </small>
 
+
                             </span>
+
 
                             <span class="money-action-arrow">
                                 ›
                             </span>
 
+
                         </button>
+
 
                     </div>
 
+
                 </section>
+
 
 
 
                 <!-- ================================
                      SAVINGS
                 ================================= -->
+
                 <section class="money-management-section">
+
 
                     <div class="section-header">
 
+
                         <div>
-                            <h3>Savings</h3>
-                            <p>Create goals and add money toward them.</p>
+
+                            <h3>
+                                Savings
+                            </h3>
+
+                            <p>
+                                Create goals and add money toward them.
+                            </p>
+
                         </div>
 
+
                     </div>
+
 
 
                     <div class="money-action-grid">
 
 
+
                         <!-- Add Savings Goal -->
+
                         <button
                             type="button"
                             class="money-action-card"
                             data-money-action="savings-goal"
                         >
 
+
                             <span class="money-action-icon">
                                 🎯
                             </span>
 
+
                             <span class="money-action-content">
+
 
                                 <strong>
                                     Add Savings Goal
                                 </strong>
 
+
                                 <small>
                                     Create a new savings target.
                                 </small>
 
+
                             </span>
+
 
                             <span class="money-action-arrow">
                                 ›
                             </span>
 
+
                         </button>
 
 
 
+
                         <!-- Add Money to Savings -->
+
                         <button
                             type="button"
                             class="money-action-card"
                             data-money-action="savings-deposit"
                         >
 
+
                             <span class="money-action-icon">
                                 🏦
                             </span>
 
+
                             <span class="money-action-content">
+
 
                                 <strong>
                                     Add Money to Savings
                                 </strong>
 
+
                                 <small>
                                     Move money toward a savings goal.
                                 </small>
 
+
                             </span>
+
 
                             <span class="money-action-arrow">
                                 ›
                             </span>
 
+
                         </button>
+
 
                     </div>
 
+
                 </section>
+
 
 
 
                 <!-- ================================
                      BUDGET SETUP
                 ================================= -->
+
                 <section class="money-management-section">
+
 
                     <div class="section-header">
 
+
                         <div>
-                            <h3>Budget Setup</h3>
-                            <p>Adjust the starting point for this month's budget.</p>
+
+                            <h3>
+                                Budget Setup
+                            </h3>
+
+                            <p>
+                                Adjust the starting point for this month's budget.
+                            </p>
+
                         </div>
 
+
                     </div>
+
 
 
                     <div class="money-action-grid">
 
 
+
                         <!-- Change Starting Balance -->
+
                         <button
                             type="button"
                             class="money-action-card"
                             data-money-action="starting-balance"
                         >
 
+
                             <span class="money-action-icon">
                                 ⚙
                             </span>
 
+
                             <span class="money-action-content">
+
 
                                 <strong>
                                     Change Starting Balance
                                 </strong>
 
+
                                 <small>
                                     Update the balance this month starts with.
                                 </small>
 
+
                             </span>
+
 
                             <span class="money-action-arrow">
                                 ›
                             </span>
 
+
                         </button>
+
 
                     </div>
 
+
                 </section>
 
+
             </section>
+
+
 
 
 
             <!-- ====================================
                  MONTHLY BUDGET PAGE
             ===================================== -->
+
             <section
                 class="page"
                 id="budget-page"
                 data-page-content="budget"
             >
 
+
                 <div class="page-heading">
 
+
                     <div>
-                        <h2>Monthly Budget</h2>
-                        <p>Plan your income, bills and expenses.</p>
+
+                        <h2>
+                            Monthly Budget
+                        </h2>
+
+                        <p>
+                            Plan your income, bills and expenses.
+                        </p>
+
                     </div>
+
 
                     <button
                         type="button"
@@ -696,16 +1086,24 @@
                         + Manage Money
                     </button>
 
+
                 </div>
 
 
 
+
                 <!-- Starting Balance -->
+
                 <section class="budget-block">
+
 
                     <div class="section-header">
 
-                        <h3>Starting Balance</h3>
+
+                        <h3>
+                            Starting Balance
+                        </h3>
+
 
                         <button
                             type="button"
@@ -715,29 +1113,44 @@
                             Change
                         </button>
 
+
                     </div>
+
 
 
                     <div class="amount-display">
 
-                        <span>Checking Balance</span>
+
+                        <span>
+                            Checking Balance
+                        </span>
+
 
                         <strong id="starting-balance">
                             $0.00
                         </strong>
 
+
                     </div>
+
 
                 </section>
 
 
 
+
                 <!-- Paychecks -->
+
                 <section class="budget-block">
+
 
                     <div class="section-header">
 
-                        <h3>Paychecks</h3>
+
+                        <h3>
+                            Paychecks
+                        </h3>
+
 
                         <button
                             class="add-button"
@@ -748,7 +1161,9 @@
                             + Add
                         </button>
 
+
                     </div>
+
 
 
                     <div
@@ -762,16 +1177,24 @@
 
                     </div>
 
+
                 </section>
 
 
 
+
                 <!-- Bills -->
+
                 <section class="budget-block">
+
 
                     <div class="section-header">
 
-                        <h3>Monthly Bills</h3>
+
+                        <h3>
+                            Monthly Bills
+                        </h3>
+
 
                         <button
                             class="add-button"
@@ -782,7 +1205,9 @@
                             + Add
                         </button>
 
+
                     </div>
+
 
 
                     <div
@@ -796,16 +1221,24 @@
 
                     </div>
 
+
                 </section>
 
 
 
+
                 <!-- Expenses -->
+
                 <section class="budget-block">
+
 
                     <div class="section-header">
 
-                        <h3>Monthly Expenses</h3>
+
+                        <h3>
+                            Monthly Expenses
+                        </h3>
+
 
                         <button
                             class="add-button"
@@ -816,7 +1249,9 @@
                             + Add
                         </button>
 
+
                     </div>
+
 
 
                     <div
@@ -830,27 +1265,42 @@
 
                     </div>
 
+
                 </section>
 
+
             </section>
+
+
 
 
 
             <!-- ====================================
                  TRANSACTIONS PAGE
             ===================================== -->
+
             <section
                 class="page"
                 id="transactions-page"
                 data-page-content="transactions"
             >
 
+
                 <div class="page-heading">
 
+
                     <div>
-                        <h2>Transactions</h2>
-                        <p>Everything moving in and out.</p>
+
+                        <h2>
+                            Transactions
+                        </h2>
+
+                        <p>
+                            Everything moving in and out.
+                        </p>
+
                     </div>
+
 
                     <button
                         class="primary-button"
@@ -861,7 +1311,9 @@
                         + Transaction
                     </button>
 
+
                 </div>
+
 
 
                 <div
@@ -875,28 +1327,43 @@
 
                 </div>
 
+
             </section>
+
+
 
 
 
             <!-- ====================================
                  SAVINGS PAGE
             ===================================== -->
+
             <section
                 class="page"
                 id="savings-page"
                 data-page-content="savings"
             >
 
+
                 <div class="page-heading">
 
+
                     <div>
-                        <h2>Savings</h2>
-                        <p>Track your savings accounts and goals.</p>
+
+                        <h2>
+                            Savings
+                        </h2>
+
+                        <p>
+                            Track your savings accounts and goals.
+                        </p>
+
                     </div>
 
 
+
                     <div class="page-actions">
+
 
                         <button
                             class="secondary-button"
@@ -905,6 +1372,7 @@
                         >
                             + Add Money
                         </button>
+
 
                         <button
                             class="primary-button"
@@ -915,31 +1383,48 @@
                             + Goal
                         </button>
 
+
                     </div>
+
 
                 </div>
 
 
 
+
                 <!-- Total Savings -->
+
                 <section class="balance-card">
 
-                    <p>Total Savings Balance</p>
+
+                    <p>
+                        Total Savings Balance
+                    </p>
+
 
                     <h2 id="savings-balance">
                         $0.00
                     </h2>
 
+
                 </section>
 
 
 
+
                 <!-- Savings Goals -->
+
                 <section class="dashboard-section">
 
+
                     <div class="section-header">
-                        <h3>Savings Goals</h3>
+
+                        <h3>
+                            Savings Goals
+                        </h3>
+
                     </div>
+
 
 
                     <div
@@ -953,36 +1438,58 @@
 
                     </div>
 
+
                 </section>
 
+
             </section>
+
+
 
 
 
             <!-- ====================================
                  REPORTS PAGE
             ===================================== -->
+
             <section
                 class="page"
                 id="reports-page"
                 data-page-content="reports"
             >
 
+
                 <div class="page-heading">
 
+
                     <div>
-                        <h2>Reports</h2>
-                        <p>See where your money is going.</p>
+
+                        <h2>
+                            Reports
+                        </h2>
+
+                        <p>
+                            See where your money is going.
+                        </p>
+
                     </div>
+
 
                 </div>
 
 
+
                 <section class="dashboard-section">
 
+
                     <div class="section-header">
-                        <h3>Monthly Overview</h3>
+
+                        <h3>
+                            Monthly Overview
+                        </h3>
+
                     </div>
+
 
 
                     <div
@@ -992,32 +1499,146 @@
                         Reports will appear here.
                     </div>
 
+
                 </section>
 
+
             </section>
+
+
 
 
 
             <!-- ====================================
                  SETTINGS PAGE
             ===================================== -->
+
             <section
                 class="page"
                 id="settings-page"
                 data-page-content="settings"
             >
 
+
                 <div class="page-heading">
 
+
                     <div>
-                        <h2>Settings</h2>
-                        <p>Manage your budget tracker.</p>
+
+                        <h2>
+                            Settings
+                        </h2>
+
+                        <p>
+                            Manage your budget tracker.
+                        </p>
+
                     </div>
+
 
                 </div>
 
 
+
+
+                <!-- ================================
+                     APP INSTALLATION
+                ================================= -->
+
                 <section class="settings-section">
+
+
+                    <div class="settings-section-heading">
+
+                        <h3>
+                            Budget Tracker App
+                        </h3>
+
+                        <p>
+                            Install Budget Tracker on this device for an app-like experience.
+                        </p>
+
+                    </div>
+
+
+
+                    <!-- Install App -->
+
+                    <button
+                        type="button"
+                        class="settings-item install-app-button"
+                        id="installAppButton"
+                        hidden
+                    >
+
+                        <span class="settings-item-content">
+
+                            <strong>
+                                Install Budget Tracker
+                            </strong>
+
+                            <small>
+                                Add the app to your Home Screen or desktop.
+                            </small>
+
+                        </span>
+
+                        <span class="settings-item-arrow">
+                            ›
+                        </span>
+
+                    </button>
+
+
+
+                    <!-- Installed App Status -->
+
+                    <div
+                        class="app-installed-message"
+                        id="app-installed-message"
+                        hidden
+                    >
+
+                        <span class="app-installed-icon">
+                            ✓
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                App Installed
+                            </strong>
+
+                            <small>
+                                Budget Tracker is running as an installed app.
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                </section>
+
+
+
+
+                <!-- ================================
+                     BUDGET SETTINGS
+                ================================= -->
+
+                <section class="settings-section">
+
+
+                    <div class="settings-section-heading">
+
+                        <h3>
+                            Budget Settings
+                        </h3>
+
+                    </div>
+
+
 
                     <button
                         type="button"
@@ -1040,13 +1661,15 @@
 
                     <button
                         type="button"
-                        class="settings-item"
+                        class="settings-item danger-settings-item"
                         id="clear-data"
                     >
                         Reset Budget Data
                     </button>
 
+
                 </section>
+
 
             </section>
 
@@ -1055,103 +1678,175 @@
 
 
 
+
+
         <!-- ========================================
              BOTTOM NAVIGATION
         ========================================= -->
+
         <nav
             class="bottom-nav"
             aria-label="Main navigation"
         >
 
+
             <!-- Home -->
+
             <button
                 class="nav-button active"
                 type="button"
                 data-page="home"
             >
-                <span class="nav-icon">⌂</span>
-                <span>Home</span>
+
+                <span class="nav-icon">
+                    ⌂
+                </span>
+
+                <span>
+                    Home
+                </span>
+
             </button>
 
 
+
+
             <!-- Budget -->
+
             <button
                 class="nav-button"
                 type="button"
                 data-page="budget"
             >
-                <span class="nav-icon">$</span>
-                <span>Budget</span>
+
+                <span class="nav-icon">
+                    $
+                </span>
+
+                <span>
+                    Budget
+                </span>
+
             </button>
 
 
+
+
             <!-- Money Management -->
+
             <button
                 class="nav-button"
                 type="button"
                 data-page="money"
             >
-                <span class="nav-icon">＋</span>
-                <span>Money</span>
+
+                <span class="nav-icon">
+                    ＋
+                </span>
+
+                <span>
+                    Money
+                </span>
+
             </button>
 
 
+
+
             <!-- Transactions -->
+
             <button
                 class="nav-button"
                 type="button"
                 data-page="transactions"
             >
-                <span class="nav-icon">⇄</span>
-                <span>Activity</span>
+
+                <span class="nav-icon">
+                    ⇄
+                </span>
+
+                <span>
+                    Activity
+                </span>
+
             </button>
 
 
+
+
             <!-- Savings -->
+
             <button
                 class="nav-button"
                 type="button"
                 data-page="savings"
             >
-                <span class="nav-icon">◇</span>
-                <span>Savings</span>
+
+                <span class="nav-icon">
+                    ◇
+                </span>
+
+                <span>
+                    Savings
+                </span>
+
             </button>
 
 
+
+
             <!-- Reports -->
+
             <button
                 class="nav-button"
                 type="button"
                 data-page="reports"
             >
-                <span class="nav-icon">▥</span>
-                <span>Reports</span>
+
+                <span class="nav-icon">
+                    ▥
+                </span>
+
+                <span>
+                    Reports
+                </span>
+
             </button>
+
 
         </nav>
 
+
     </div>
+
+
 
 
 
     <!-- ========================================
          UNIVERSAL MONEY POPUP
     ========================================= -->
+
     <div
         class="money-modal"
         id="money-modal"
         aria-hidden="true"
     >
 
+
         <!-- Dark background behind popup -->
+
         <div
             class="money-modal-overlay"
             id="money-modal-overlay"
             data-money-modal-close
-        ></div>
+        >
+        </div>
+
 
 
         <!-- Popup Pane -->
+
         <div
             class="money-modal-content"
             role="dialog"
@@ -1160,23 +1855,31 @@
         >
 
 
+
             <!-- Popup Header -->
+
             <div class="money-modal-header">
 
+
                 <div>
+
 
                     <p class="money-modal-label">
                         Money Management
                     </p>
 
+
                     <h3 id="money-modal-title">
                         Add Money
                     </h3>
 
+
                 </div>
 
 
+
                 <!-- Red X -->
+
                 <button
                     type="button"
                     class="money-modal-close"
@@ -1188,22 +1891,28 @@
                     ×
                 </button>
 
+
             </div>
+
+
 
 
 
             <!-- ====================================
                  UNIVERSAL FORM
             ===================================== -->
+
             <form
                 id="money-modal-form"
                 autocomplete="off"
             >
 
+
                 <!--
                     money.js will place the correct
                     form fields inside this area.
                 -->
+
                 <div
                     class="money-modal-body"
                     id="money-modal-body"
@@ -1212,20 +1921,27 @@
 
 
 
+
                 <!-- Status Message -->
+
                 <p
                     class="money-modal-status"
                     id="money-modal-status"
                     aria-live="polite"
-                ></p>
+                >
+                </p>
+
 
 
 
                 <!-- Popup Buttons -->
+
                 <div class="money-modal-actions">
 
 
+
                     <!-- Undo -->
+
                     <button
                         type="button"
                         class="secondary-button money-undo-button"
@@ -1235,7 +1951,9 @@
                     </button>
 
 
+
                     <!-- Save -->
+
                     <button
                         type="submit"
                         class="primary-button money-save-button"
@@ -1244,13 +1962,19 @@
                         💾 Save
                     </button>
 
+
                 </div>
+
 
             </form>
 
+
         </div>
 
+
     </div>
+
+
 
 
 
@@ -1258,18 +1982,34 @@
          JAVASCRIPT
     ========================================= -->
 
+
     <!-- Storage loads first -->
-    <script src="js/storage.js"></script>
+
+    <script src="./js/storage.js"></script>
+
 
     <!-- Navigation -->
-    <script src="js/nav.js"></script>
+
+    <script src="./js/nav.js"></script>
+
 
     <!-- Main App -->
-    <script src="js/app.js"></script>
+
+    <script src="./js/app.js"></script>
+
 
     <!-- Money Management -->
-    <script src="js/money.js"></script>
+
+    <script src="./js/money.js"></script>
+
+
+    <!-- ========================================
+         PWA / INSTALLABLE APP
+    ========================================= -->
+
+    <script src="./js/pwa.js"></script>
 
 
 </body>
+
 </html>
