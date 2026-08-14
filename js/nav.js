@@ -121,6 +121,62 @@ document.addEventListener(
         ];
 
 
+        const pageAliases = {
+
+            "money-management":
+                "money"
+
+        };
+
+
+        function resolvePageFromHash(
+            hash = window.location.hash
+        ) {
+
+            const rawPage =
+                String(
+                    hash || ""
+                )
+                    .replace(
+                        /^#/,
+                        ""
+                    )
+                    .trim()
+                    .toLowerCase();
+
+
+            if (
+                !rawPage
+            ) {
+
+                return "home";
+
+            }
+
+
+            const resolvedPage =
+                pageAliases[
+                    rawPage
+                ] ||
+                rawPage;
+
+
+            if (
+                validPages.includes(
+                    resolvedPage
+                )
+            ) {
+
+                return resolvedPage;
+
+            }
+
+
+            return null;
+
+        }
+
+
         /* =================================================
            3. HEADER MODE
            ================================================= */
@@ -372,6 +428,43 @@ document.addEventListener(
         }
 
 
+        function handleUrlNavigation() {
+
+            const resolvedPage =
+                resolvePageFromHash();
+
+
+            const pageName =
+                resolvedPage ||
+                "home";
+
+
+            const canonicalHash =
+                `#${pageName}`;
+
+
+            if (
+                window.location.hash !==
+                canonicalHash
+            ) {
+
+                history.replaceState(
+                    null,
+                    "",
+                    canonicalHash
+                );
+
+            }
+
+
+            showPage(
+                pageName,
+                false
+            );
+
+        }
+
+
         /* =================================================
            5. PAGE NAVIGATION BUTTONS
            ================================================= */
@@ -448,40 +541,7 @@ document.addEventListener(
 
         function loadStartingPage() {
 
-            const pageFromURL =
-                window.location.hash
-                    .replace(
-                        "#",
-                        ""
-                    );
-
-
-            const pageName =
-                validPages.includes(
-                    pageFromURL
-                )
-
-                    ? pageFromURL
-
-                    : "home";
-
-
-            history.replaceState(
-                {
-
-                    page:
-                        pageName
-
-                },
-                "",
-                `#${pageName}`
-            );
-
-
-            showPage(
-                pageName,
-                false
-            );
+            handleUrlNavigation();
 
         }
 
@@ -494,26 +554,17 @@ document.addEventListener(
             "popstate",
             () => {
 
-                const pageName =
-                    window.location.hash
-                        .replace(
-                            "#",
-                            ""
-                        );
+                handleUrlNavigation();
+
+            }
+        );
 
 
-                if (
-                    validPages.includes(
-                        pageName
-                    )
-                ) {
+        window.addEventListener(
+            "hashchange",
+            () => {
 
-                    showPage(
-                        pageName,
-                        false
-                    );
-
-                }
+                handleUrlNavigation();
 
             }
         );
