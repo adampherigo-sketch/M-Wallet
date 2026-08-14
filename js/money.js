@@ -3709,14 +3709,17 @@ function saveMoneyForm(
                 record
             );
 
+
         if (
-            wasEditingBill &&
-            !savedRecord
+            savedRecord === false ||
+            savedRecord === null ||
+            savedRecord === undefined
         ) {
 
             throw new Error(
-                "Unable to update this bill. It may have been deleted or changed."
+                "Your changes could not be saved. Your existing wallet data has been preserved."
             );
+
         }
 
 

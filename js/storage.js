@@ -2424,9 +2424,19 @@ const BudgetStorage = {
             normalizedMonth;
 
 
-        this.save(
-            data
-        );
+        const saved =
+            this.save(
+                data
+            );
+
+
+        if (
+            !saved
+        ) {
+
+            return false;
+
+        }
 
 
         return normalizedMonth;
@@ -2456,15 +2466,31 @@ const BudgetStorage = {
             );
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
 
 
-        this.syncCheckingAccountBalance(
-            monthKey
-        );
+        const syncedBalance =
+            this.syncCheckingAccountBalance(
+                monthKey
+            );
+
+
+        if (
+            syncedBalance === null
+        ) {
+
+            return null;
+
+        }
 
 
         return month.startingBalance;
@@ -2524,9 +2550,15 @@ const BudgetStorage = {
         );
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return newIncome;
@@ -2627,9 +2659,15 @@ const BudgetStorage = {
             updated;
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return updated;
@@ -2657,9 +2695,15 @@ const BudgetStorage = {
             );
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return false;
+
+        }
 
 
         return (
@@ -3299,10 +3343,16 @@ const BudgetStorage = {
         );
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         const linked =
@@ -3318,42 +3368,52 @@ const BudgetStorage = {
             !linked
         ) {
 
-            this.addIncome({
+            const linkedIncome =
+                this.addIncome({
 
-                name:
-                    newPaycheck.name,
+                    name:
+                        newPaycheck.name,
 
-                source:
-                    newPaycheck.name,
+                    source:
+                        newPaycheck.name,
 
-                amount:
-                    newPaycheck.amount,
+                    amount:
+                        newPaycheck.amount,
 
-                date:
-                    newPaycheck.payDate,
+                    date:
+                        newPaycheck.payDate,
 
-                category:
-                    "Employment",
+                    category:
+                        "Employment",
 
-                incomeType:
-                    "paycheck",
+                    incomeType:
+                        "paycheck",
 
-                recurring:
-                    false,
+                    recurring:
+                        false,
 
-                notes:
-                    newPaycheck.notes,
+                    notes:
+                        newPaycheck.notes,
 
-                legacyPaycheckId:
-                    newPaycheck.id,
+                    legacyPaycheckId:
+                        newPaycheck.id,
 
-                legacyMonthKey:
-                    monthKey,
+                    legacyMonthKey:
+                        monthKey,
 
-                createdAt:
-                    newPaycheck.createdAt
+                    createdAt:
+                        newPaycheck.createdAt
 
-            });
+                });
+
+
+            if (
+                !linkedIncome
+            ) {
+
+                return null;
+
+            }
 
         }
 
@@ -3425,10 +3485,16 @@ const BudgetStorage = {
             );
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         const linkedIncome =
@@ -3444,30 +3510,40 @@ const BudgetStorage = {
             linkedIncome
         ) {
 
-            this.updateIncome(
+            const updatedIncome =
+                this.updateIncome(
 
-                linkedIncome.id,
+                    linkedIncome.id,
 
-                {
+                    {
 
-                    name:
-                        paycheck.name,
+                        name:
+                            paycheck.name,
 
-                    source:
-                        paycheck.name,
+                        source:
+                            paycheck.name,
 
-                    amount:
-                        paycheck.amount,
+                        amount:
+                            paycheck.amount,
 
-                    date:
-                        paycheck.payDate,
+                        date:
+                            paycheck.payDate,
 
-                    notes:
-                        paycheck.notes
+                        notes:
+                            paycheck.notes
 
-                }
+                    }
 
-            );
+                );
+
+
+            if (
+                !updatedIncome
+            ) {
+
+                return null;
+
+            }
 
         }
 
@@ -3501,10 +3577,16 @@ const BudgetStorage = {
             );
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return false;
+
+        }
 
 
         const linkedIncome =
@@ -3520,9 +3602,15 @@ const BudgetStorage = {
             linkedIncome
         ) {
 
-            this.deleteIncome(
-                linkedIncome.id
-            );
+            if (
+                !this.deleteIncome(
+                    linkedIncome.id
+                )
+            ) {
+
+                return false;
+
+            }
 
         }
 
@@ -3663,10 +3751,16 @@ const BudgetStorage = {
         );
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return newBill;
@@ -3740,10 +3834,16 @@ const BudgetStorage = {
             this.now();
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return bill;
@@ -3799,10 +3899,16 @@ const BudgetStorage = {
             this.now();
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return bill;
@@ -3834,10 +3940,16 @@ const BudgetStorage = {
             );
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return false;
+
+        }
 
 
         return (
@@ -3886,9 +3998,15 @@ const BudgetStorage = {
         );
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return newExpense;
@@ -3989,9 +4107,15 @@ const BudgetStorage = {
             updated;
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return updated;
@@ -4055,9 +4179,15 @@ const BudgetStorage = {
         }
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return false;
+
+        }
 
 
         return true;
@@ -4448,10 +4578,16 @@ const BudgetStorage = {
         );
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return newTransaction;
@@ -4519,10 +4655,16 @@ const BudgetStorage = {
             this.now();
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return transaction;
@@ -4554,10 +4696,16 @@ const BudgetStorage = {
             );
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return false;
+
+        }
 
 
         return (
@@ -4725,9 +4873,15 @@ const BudgetStorage = {
             );
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return endingBalance;
@@ -4833,9 +4987,15 @@ const BudgetStorage = {
         );
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         /*
@@ -5084,9 +5244,15 @@ const BudgetStorage = {
             this.now();
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return goal;
@@ -5143,9 +5309,15 @@ const BudgetStorage = {
             this.now();
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return goal;
@@ -5237,9 +5409,15 @@ const BudgetStorage = {
             );
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return false;
+
+        }
 
 
         return true;
@@ -5444,14 +5622,26 @@ const BudgetStorage = {
             this.now();
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
-        this.syncCheckingAccountBalance(
-            monthKey
-        );
+        if (
+            this.syncCheckingAccountBalance(
+                monthKey
+            ) === null
+        ) {
+
+            return null;
+
+        }
 
 
         return normalized;
@@ -5869,14 +6059,26 @@ const BudgetStorage = {
             this.now();
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return false;
+
+        }
 
 
-        this.syncCheckingAccountBalance(
-            monthKey
-        );
+        if (
+            this.syncCheckingAccountBalance(
+                monthKey
+            ) === null
+        ) {
+
+            return false;
+
+        }
 
 
         return true;
@@ -6010,9 +6212,15 @@ const BudgetStorage = {
         );
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return {
@@ -6166,9 +6374,15 @@ const BudgetStorage = {
         );
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return {
@@ -6589,10 +6803,16 @@ const BudgetStorage = {
             endingBalance;
 
 
-        this.saveMonth(
-            monthKey,
-            month
-        );
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return endingBalance;
@@ -7193,6 +7413,15 @@ const BudgetStorage = {
             );
 
 
+        if (
+            previousEndingBalance === null
+        ) {
+
+            return null;
+
+        }
+
+
         const data =
             this.load();
 
@@ -7312,9 +7541,15 @@ const BudgetStorage = {
             newMonth;
 
 
-        this.save(
-            data
-        );
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         return newMonth;
@@ -7401,12 +7636,11 @@ const BudgetStorage = {
                 );
 
 
-            this.save(
-                normalized
+            return Boolean(
+                this.save(
+                    normalized
+                )
             );
-
-
-            return true;
 
         }
 
@@ -7428,10 +7662,19 @@ const BudgetStorage = {
 
 
     clearAllData() {
+        const defaultData =
+            this.createDefaultData();
 
-        localStorage.removeItem(
-            this.storageKey
-        );
+
+        if (
+            !this.save(
+                defaultData
+            )
+        ) {
+
+            return null;
+
+        }
 
 
         this.legacyStorageKeys
@@ -7453,15 +7696,6 @@ const BudgetStorage = {
 
         localStorage.removeItem(
             "mWalletMoneyEntries"
-        );
-
-
-        const defaultData =
-            this.createDefaultData();
-
-
-        this.save(
-            defaultData
         );
 
 
