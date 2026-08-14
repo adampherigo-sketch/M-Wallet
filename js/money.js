@@ -3688,6 +3688,16 @@ function saveMoneyForm(
                 record
             );
 
+        if (
+            wasEditingBill &&
+            !savedRecord
+        ) {
+
+            throw new Error(
+                "Unable to update this bill. It may have been deleted or changed."
+            );
+        }
+
 
         const detail = {
 

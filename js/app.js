@@ -10,6 +10,7 @@ const BudgetApp = {
 
     initialized: false,
     reportsInitialized: false,
+    refreshQueued: false,
 
 
     /* =====================================================
@@ -117,11 +118,23 @@ const BudgetApp = {
             "mwallet:money-saved",
             "mwallet:income-updated",
             "mwallet:income-deleted",
+            "mwallet:bill-updated",
+            "mwallet:bill-deleted",
             "mwallet:expense-updated",
             "mwallet:expense-deleted",
             "mwallet:savings-updated",
             "mwallet:savings-goal-updated",
-            "mwallet:savings-goal-deleted",
+            "mwallet:savings-goal-deleted"
+        ].forEach(eventName => {
+
+            document.addEventListener(
+                eventName,
+                () => this.queueRefresh()
+            );
+        });
+
+
+        [
             "budget:month-changed",
             "mwallet:month-changed"
         ].forEach(eventName => {
@@ -190,6 +203,34 @@ const BudgetApp = {
 
 
         this.bindSettingsActions();
+    },
+
+
+    /* =====================================================
+       5. QUEUE APP REFRESH
+       ===================================================== */
+
+    queueRefresh() {
+
+        if (
+            this.refreshQueued
+        ) {
+            return;
+        }
+
+        this.refreshQueued =
+            true;
+
+        window.setTimeout(
+            () => {
+
+                this.refreshQueued =
+                    false;
+
+                this.refresh();
+            },
+            0
+        );
     },
 
 
