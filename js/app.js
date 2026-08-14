@@ -71,48 +71,6 @@ const BudgetApp = {
         const yearSelect =
             document.getElementById("year-select");
 
-
-        if (monthSelect) {
-            monthSelect.addEventListener(
-                "change",
-                () => this.refresh()
-            );
-        }
-
-
-        if (yearSelect) {
-            yearSelect.addEventListener(
-                "change",
-                () => this.refresh()
-            );
-        }
-
-
-        [
-            "previous-month",
-            "next-month",
-            "today-month"
-        ].forEach(buttonId => {
-
-            const button =
-                document.getElementById(buttonId);
-
-            if (!button) {
-                return;
-            }
-
-            button.addEventListener(
-                "click",
-                () => {
-                    window.setTimeout(
-                        () => this.refresh(),
-                        0
-                    );
-                }
-            );
-        });
-
-
         [
             "budget:money-saved",
             "mwallet:money-saved",
@@ -141,7 +99,7 @@ const BudgetApp = {
 
             document.addEventListener(
                 eventName,
-                () => this.refresh()
+                () => this.queueRefresh()
             );
         });
 
