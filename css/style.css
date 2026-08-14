@@ -1,6 +1,6 @@
 /* =========================================================
    BUDGET TRACKER
-   Base Theme + Layout
+   Main Theme + Layout
    ========================================================= */
 
 
@@ -34,7 +34,8 @@
     --border: #ddd9cf;
 
     /* Status colors */
-    --danger: #a84343;
+    --danger: #b34242;
+    --danger-dark: #8f3030;
     --danger-soft: #f7dddd;
 
     --success: #2d7a52;
@@ -43,13 +44,15 @@
     /* Shadows */
     --shadow-sm: 0 4px 14px rgba(25, 40, 31, 0.06);
     --shadow-md: 0 10px 30px rgba(25, 40, 31, 0.10);
+    --shadow-lg: 0 25px 70px rgba(15, 35, 24, 0.24);
 
     /* Sizing */
     --radius-sm: 10px;
     --radius-md: 16px;
     --radius-lg: 22px;
+    --radius-xl: 28px;
 
-    --nav-height: 76px;
+    --nav-height: 82px;
 
     /* Transitions */
     --transition: 0.2s ease;
@@ -72,6 +75,7 @@ html {
 
 body {
     min-height: 100vh;
+
     font-family:
         Inter,
         system-ui,
@@ -81,6 +85,7 @@ body {
         sans-serif;
 
     color: var(--text);
+
     background:
         radial-gradient(
             circle at top right,
@@ -95,13 +100,16 @@ body {
 }
 
 
-/* =========================================================
-   3. BUTTON RESET
-   ========================================================= */
+/* Prevent page scrolling while popup is open */
 
-button {
-    font: inherit;
+body.modal-open {
+    overflow: hidden;
 }
+
+
+/* =========================================================
+   3. GENERAL ELEMENTS
+   ========================================================= */
 
 button,
 input,
@@ -111,7 +119,13 @@ textarea {
 }
 
 button {
+    font: inherit;
     cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
 }
 
 
@@ -135,7 +149,9 @@ button {
     z-index: 100;
 
     background: rgba(244, 241, 232, 0.94);
+
     backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 
     border-bottom: 1px solid rgba(221, 217, 207, 0.8);
 }
@@ -157,6 +173,7 @@ button {
     margin-bottom: 3px;
 
     color: var(--green);
+
     font-size: 0.72rem;
     font-weight: 800;
 
@@ -166,6 +183,7 @@ button {
 
 .app-header h1 {
     color: var(--charcoal);
+
     font-size: clamp(1.35rem, 3vw, 1.8rem);
     font-weight: 750;
 }
@@ -173,6 +191,8 @@ button {
 .header-button {
     width: 44px;
     height: 44px;
+
+    flex-shrink: 0;
 
     display: grid;
     place-items: center;
@@ -183,23 +203,27 @@ button {
     background: var(--surface);
 
     color: var(--green-dark);
+
     font-size: 1.2rem;
 
     box-shadow: var(--shadow-sm);
 
     transition:
         transform var(--transition),
-        background var(--transition);
+        background var(--transition),
+        border-color var(--transition);
 }
 
 .header-button:hover {
     transform: translateY(-2px);
+
     background: var(--green-soft);
+    border-color: var(--green-light);
 }
 
 
 /* =========================================================
-   MONTH / YEAR NAVIGATION
+   6. MONTH / YEAR NAVIGATION
    ========================================================= */
 
 .header-month-area {
@@ -209,6 +233,7 @@ button {
 .month-navigation {
     display: flex;
     align-items: center;
+
     gap: 8px;
 
     margin-top: 7px;
@@ -252,6 +277,8 @@ button {
     width: 36px;
     height: 36px;
 
+    flex-shrink: 0;
+
     display: grid;
     place-items: center;
 
@@ -267,11 +294,14 @@ button {
 
     transition:
         background var(--transition),
-        transform var(--transition);
+        transform var(--transition),
+        border-color var(--transition);
 }
 
 .month-arrow:hover {
     background: var(--green-soft);
+    border-color: var(--green-light);
+
     transform: translateY(-1px);
 }
 
@@ -291,8 +321,6 @@ button {
     font-size: 0.75rem;
     font-weight: 750;
 
-    cursor: pointer;
-
     transition:
         background var(--transition),
         transform var(--transition);
@@ -300,11 +328,12 @@ button {
 
 .today-button:hover {
     background: var(--green);
+
     transform: translateY(-1px);
 }
 
 
-/* Current Month Display */
+/* Current Month */
 
 .current-month-title {
     margin-top: 8px;
@@ -319,32 +348,7 @@ button {
 
 
 /* =========================================================
-   MOBILE MONTH NAVIGATION
-   ========================================================= */
-
-@media (max-width: 600px) {
-
-    .month-navigation {
-        flex-wrap: wrap;
-    }
-
-    .month-select {
-        min-width: 115px;
-    }
-
-    .year-select {
-        min-width: 80px;
-    }
-
-    .today-button {
-        padding: 8px 10px;
-    }
-
-}
-
-
-/* =========================================================
-   6. MAIN CONTENT
+   7. MAIN CONTENT
    ========================================================= */
 
 .app-content {
@@ -359,11 +363,12 @@ button {
 
 
 /* =========================================================
-   7. PAGE SYSTEM
+   8. PAGE SYSTEM
    ========================================================= */
 
 .page {
     display: none;
+
     animation: fadeIn 0.25s ease;
 }
 
@@ -372,6 +377,7 @@ button {
 }
 
 @keyframes fadeIn {
+
     from {
         opacity: 0;
         transform: translateY(5px);
@@ -381,11 +387,12 @@ button {
         opacity: 1;
         transform: translateY(0);
     }
+
 }
 
 
 /* =========================================================
-   8. PAGE HEADINGS
+   9. PAGE HEADINGS
    ========================================================= */
 
 .page-heading {
@@ -401,24 +408,35 @@ button {
 .page-heading h2 {
     margin-bottom: 5px;
 
+    color: var(--charcoal);
+
     font-size: clamp(1.55rem, 4vw, 2rem);
     font-weight: 760;
-
-    color: var(--charcoal);
 }
 
 .page-heading p {
     color: var(--muted);
+
     line-height: 1.5;
+}
+
+.page-actions {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
 }
 
 
 /* =========================================================
-   9. MAIN BALANCE CARD
+   10. MAIN BALANCE CARD
    ========================================================= */
 
 .balance-card {
     position: relative;
+
     overflow: hidden;
 
     margin-bottom: 26px;
@@ -448,6 +466,7 @@ button {
     content: "$";
 
     position: absolute;
+
     right: 18px;
     bottom: -35px;
 
@@ -476,11 +495,10 @@ button {
 
 .balance-card h2 {
     font-size: clamp(2.35rem, 8vw, 3.8rem);
-    line-height: 1;
-
-    letter-spacing: -0.04em;
-
     font-weight: 780;
+
+    line-height: 1;
+    letter-spacing: -0.04em;
 }
 
 .balance-details {
@@ -517,7 +535,7 @@ button {
 
 
 /* =========================================================
-   10. GENERAL SECTIONS
+   11. GENERAL SECTIONS
    ========================================================= */
 
 .dashboard-section,
@@ -551,9 +569,18 @@ button {
     font-weight: 750;
 }
 
+.section-header p {
+    margin-top: 4px;
+
+    color: var(--muted);
+
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
 
 /* =========================================================
-   11. MONTHLY SUMMARY CARDS
+   12. MONTHLY SUMMARY CARDS
    ========================================================= */
 
 .summary-grid {
@@ -591,9 +618,6 @@ button {
     font-size: 1.18rem;
 }
 
-
-/* Individual money categories */
-
 .summary-card:nth-child(1) {
     border-top: 3px solid var(--success);
 }
@@ -612,7 +636,7 @@ button {
 
 
 /* =========================================================
-   12. INFO CARD
+   13. INFO CARD
    ========================================================= */
 
 .info-card {
@@ -648,7 +672,7 @@ button {
 
 
 /* =========================================================
-   13. AMOUNT DISPLAY
+   14. AMOUNT DISPLAY
    ========================================================= */
 
 .amount-display {
@@ -677,7 +701,7 @@ button {
 
 
 /* =========================================================
-   14. LIST CONTAINERS
+   15. LIST CONTAINERS
    ========================================================= */
 
 .list-container,
@@ -699,10 +723,11 @@ button {
 
 
 /* =========================================================
-   15. BUTTONS
+   16. BUTTONS
    ========================================================= */
 
 .primary-button,
+.secondary-button,
 .add-button,
 .text-button {
     border: none;
@@ -712,11 +737,13 @@ button {
     transition:
         transform var(--transition),
         box-shadow var(--transition),
-        background var(--transition);
+        background var(--transition),
+        color var(--transition),
+        border-color var(--transition);
 }
 
 
-/* Primary action */
+/* Primary */
 
 .primary-button {
     padding: 11px 16px;
@@ -724,19 +751,42 @@ button {
     border-radius: 999px;
 
     background: var(--green-dark);
-    color: white;
+
+    color: #ffffff;
 
     box-shadow: 0 5px 14px rgba(22, 59, 43, 0.18);
 }
 
 .primary-button:hover {
-    transform: translateY(-2px);
-
     background: var(--green);
+
+    transform: translateY(-2px);
 }
 
 
-/* Small add button */
+/* Secondary */
+
+.secondary-button {
+    padding: 10px 16px;
+
+    border: 1px solid var(--border);
+    border-radius: 999px;
+
+    background: var(--surface);
+
+    color: var(--green-dark);
+}
+
+.secondary-button:hover {
+    background: var(--green-soft);
+
+    border-color: var(--green-light);
+
+    transform: translateY(-1px);
+}
+
+
+/* Small Add */
 
 .add-button {
     padding: 8px 13px;
@@ -744,6 +794,7 @@ button {
     border-radius: 999px;
 
     background: var(--green-soft);
+
     color: var(--green-dark);
 }
 
@@ -752,9 +803,11 @@ button {
 }
 
 
-/* Link-style button */
+/* Text button */
 
 .text-button {
+    padding: 4px;
+
     background: transparent;
 
     color: var(--green);
@@ -768,7 +821,7 @@ button {
 
 
 /* =========================================================
-   16. TABLE STYLING
+   17. TABLE STYLING
    ========================================================= */
 
 table {
@@ -781,6 +834,7 @@ table {
 
 thead {
     background: var(--green-dark);
+
     color: #ffffff;
 }
 
@@ -815,8 +869,7 @@ tbody tr:hover {
 
 
 /* =========================================================
-   17. TRANSACTION ITEMS
-   For later JS-generated transactions
+   18. TRANSACTION ITEMS
    ========================================================= */
 
 .transaction-item {
@@ -880,11 +933,11 @@ tbody tr:hover {
 
 
 /* =========================================================
-   18. SAVINGS GOAL CARDS
-   For later JS-generated savings goals
+   19. SAVINGS GOAL CARDS
    ========================================================= */
 
 .savings-goal-card {
+    margin-bottom: 12px;
     padding: 18px;
 
     border: 1px solid var(--border);
@@ -892,203 +945,6 @@ tbody tr:hover {
 
     background: var(--surface);
 }
-
-
-/* =========================================================
-   19. MODALS & DIALOGS
-   ========================================================= */
-
-.modal-overlay {
-    display: none;
-
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
-
-    z-index: 999;
-}
-
-.modal-overlay.active {
-    display: block;
-}
-
-.modal {
-    display: none;
-
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    max-width: 480px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-
-    background: var(--surface);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
-
-    z-index: 1000;
-
-    animation: modalSlideIn 0.3s ease;
-}
-
-.modal.active {
-    display: block;
-}
-
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -48%);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
-    }
-}
-
-.modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    padding: 20px;
-    border-bottom: 1px solid var(--border);
-}
-
-.modal-header h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: var(--charcoal);
-}
-
-.modal-close {
-    background: none;
-    border: none;
-
-    font-size: 1.5rem;
-    color: var(--muted);
-
-    cursor: pointer;
-
-    padding: 0;
-    width: 32px;
-    height: 32px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: var(--radius-sm);
-
-    transition: all var(--transition);
-}
-
-.modal-close:hover {
-    background: var(--surface-soft);
-    color: var(--charcoal);
-}
-
-.modal form {
-    padding: 20px;
-}
-
-.form-group {
-    margin-bottom: 18px;
-}
-
-.form-group label {
-    display: block;
-
-    margin-bottom: 6px;
-
-    color: var(--text);
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group input[type="date"],
-.form-group select {
-    width: 100%;
-
-    padding: 10px 12px;
-
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-
-    font-family: inherit;
-    font-size: 1rem;
-
-    background: var(--surface-soft);
-    color: var(--text);
-
-    transition: all var(--transition);
-}
-
-.form-group input[type="text"]:focus,
-.form-group input[type="number"]:focus,
-.form-group input[type="date"]:focus,
-.form-group select:focus {
-    outline: none;
-
-    border-color: var(--green);
-    background: var(--surface);
-    box-shadow: 0 0 0 3px var(--green-soft);
-}
-
-.form-group.checkbox {
-    display: flex;
-    align-items: center;
-
-    gap: 10px;
-
-    margin-bottom: 18px;
-}
-
-.form-group.checkbox input[type="checkbox"] {
-    width: auto;
-
-    margin: 0;
-}
-
-.form-group.checkbox label {
-    margin: 0;
-
-    font-weight: 500;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-
-    padding: 16px 20px;
-    border-top: 1px solid var(--border);
-
-    background: var(--surface-soft);
-}
-
-.modal-actions button {
-    padding: 10px 20px;
-
-    border-radius: var(--radius-sm);
-
-    font-weight: 600;
-
-    cursor: pointer;
-
-    transition: all var(--transition);
-}
-
 
 .savings-goal-card:last-child {
     margin-bottom: 0;
@@ -1133,7 +989,706 @@ tbody tr:hover {
 
 
 /* =========================================================
-   19. REPORT PLACEHOLDER
+   20. MONEY MANAGEMENT PAGE
+   ========================================================= */
+
+.money-management-section {
+    margin-bottom: 24px;
+    padding: 22px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    background: var(--surface);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.money-management-section:last-child {
+    margin-bottom: 0;
+}
+
+
+/* =========================================================
+   21. MONEY ACTION GRID
+   ========================================================= */
+
+.money-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 14px;
+}
+
+
+/* Individual action card */
+
+.money-action-card {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+
+    gap: 14px;
+
+    min-height: 98px;
+
+    padding: 18px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    background:
+        linear-gradient(
+            145deg,
+            var(--surface-soft),
+            #ffffff
+        );
+
+    color: var(--text);
+
+    text-align: left;
+
+    box-shadow: 0 3px 10px rgba(20, 40, 30, 0.03);
+
+    transition:
+        transform var(--transition),
+        box-shadow var(--transition),
+        border-color var(--transition),
+        background var(--transition);
+}
+
+.money-action-card:hover {
+    transform: translateY(-3px);
+
+    border-color: rgba(36, 92, 66, 0.28);
+
+    background: var(--green-soft);
+
+    box-shadow: 0 10px 24px rgba(22, 59, 43, 0.09);
+}
+
+.money-action-card:active {
+    transform: translateY(-1px);
+}
+
+
+/* Icon */
+
+.money-action-icon {
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 14px;
+
+    background: var(--green-soft);
+
+    color: var(--green-dark);
+
+    font-size: 1.35rem;
+}
+
+
+/* Give sections some subtle visual variety */
+
+.money-management-section:nth-of-type(2) .money-action-icon {
+    background: var(--gold-soft);
+}
+
+.money-management-section:nth-of-type(3) .money-action-icon {
+    background: var(--purple-soft);
+}
+
+.money-management-section:nth-of-type(4) .money-action-icon {
+    background: var(--green-light);
+}
+
+
+/* Card content */
+
+.money-action-content {
+    min-width: 0;
+
+    display: block;
+}
+
+.money-action-content strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: var(--charcoal);
+
+    font-size: 0.96rem;
+    font-weight: 750;
+}
+
+.money-action-content small {
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+
+/* Arrow */
+
+.money-action-arrow {
+    color: var(--green);
+
+    font-size: 1.7rem;
+    font-weight: 400;
+
+    transition: transform var(--transition);
+}
+
+.money-action-card:hover .money-action-arrow {
+    transform: translateX(4px);
+}
+
+
+/* =========================================================
+   22. UNIVERSAL MONEY POPUP
+   ========================================================= */
+
+.money-modal {
+    position: fixed;
+    inset: 0;
+
+    z-index: 1000;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+}
+
+
+/* money.js will add .active */
+
+.money-modal.active {
+    display: flex;
+}
+
+
+/* =========================================================
+   23. DARK POPUP BACKGROUND
+   ========================================================= */
+
+.money-modal-overlay {
+    position: absolute;
+    inset: 0;
+
+    background: rgba(12, 18, 14, 0.62);
+
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+
+    animation: moneyOverlayFade 0.2s ease;
+}
+
+@keyframes moneyOverlayFade {
+
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+}
+
+
+/* =========================================================
+   24. POPUP PANEL
+   ========================================================= */
+
+.money-modal-content {
+    position: relative;
+    z-index: 1;
+
+    width: min(520px, 100%);
+
+    max-height: min(88vh, 760px);
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    border: 1px solid rgba(221, 217, 207, 0.95);
+    border-radius: var(--radius-xl);
+
+    background: var(--surface);
+
+    box-shadow: var(--shadow-lg);
+
+    animation: moneyModalOpen 0.25s ease;
+}
+
+@keyframes moneyModalOpen {
+
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+}
+
+
+/* =========================================================
+   25. POPUP HEADER
+   ========================================================= */
+
+.money-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 20px;
+
+    flex-shrink: 0;
+
+    padding: 22px 24px 18px;
+
+    border-bottom: 1px solid var(--border);
+
+    background:
+        linear-gradient(
+            180deg,
+            #ffffff,
+            var(--surface-soft)
+        );
+}
+
+.money-modal-label {
+    margin-bottom: 4px;
+
+    color: var(--green);
+
+    font-size: 0.68rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+.money-modal-header h3 {
+    color: var(--charcoal);
+
+    font-size: 1.35rem;
+    font-weight: 780;
+}
+
+
+/* =========================================================
+   26. RED CLOSE X
+   ========================================================= */
+
+.money-modal-close {
+    width: 38px;
+    height: 38px;
+
+    flex-shrink: 0;
+
+    display: grid;
+    place-items: center;
+
+    padding: 0;
+
+    border: 1px solid rgba(179, 66, 66, 0.2);
+    border-radius: 50%;
+
+    background: var(--danger-soft);
+
+    color: var(--danger);
+
+    font-size: 1.55rem;
+    font-weight: 600;
+    line-height: 1;
+
+    transition:
+        background var(--transition),
+        color var(--transition),
+        transform var(--transition),
+        box-shadow var(--transition);
+}
+
+.money-modal-close:hover {
+    background: var(--danger);
+
+    color: white;
+
+    transform: scale(1.07);
+
+    box-shadow: 0 5px 14px rgba(179, 66, 66, 0.22);
+}
+
+.money-modal-close:active {
+    transform: scale(0.96);
+}
+
+
+/* =========================================================
+   27. UNIVERSAL MONEY FORM
+   ========================================================= */
+
+#money-modal-form {
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.money-modal-body {
+    min-height: 0;
+
+    overflow-y: auto;
+
+    padding: 22px 24px;
+}
+
+
+/* =========================================================
+   28. FORM GROUPS
+   ========================================================= */
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: var(--charcoal);
+
+    font-size: 0.79rem;
+    font-weight: 750;
+}
+
+.form-group small,
+.form-help {
+    display: block;
+
+    margin-top: 6px;
+
+    color: var(--muted);
+
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+
+/* =========================================================
+   29. INPUTS / DROPDOWNS / TEXTAREAS
+   ========================================================= */
+
+input,
+select,
+textarea {
+    width: 100%;
+
+    padding: 12px 14px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    outline: none;
+
+    background: var(--surface);
+
+    color: var(--text);
+
+    font-size: 0.95rem;
+
+    transition:
+        border-color var(--transition),
+        box-shadow var(--transition),
+        background var(--transition);
+}
+
+.money-modal input,
+.money-modal select,
+.money-modal textarea {
+    background: var(--surface-soft);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+    border-color: #c7c2b7;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--green);
+
+    background: var(--surface);
+
+    box-shadow: 0 0 0 3px rgba(36, 92, 66, 0.11);
+}
+
+textarea {
+    min-height: 100px;
+
+    resize: vertical;
+}
+
+
+/* Number fields */
+
+input[type="number"] {
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* Date fields */
+
+input[type="date"] {
+    color-scheme: light;
+}
+
+
+/* Select */
+
+select {
+    cursor: pointer;
+}
+
+
+/* Placeholder */
+
+input::placeholder,
+textarea::placeholder {
+    color: #9a9d98;
+}
+
+
+/* =========================================================
+   30. MONEY INPUT FIELD
+   Optional class for money.js generated fields
+   ========================================================= */
+
+.money-input-wrapper {
+    position: relative;
+}
+
+.money-input-symbol {
+    position: absolute;
+
+    top: 50%;
+    left: 14px;
+
+    transform: translateY(-50%);
+
+    color: var(--muted);
+
+    font-weight: 750;
+
+    pointer-events: none;
+}
+
+.money-input-wrapper input {
+    padding-left: 30px;
+}
+
+
+/* =========================================================
+   31. CHECKBOX
+   ========================================================= */
+
+.form-group.checkbox,
+.checkbox-group {
+    display: flex;
+    align-items: center;
+
+    gap: 11px;
+
+    padding: 12px 14px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    background: var(--surface-soft);
+}
+
+.form-group.checkbox input[type="checkbox"],
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+
+    flex-shrink: 0;
+
+    margin: 0;
+
+    accent-color: var(--green);
+
+    cursor: pointer;
+}
+
+.form-group.checkbox label,
+.checkbox-group label {
+    margin: 0;
+
+    color: var(--text);
+
+    font-size: 0.85rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   32. MODAL STATUS MESSAGE
+   ========================================================= */
+
+.money-modal-status {
+    min-height: 20px;
+
+    padding: 0 24px;
+
+    color: var(--success);
+
+    font-size: 0.78rem;
+    font-weight: 700;
+
+    text-align: right;
+}
+
+.money-modal-status.error {
+    color: var(--danger);
+}
+
+.money-modal-status.success {
+    color: var(--success);
+}
+
+
+/* =========================================================
+   33. MODAL ACTION FOOTER
+   ========================================================= */
+
+.money-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+
+    gap: 12px;
+
+    flex-shrink: 0;
+
+    padding: 18px 24px 22px;
+
+    border-top: 1px solid var(--border);
+
+    background: var(--surface-soft);
+}
+
+
+/* =========================================================
+   34. UNDO BUTTON
+   ========================================================= */
+
+.money-undo-button {
+    min-width: 105px;
+
+    border: 1px solid var(--border);
+
+    background: var(--surface);
+
+    color: var(--charcoal);
+}
+
+.money-undo-button:hover {
+    background: var(--gold-soft);
+
+    border-color: rgba(195, 163, 90, 0.55);
+
+    color: #5d4b23;
+}
+
+
+/* =========================================================
+   35. SAVE BUTTON
+   ========================================================= */
+
+.money-save-button {
+    min-width: 115px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--green-dark),
+            var(--green)
+        );
+
+    color: white;
+
+    box-shadow: 0 6px 16px rgba(22, 59, 43, 0.2);
+}
+
+.money-save-button:hover {
+    background:
+        linear-gradient(
+            135deg,
+            var(--green),
+            #317354
+        );
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 8px 20px rgba(22, 59, 43, 0.25);
+}
+
+.money-save-button:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   36. FORM VALIDATION
+   ========================================================= */
+
+input:invalid:not(:placeholder-shown) {
+    border-color: rgba(179, 66, 66, 0.55);
+}
+
+.form-error {
+    margin-top: 6px;
+
+    color: var(--danger);
+
+    font-size: 0.72rem;
+    font-weight: 650;
+}
+
+
+/* =========================================================
+   37. REPORT PLACEHOLDER
    ========================================================= */
 
 .chart-placeholder {
@@ -1147,18 +1702,19 @@ tbody tr:hover {
     border: 2px dashed var(--border);
     border-radius: var(--radius-md);
 
-    color: var(--muted);
-
     background: var(--surface-soft);
+
+    color: var(--muted);
 }
 
 
 /* =========================================================
-   20. SETTINGS
+   38. SETTINGS
    ========================================================= */
 
 .settings-section {
     display: grid;
+
     gap: 10px;
 }
 
@@ -1180,75 +1736,37 @@ tbody tr:hover {
 
     transition:
         background var(--transition),
-        transform var(--transition);
+        transform var(--transition),
+        border-color var(--transition);
 }
 
 .settings-item:hover {
     transform: translateX(3px);
 
     background: var(--green-soft);
+
+    border-color: var(--green-light);
 }
 
 
 /* =========================================================
-   21. FORM STYLING
-   We'll use this when we create forms/modals.
-   ========================================================= */
-
-input,
-select,
-textarea {
-    width: 100%;
-
-    padding: 12px 14px;
-
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-
-    outline: none;
-
-    color: var(--text);
-    background: var(--surface);
-
-    transition:
-        border var(--transition),
-        box-shadow var(--transition);
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-    border-color: var(--green);
-
-    box-shadow: 0 0 0 3px rgba(36, 92, 66, 0.1);
-}
-
-label {
-    display: block;
-
-    margin-bottom: 6px;
-
-    color: var(--charcoal);
-
-    font-size: 0.78rem;
-    font-weight: 700;
-}
-
-
-/* =========================================================
-   22. BOTTOM NAVIGATION
+   39. BOTTOM NAVIGATION
    ========================================================= */
 
 .bottom-nav {
     position: fixed;
+
     left: 50%;
     bottom: 0;
+
     z-index: 200;
 
-    width: min(700px, 100%);
+    width: min(760px, 100%);
 
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+
+    /* Six navigation buttons */
+    grid-template-columns: repeat(6, 1fr);
 
     padding:
         8px
@@ -1265,6 +1783,7 @@ label {
     background: rgba(255, 255, 255, 0.96);
 
     backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 
     box-shadow:
         0 -8px 26px rgba(20, 40, 30, 0.08);
@@ -1305,17 +1824,46 @@ label {
 
 .nav-button:hover {
     color: var(--green-dark);
+
+    background: rgba(237, 245, 236, 0.55);
 }
 
 .nav-button.active {
     color: var(--green-dark);
+
     background: var(--green-soft);
 }
 
 
+/* Highlight Money button slightly */
+
+.nav-button[data-page="money"] .nav-icon {
+    width: 29px;
+    height: 29px;
+
+    display: grid;
+    place-items: center;
+
+    margin-top: -6px;
+
+    border-radius: 50%;
+
+    background: var(--green-dark);
+
+    color: white;
+
+    font-size: 1.15rem;
+
+    box-shadow: 0 4px 10px rgba(22, 59, 43, 0.2);
+}
+
+.nav-button[data-page="money"].active .nav-icon {
+    background: var(--green);
+}
+
+
 /* =========================================================
-   23. MONEY UTILITY CLASSES
-   Useful later in JavaScript
+   40. MONEY UTILITY CLASSES
    ========================================================= */
 
 .money-positive {
@@ -1340,7 +1888,7 @@ label {
 
 
 /* =========================================================
-   24. SCROLLBAR
+   41. SCROLLBAR
    ========================================================= */
 
 ::-webkit-scrollbar {
@@ -1363,8 +1911,32 @@ label {
 }
 
 
+/* Popup scrollbar */
+
+.money-modal-body::-webkit-scrollbar-track {
+    background: var(--surface-soft);
+}
+
+.money-modal-body::-webkit-scrollbar-thumb {
+    border-color: var(--surface-soft);
+}
+
+
 /* =========================================================
-   25. TABLET / SMALL LAPTOP
+   42. ACCESSIBILITY FOCUS
+   ========================================================= */
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid rgba(36, 92, 66, 0.2);
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   43. TABLET / SMALL LAPTOP
    ========================================================= */
 
 @media (max-width: 800px) {
@@ -1373,31 +1945,79 @@ label {
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .money-action-grid {
+        grid-template-columns: 1fr;
+    }
+
 }
 
 
 /* =========================================================
-   26. MOBILE
+   44. MOBILE
    ========================================================= */
 
 @media (max-width: 600px) {
+
+    :root {
+        --nav-height: 78px;
+    }
+
+
+    /* Header */
 
     .header-content {
         padding: 17px 16px;
     }
 
+    .month-navigation {
+        flex-wrap: wrap;
+    }
+
+    .month-select {
+        min-width: 115px;
+    }
+
+    .year-select {
+        min-width: 80px;
+    }
+
+    .today-button {
+        padding: 8px 10px;
+    }
+
+
+    /* Main */
+
     .app-content {
         padding:
             22px
             15px
-            calc(var(--nav-height) + 34px);
+            calc(var(--nav-height) + 36px);
     }
+
+
+    /* Heading */
 
     .page-heading {
         flex-direction: column;
 
         gap: 12px;
     }
+
+    .page-heading .primary-button,
+    .page-heading .secondary-button {
+        width: 100%;
+    }
+
+    .page-actions {
+        width: 100%;
+
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+
+    /* Balance */
 
     .balance-card {
         padding: 24px 20px;
@@ -1407,19 +2027,32 @@ label {
         grid-template-columns: 1fr 1fr;
     }
 
+
+    /* Sections */
+
     .dashboard-section,
     .budget-block,
-    .settings-section {
+    .settings-section,
+    .money-management-section {
         padding: 18px;
     }
+
+
+    /* Summary */
 
     .summary-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 
+
+    /* Info */
+
     .info-card {
         grid-template-columns: 1fr;
     }
+
+
+    /* Amount */
 
     .amount-display {
         align-items: flex-start;
@@ -1427,6 +2060,9 @@ label {
 
         gap: 5px;
     }
+
+
+    /* Tables */
 
     .table-container {
         overflow-x: auto;
@@ -1436,11 +2072,110 @@ label {
         min-width: 620px;
     }
 
+
+    /* Money Management */
+
+    .money-action-grid {
+        grid-template-columns: 1fr;
+
+        gap: 11px;
+    }
+
+    .money-action-card {
+        min-height: 88px;
+
+        padding: 15px;
+    }
+
+    .money-action-icon {
+        width: 44px;
+        height: 44px;
+
+        font-size: 1.2rem;
+    }
+
+
+    /* Modal */
+
+    .money-modal {
+        align-items: flex-end;
+
+        padding: 0;
+    }
+
+    .money-modal-content {
+        width: 100%;
+        max-height: 92dvh;
+
+        border-radius: 24px 24px 0 0;
+
+        animation: moneyModalMobileOpen 0.28s ease;
+    }
+
+    @keyframes moneyModalMobileOpen {
+
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    }
+
+    .money-modal-header {
+        padding: 19px 18px 16px;
+    }
+
+    .money-modal-body {
+        padding: 20px 18px;
+    }
+
+    .money-modal-status {
+        padding: 0 18px;
+    }
+
+    .money-modal-actions {
+        padding:
+            15px
+            18px
+            calc(15px + env(safe-area-inset-bottom));
+    }
+
+
+    /* Navigation */
+
+    .bottom-nav {
+        width: 100%;
+
+        border-radius: 18px 18px 0 0;
+    }
+
+    .nav-button {
+        padding: 7px 2px;
+
+        font-size: 0.6rem;
+    }
+
+    .nav-icon {
+        font-size: 1.1rem;
+    }
+
+    .nav-button[data-page="money"] .nav-icon {
+        width: 27px;
+        height: 27px;
+
+        font-size: 1rem;
+    }
+
 }
 
 
 /* =========================================================
-   27. EXTRA SMALL PHONES
+   45. EXTRA SMALL PHONES
    ========================================================= */
 
 @media (max-width: 390px) {
@@ -1453,19 +2188,59 @@ label {
         grid-template-columns: 1fr;
     }
 
+
+    /* Stack Savings buttons */
+
+    .page-actions {
+        grid-template-columns: 1fr;
+    }
+
+
+    /* Modal buttons */
+
+    .money-modal-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .money-modal-actions button {
+        width: 100%;
+        min-width: 0;
+    }
+
+
+    /* Smaller nav labels */
+
     .nav-button {
-        font-size: 0.61rem;
+        font-size: 0.55rem;
     }
 
     .nav-icon {
-        font-size: 1.1rem;
+        font-size: 1rem;
+    }
+
+
+    /* Action card */
+
+    .money-action-card {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+
+        gap: 11px;
+    }
+
+    .money-action-content strong {
+        font-size: 0.9rem;
+    }
+
+    .money-action-content small {
+        font-size: 0.72rem;
     }
 
 }
 
 
 /* =========================================================
-   28. DESKTOP
+   46. DESKTOP
    ========================================================= */
 
 @media (min-width: 1000px) {
@@ -1479,8 +2254,27 @@ label {
     }
 
     .dashboard-section,
-    .budget-block {
+    .budget-block,
+    .money-management-section {
         padding: 26px;
+    }
+
+}
+
+
+/* =========================================================
+   47. REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 
 }

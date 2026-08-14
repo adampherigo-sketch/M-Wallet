@@ -1,3240 +1,2002 @@
 /* =========================================================
    BUDGET TRACKER
-   Main Application
+   Main Application / Rendering
+   app.js
    ========================================================= */
 
 
-document.addEventListener("DOMContentLoaded", () => {
+/* =========================================================
+   1. MAIN APP OBJECT
+   ========================================================= */
+
+const BudgetApp = {
+
+    initialized: false,
 
 
     /* =====================================================
-       1. MAKE SURE STORAGE EXISTS
+       2. INITIALIZE APP
        ===================================================== */
 
-    if (typeof BudgetStorage === "undefined") {
+    init() {
 
-        console.error(
-            "BudgetStorage was not found. Make sure storage.js loads before app.js."
+        if (this.initialized) {
+            return;
+        }
+
+        this.initialized = true;
+
+
+        if (!window.BudgetStorage) {
+
+            console.error(
+                "BudgetStorage is not available. Make sure storage.js loads before app.js."
+            );
+
+            return;
+        }
+
+
+        this.bindEvents();
+
+        this.refresh();
+
+        console.log(
+            "Budget Tracker app loaded."
         );
 
-        return;
-
-    }
+    },
 
 
     /* =====================================================
-       1B. MODAL MANAGEMENT SYSTEM
+       3. BIND APP EVENTS
        ===================================================== */
 
-    const ModalManager = {
+    bindEvents() {
 
-        currentEditId: null,
+        const monthSelect =
+            document.getElementById(
+                "month-select"
+            );
 
-        openModal(modalId) {
+        const yearSelect =
+            document.getElementById(
+                "year-select"
+            );
 
-            const modal = document.getElementById(modalId);
-            const overlay = document.getElementById("modal-overlay");
 
-            if (modal && overlay) {
-                modal.classList.add("active");
-                overlay.classList.add("active");
-                document.body.style.overflow = "hidden";
-            }
+        /* -------------------------------------------------
+           MONTH CHANGED
+           ------------------------------------------------- */
 
-        },
+        if (monthSelect) {
 
-        closeModal(modalId) {
+            monthSelect.addEventListener(
+                "change",
+                () => {
 
-            const modal = document.getElementById(modalId);
-            const overlay = document.getElementById("modal-overlay");
+                    this.refresh();
 
-            if (modal) {
-                modal.classList.remove("active");
-            }
-
-            if (overlay && !document.querySelector(".modal.active")) {
-                overlay.classList.remove("active");
-                document.body.style.overflow = "";
-            }
-
-        },
-
-        closeAllModals() {
-
-            document.querySelectorAll(".modal").forEach(modal => {
-                modal.classList.remove("active");
-            });
-
-            const overlay = document.getElementById("modal-overlay");
-            if (overlay) {
-                overlay.classList.remove("active");
-                document.body.style.overflow = "";
-            }
-
-        },
-
-        setupModalControls() {
-
-            // Close button clicks
-            document.querySelectorAll("[data-modal-close]").forEach(button => {
-                button.addEventListener("click", (e) => {
-                    const modalId = e.target.dataset.modalClose;
-                    this.closeModal(modalId);
-                });
-            });
-
-            // Overlay clicks
-            document.getElementById("modal-overlay")?.addEventListener("click", () => {
-                this.closeAllModals();
-            });
-
-            // Escape key
-            document.addEventListener("keydown", (e) => {
-                if (e.key === "Escape") {
-                    this.closeAllModals();
                 }
-            });
+            );
 
         }
 
-    };
 
-    ModalManager.setupModalControls();
+        /* -------------------------------------------------
+           YEAR CHANGED
+           ------------------------------------------------- */
+
+        if (yearSelect) {
+
+            yearSelect.addEventListener(
+                "change",
+                () => {
+
+                    this.refresh();
+
+                }
+            );
+
+        }
+
+
+        /* -------------------------------------------------
+           PREVIOUS / NEXT / TODAY
+
+           nav.js handles changing the selected month.
+
+           app.js waits until that change finishes,
+           then redraws the budget.
+           ------------------------------------------------- */
+
+        [
+            "previous-month",
+            "next-month",
+            "today-month"
+        ].forEach(buttonId => {
+
+            const button =
+                document.getElementById(
+                    buttonId
+                );
+
+
+            if (!button) {
+                return;
+            }
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    window.setTimeout(
+                        () => {
+
+                            this.refresh();
+
+                        },
+                        0
+                    );
+
+                }
+            );
+
+        });
+
+
+        /* -------------------------------------------------
+           MONEY SAVED
+
+           money.js fires:
+
+               budget:money-saved
+
+           immediately after something is stored.
+           ------------------------------------------------- */
+
+        document.addEventListener(
+            "budget:money-saved",
+            () => {
+
+                this.refresh();
+
+            }
+        );
+
+
+        /* -------------------------------------------------
+           OPTIONAL MONTH EVENT FROM NAV.JS
+           ------------------------------------------------- */
+
+        document.addEventListener(
+            "budget:month-changed",
+            () => {
+
+                this.refresh();
+
+            }
+        );
+
+
+        /* -------------------------------------------------
+           ANOTHER TAB CHANGED LOCAL STORAGE
+           ------------------------------------------------- */
+
+        window.addEventListener(
+            "storage",
+            event => {
+
+                if (
+                    event.key ===
+                    BudgetStorage.storageKey
+                ) {
+
+                    this.refresh();
+
+                }
+
+            }
+        );
+
+
+        /* -------------------------------------------------
+           SETTINGS BUTTONS
+           ------------------------------------------------- */
+
+        this.bindSettingsActions();
+
+    },
 
 
     /* =====================================================
-       2. APP SETTINGS
+       4. REFRESH ENTIRE APP
        ===================================================== */
 
-    const BudgetApp = {
+    /*
+        This is now the master redraw function.
 
-        currentMonthKey: BudgetStorage.getCurrentMonthKey(),
+        Anytime money changes:
 
-        currency: "USD",
+            Save
+            Month
+            Year
+            Reset
 
+        we call this one function.
+    */
 
-        /* =================================================
-           3. INITIALIZE APP
-           ================================================= */
+    refresh() {
 
-        init() {
+        try {
 
-            this.prepareCurrentMonth();
-
-            this.populateYearSelect();
-
-            this.connectMonthControls();
-
-            this.updateMonthControls();
-
-            this.updateMonthHeading();
-
-            this.connectButtons();
-
-            this.connectDynamicActions();
-
-            this.setupFormHandlers();
-
-            this.renderAll();
-
-            console.log("Budget Tracker app loaded.");
-
-        },
+            const monthKey =
+                BudgetStorage
+                    .getSelectedMonthKey();
 
 
-        /* =================================================
-           4. PREPARE CURRENT MONTH
-           ================================================= */
-
-        prepareCurrentMonth() {
-
-            const data = BudgetStorage.load();
-
-            /*
-                If the current month already exists,
-                don't do anything.
-            */
-
-            if (data.months[this.currentMonthKey]) {
-                return;
-            }
-
-
-            /*
-                Check whether the previous month exists.
-
-                If it does, automatically carry the
-                previous ending balance into this month.
-            */
-
-            const previousMonthKey =
-                this.getPreviousMonthKey(
-                    this.currentMonthKey
-                );
-
-
-            if (data.months[previousMonthKey]) {
-
-                BudgetStorage.rolloverMonth(
-                    previousMonthKey,
-                    this.currentMonthKey
-                );
-
-            } else {
-
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-            }
-
-        },
-
-        /* =================================================
-           YEAR DROPDOWN
-           ================================================= */
-
-        populateYearSelect() {
-
-            const select =
-                document.getElementById(
-                    "year-select"
-                );
-
-
-            if (!select) {
-                return;
-            }
-
-
-            const data =
-                BudgetStorage.load();
-
-
-            const currentYear =
-                new Date().getFullYear();
-
-
-            /*
-                Default range:
-                5 years back
-                through
-                10 years forward
-            */
-
-            let minimumYear =
-                currentYear - 5;
-
-            let maximumYear =
-                currentYear + 10;
-
-
-            /*
-                If saved budgets exist outside that
-                range, include those too.
-            */
-
-            Object.keys(
-                data.months
-            ).forEach(monthKey => {
-
-                const year =
-                    Number(
-                        monthKey.split("-")[0]
+            const snapshot =
+                BudgetStorage
+                    .getMonthSnapshot(
+                        monthKey
                     );
 
 
-                minimumYear =
-                    Math.min(
-                        minimumYear,
-                        year
-                    );
+            this.updateCurrentMonthTitle();
+
+            this.renderDashboard(
+                snapshot
+            );
+
+            this.renderBudget(
+                snapshot
+            );
+
+            this.renderTransactions(
+                snapshot
+            );
+
+            this.renderSavings(
+                snapshot
+            );
 
 
-                maximumYear =
-                    Math.max(
-                        maximumYear,
-                        year
-                    );
+            /*
+                Future parts of the app can listen
+                for this if needed.
+            */
 
-            });
+            document.dispatchEvent(
 
-
-            select.innerHTML = "";
-
-
-            for (
-                let year = minimumYear;
-                year <= maximumYear;
-                year++
-            ) {
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-
-                option.value =
-                    year;
-
-
-                option.textContent =
-                    year;
-
-
-                select.appendChild(
-                    option
-                );
-
-            }
-
-        },
-
-        /* =================================================
-           CONNECT MONTH CONTROLS
-           ================================================= */
-
-        connectMonthControls() {
-
-            const monthSelect =
-                document.getElementById(
-                    "month-select"
-                );
-
-
-            const yearSelect =
-                document.getElementById(
-                    "year-select"
-                );
-
-
-            const previousButton =
-                document.getElementById(
-                    "previous-month"
-                );
-
-
-            const nextButton =
-                document.getElementById(
-                    "next-month"
-                );
-
-
-            const todayButton =
-                document.getElementById(
-                    "today-month"
-                );
-
-
-            /* ---------------------------------------------
-               Change Month Dropdown
-            --------------------------------------------- */
-
-            monthSelect
-                ?.addEventListener(
-                    "change",
-                    () => {
-
-                        this.goToSelectedMonth();
-
+                new CustomEvent(
+                    "budget:app-refreshed",
+                    {
+                        detail: {
+                            monthKey,
+                            snapshot
+                        }
                     }
+                )
+
+            );
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Budget Tracker could not refresh:",
+                error
+            );
+
+        }
+
+    },
+
+
+    /* =====================================================
+       5. UPDATE CURRENT MONTH HEADING
+       ===================================================== */
+
+    updateCurrentMonthTitle() {
+
+        const monthSelect =
+            document.getElementById(
+                "month-select"
+            );
+
+        const yearSelect =
+            document.getElementById(
+                "year-select"
+            );
+
+        const title =
+            document.getElementById(
+                "current-month"
+            );
+
+
+        if (
+            !monthSelect ||
+            !yearSelect ||
+            !title
+        ) {
+            return;
+        }
+
+
+        const selectedOption =
+            monthSelect.options[
+                monthSelect.selectedIndex
+            ];
+
+
+        const monthName =
+            selectedOption
+                ? selectedOption.textContent
+                : "";
+
+
+        title.textContent =
+            `${monthName} ${yearSelect.value}`;
+
+    },
+
+
+    /* =====================================================
+       6. RENDER DASHBOARD
+       ===================================================== */
+
+    renderDashboard(snapshot) {
+
+        const summary =
+            snapshot.summary;
+
+
+        /* -------------------------------------------------
+           MAIN BALANCE
+           ------------------------------------------------- */
+
+        this.setMoneyText(
+            "checking-balance",
+            summary.endingBalance
+        );
+
+
+        this.setMoneyText(
+            "monthly-remaining",
+            summary.remaining
+        );
+
+
+        this.setMoneyText(
+            "monthly-savings",
+            summary.savings
+        );
+
+
+        /* -------------------------------------------------
+           MONTH SUMMARY
+           ------------------------------------------------- */
+
+        this.setMoneyText(
+            "total-income",
+            summary.income
+        );
+
+
+        this.setMoneyText(
+            "total-bills",
+            summary.bills
+        );
+
+
+        this.setMoneyText(
+            "total-expenses",
+            summary.expenses
+        );
+
+
+        this.setMoneyText(
+            "total-savings",
+            summary.savings
+        );
+
+
+        /* -------------------------------------------------
+           DASHBOARD SECTIONS
+           ------------------------------------------------- */
+
+        this.renderUpcomingBills(
+            snapshot
+        );
+
+
+        this.renderNextPaycheck(
+            snapshot
+        );
+
+
+        this.renderDashboardSavings(
+            snapshot
+        );
+
+    },
+
+
+    /* =====================================================
+       7. UPCOMING BILLS
+       ===================================================== */
+
+    renderUpcomingBills(snapshot) {
+
+        const container =
+            document.getElementById(
+                "upcoming-bills"
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        const monthKey =
+            snapshot.monthKey;
+
+
+        const currentMonthKey =
+            BudgetStorage
+                .getCurrentMonthKey();
+
+
+        const today =
+            this.getTodayKey();
+
+
+        const bills =
+            [...snapshot.bills]
+
+                .filter(
+                    bill =>
+                        !bill.paid
+                )
+
+                .sort(
+                    (a, b) =>
+                        this.compareDates(
+                            a.dueDate,
+                            b.dueDate
+                        )
+                )
+
+                .slice(
+                    0,
+                    5
                 );
 
 
-            /* ---------------------------------------------
-               Change Year Dropdown
-            --------------------------------------------- */
+        if (
+            bills.length === 0
+        ) {
 
-            yearSelect
-                ?.addEventListener(
-                    "change",
-                    () => {
+            container.innerHTML = `
 
-                        this.goToSelectedMonth();
+                <p class="empty-message">
+                    No upcoming bills.
+                </p>
 
-                    }
-                );
+            `;
 
+            return;
 
-            /* ---------------------------------------------
-               Previous Month
-            --------------------------------------------- */
-
-            previousButton
-                ?.addEventListener(
-                    "click",
-                    () => {
-
-                        this.changeMonth(-1);
-
-                    }
-                );
+        }
 
 
-            /* ---------------------------------------------
-               Next Month
-            --------------------------------------------- */
+        container.innerHTML =
+            bills.map(bill => {
 
-            nextButton
-                ?.addEventListener(
-                    "click",
-                    () => {
+                const overdue =
+                    monthKey ===
+                        currentMonthKey &&
 
-                        this.changeMonth(1);
-
-                    }
-                );
+                    bill.dueDate &&
+                    bill.dueDate < today;
 
 
-            /* ---------------------------------------------
-               Return to Actual Current Month
-            --------------------------------------------- */
-
-            todayButton
-                ?.addEventListener(
-                    "click",
-                    () => {
-
-                        this.currentMonthKey =
-                            BudgetStorage
-                                .getCurrentMonthKey();
-
-
-                        this.prepareMonth(
-                            this.currentMonthKey
+                const status =
+                    overdue
+                        ? "Overdue"
+                        : this.formatDate(
+                            bill.dueDate
                         );
 
 
-                        this.refreshViewedMonth();
+                return `
 
-                    }
-                );
+                    <article class="transaction-item">
 
-        },
-
-        /* =================================================
-           GO TO SELECTED MONTH
-           ================================================= */
-
-        goToSelectedMonth() {
-
-            const monthSelect =
-                document.getElementById(
-                    "month-select"
-                );
+                        <div class="transaction-icon">
+                            🧾
+                        </div>
 
 
-            const yearSelect =
-                document.getElementById(
-                    "year-select"
-                );
+                        <div class="transaction-info">
+
+                            <strong>
+                                ${this.escapeHTML(
+                                    bill.name
+                                )}
+                            </strong>
+
+                            <span>
+                                ${this.escapeHTML(
+                                    bill.category ||
+                                    "Bill"
+                                )}
+                                ·
+                                ${status}
+                            </span>
+
+                        </div>
 
 
-            if (
-                !monthSelect
-                ||
-                !yearSelect
-            ) {
-                return;
-            }
+                        <div class="transaction-amount expense">
+                            ${this.formatCurrency(
+                                -Math.abs(
+                                    Number(
+                                        bill.amount
+                                    )
+                                )
+                            )}
+                        </div>
+
+                    </article>
+
+                `;
+
+            }).join("");
+
+    },
 
 
-            const month =
-                monthSelect.value;
+    /* =====================================================
+       8. NEXT PAYCHECK
+       ===================================================== */
 
+    renderNextPaycheck(snapshot) {
 
-            const year =
-                yearSelect.value;
+        const dateElement =
+            document.getElementById(
+                "next-pay-date"
+            );
 
-
-            this.currentMonthKey =
-                `${year}-${month}`;
-
-
-            this.prepareMonth(
-                this.currentMonthKey
+        const amountElement =
+            document.getElementById(
+                "next-pay-amount"
             );
 
 
-            this.refreshViewedMonth();
-
-        },
-
-        /* =================================================
-           MOVE FORWARD / BACKWARD MONTH
-           ================================================= */
-
-        changeMonth(direction) {
-
-            const [year, month] =
-                this.currentMonthKey
-                    .split("-")
-                    .map(Number);
+        if (
+            !dateElement ||
+            !amountElement
+        ) {
+            return;
+        }
 
 
-            const date =
-                new Date(
-                    year,
-                    month - 1 + direction,
-                    1
+        let paychecks =
+            [...snapshot.paychecks]
+
+                .filter(
+                    paycheck =>
+                        paycheck.payDate
+                )
+
+                .sort(
+                    (a, b) =>
+                        this.compareDates(
+                            a.payDate,
+                            b.payDate
+                        )
                 );
 
-
-            this.currentMonthKey =
-                this.createMonthKey(
-                    date
-                );
-
-
-            this.prepareMonth(
-                this.currentMonthKey
-            );
-
-
-            /*
-                If we move outside the currently
-                generated year dropdown range,
-                rebuild it.
-            */
-
-            this.populateYearSelect();
-
-
-            this.refreshViewedMonth();
-
-        },
-
-        /* =================================================
-           REFRESH VIEWED MONTH
-           ================================================= */
-
-        refreshViewedMonth() {
-
-            this.updateMonthControls();
-
-            this.updateMonthHeading();
-
-            this.renderAll();
-
-        },
-
-        /* =================================================
-           UPDATE MONTH / YEAR CONTROLS
-           ================================================= */
-
-        updateMonthControls() {
-
-            const monthSelect =
-                document.getElementById(
-                    "month-select"
-                );
-
-
-            const yearSelect =
-                document.getElementById(
-                    "year-select"
-                );
-
-
-            const [year, month] =
-                this.currentMonthKey
-                    .split("-");
-
-
-            if (monthSelect) {
-
-                monthSelect.value =
-                    month;
-
-            }
-
-
-            if (yearSelect) {
-
-                yearSelect.value =
-                    year;
-
-            }
-
-        },
-
-/* =================================================
-   PREPARE ANY VIEWED MONTH
-   ================================================= */
-
-prepareMonth(monthKey) {
-
-    const data =
-        BudgetStorage.load();
-
-
-    /*
-        Month already exists.
-    */
-
-    if (data.months[monthKey]) {
-        return;
-    }
-
-
-    const previousMonthKey =
-        this.getPreviousMonthKey(
-            monthKey
-        );
-
-
-    /*
-        If the month before this one exists,
-        carry its ending balance forward.
-
-        This also copies recurring bills.
-    */
-
-    if (data.months[previousMonthKey]) {
-
-        BudgetStorage.rolloverMonth(
-            previousMonthKey,
-            monthKey
-        );
-
-    } else {
 
         /*
-            Otherwise create a fresh empty month.
+            When looking at the current month,
+            "Next Paycheck" should actually mean
+            today or later.
         */
 
-        BudgetStorage.getMonth(
-            monthKey
-        );
-
-    }
-
-},
-
-        /* =================================================
-           5. GET PREVIOUS MONTH
-           ================================================= */
-
-        getPreviousMonthKey(monthKey) {
-
-            const [year, month] =
-                monthKey.split("-").map(Number);
-
-            const date =
-                new Date(year, month - 2, 1);
-
-            return this.createMonthKey(date);
-
-        },
-
-
-        /* =================================================
-           6. CREATE MONTH KEY
-           ================================================= */
-
-        createMonthKey(date) {
-
-            const year =
-                date.getFullYear();
-
-            const month =
-                String(
-                    date.getMonth() + 1
-                ).padStart(2, "0");
-
-            return `${year}-${month}`;
-
-        },
-
-
-        /* =================================================
-           7. MONTH HEADING
-           ================================================= */
-
-        updateMonthHeading() {
-
-            const heading =
-                document.getElementById(
-                    "current-month"
-                );
-
-            if (!heading) {
-                return;
-            }
-
-
-            const [year, month] =
-                this.currentMonthKey
-                    .split("-")
-                    .map(Number);
-
-
-            const date =
-                new Date(
-                    year,
-                    month - 1,
-                    1
-                );
-
-
-            heading.textContent =
-                date.toLocaleDateString(
-                    undefined,
-                    {
-                        month: "long",
-                        year: "numeric"
-                    }
-                );
-
-        },
-
-
-        /* =================================================
-           8. FORMAT MONEY
-           ================================================= */
-
-        formatMoney(amount) {
-
-            const number =
-                Number(amount) || 0;
-
-
-            return new Intl.NumberFormat(
-                undefined,
-                {
-                    style: "currency",
-                    currency: this.currency
-                }
-            ).format(number);
-
-        },
-
-
-        /* =================================================
-           9. FORMAT DATE
-           ================================================= */
-
-        formatDate(dateValue) {
-
-            if (!dateValue) {
-                return "—";
-            }
-
-
-            /*
-                Parse YYYY-MM-DD as a local date instead
-                of UTC so dates don't shift backward.
-            */
-
-            const parts =
-                dateValue.split("-");
-
-
-            if (parts.length === 3) {
-
-                const date =
-                    new Date(
-                        Number(parts[0]),
-                        Number(parts[1]) - 1,
-                        Number(parts[2])
-                    );
-
-
-                return date.toLocaleDateString(
-                    undefined,
-                    {
-                        month: "short",
-                        day: "numeric"
-                    }
-                );
-
-            }
-
-
-            return dateValue;
-
-        },
-
-
-        /* =================================================
-           10. TODAY AS YYYY-MM-DD
-           ================================================= */
-
-        getToday() {
+        if (
+            snapshot.monthKey ===
+            BudgetStorage.getCurrentMonthKey()
+        ) {
 
             const today =
-                new Date();
+                this.getTodayKey();
 
 
-            const year =
-                today.getFullYear();
+            paychecks =
+                paychecks.filter(
+                    paycheck =>
+                        paycheck.payDate >=
+                        today
+                );
 
-            const month =
-                String(
-                    today.getMonth() + 1
-                ).padStart(2, "0");
-
-            const day =
-                String(
-                    today.getDate()
-                ).padStart(2, "0");
+        }
 
 
-            return `${year}-${month}-${day}`;
-
-        },
-
-
-        /* =================================================
-           11. ESCAPE USER TEXT
-           ================================================= */
-
-        escapeHTML(value) {
-
-            return String(value ?? "")
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll('"', "&quot;")
-                .replaceAll("'", "&#039;");
-
-        },
+        const nextPaycheck =
+            paychecks[0];
 
 
-        /* =================================================
-           12. SET ELEMENT TEXT
-           ================================================= */
+        if (!nextPaycheck) {
 
-        setText(id, value) {
+            dateElement.textContent =
+                "—";
 
-            const element =
-                document.getElementById(id);
 
-            if (element) {
-                element.textContent = value;
+            amountElement.textContent =
+                this.formatCurrency(0);
+
+
+            return;
+
+        }
+
+
+        dateElement.textContent =
+            this.formatDate(
+                nextPaycheck.payDate
+            );
+
+
+        amountElement.textContent =
+            this.formatCurrency(
+                nextPaycheck.amount
+            );
+
+    },
+
+
+    /* =====================================================
+       9. DASHBOARD SAVINGS OVERVIEW
+       ===================================================== */
+
+    renderDashboardSavings(snapshot) {
+
+        const container =
+            document.getElementById(
+                "savings-overview"
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        const goals =
+            snapshot.savingsGoals.slice(
+                0,
+                3
+            );
+
+
+        if (
+            goals.length === 0
+        ) {
+
+            if (
+                snapshot.summary.savings > 0
+            ) {
+
+                container.innerHTML = `
+
+                    <article class="savings-goal-card">
+
+                        <div class="savings-goal-header">
+
+                            <span>
+                                Saved this month
+                            </span>
+
+                            <strong>
+                                ${this.formatCurrency(
+                                    snapshot.summary.savings
+                                )}
+                            </strong>
+
+                        </div>
+
+                    </article>
+
+                `;
+
+                return;
+
             }
 
-        },
+
+            container.innerHTML = `
+
+                <p class="empty-message">
+                    No savings goals yet.
+                </p>
+
+            `;
+
+            return;
+
+        }
 
 
-        /* =================================================
-           13. RENDER EVERYTHING
-           ================================================= */
+        container.innerHTML =
+            goals.map(
+                goal =>
+                    this.createSavingsGoalHTML(
+                        goal
+                    )
+            ).join("");
 
-        renderAll() {
-
-            this.renderDashboard();
-
-            this.renderPaychecks();
-
-            this.renderBills();
-
-            this.renderExpenses();
-
-            this.renderTransactions();
-
-            this.renderSavings();
-
-            this.renderReports();
-
-        },
+    },
 
 
-        /* =================================================
-           14. DASHBOARD
-           ================================================= */
+    /* =====================================================
+       10. RENDER MONTHLY BUDGET PAGE
+       ===================================================== */
 
-        renderDashboard() {
+    renderBudget(snapshot) {
 
-            const summary =
-                BudgetStorage.getMonthlySummary(
-                    this.currentMonthKey
-                );
+        this.setMoneyText(
+            "starting-balance",
+            snapshot.startingBalance
+        );
 
 
-            /*
-                Main figures
-            */
+        this.renderPaycheckTable(
+            snapshot.paychecks
+        );
 
-            this.setText(
-                "checking-balance",
-                this.formatMoney(
-                    summary.endingBalance
-                )
+
+        this.renderBillTable(
+            snapshot.bills
+        );
+
+
+        this.renderExpenseTable(
+            snapshot.expenses
+        );
+
+    },
+
+
+    /* =====================================================
+       11. PAYCHECK TABLE
+       ===================================================== */
+
+    renderPaycheckTable(paychecks) {
+
+        const container =
+            document.getElementById(
+                "paycheck-list"
             );
 
 
-            this.setText(
-                "monthly-remaining",
-                this.formatMoney(
-                    summary.remaining
-                )
+        if (!container) {
+            return;
+        }
+
+
+        if (
+            paychecks.length === 0
+        ) {
+
+            container.innerHTML = `
+
+                <p class="empty-message">
+                    No paychecks added.
+                </p>
+
+            `;
+
+            return;
+
+        }
+
+
+        const sorted =
+            [...paychecks].sort(
+                (a, b) =>
+                    this.compareDates(
+                        a.payDate,
+                        b.payDate
+                    )
             );
 
 
-            this.setText(
-                "monthly-savings",
-                this.formatMoney(
-                    summary.savings
-                )
+        container.innerHTML = `
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Paycheck</th>
+                        <th>Pay Date</th>
+                        <th>Hours</th>
+                        <th>Amount</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    ${sorted.map(paycheck => `
+
+                        <tr>
+
+                            <td>
+                                ${this.escapeHTML(
+                                    paycheck.name
+                                )}
+                            </td>
+
+                            <td>
+                                ${this.formatDate(
+                                    paycheck.payDate
+                                )}
+                            </td>
+
+                            <td>
+                                ${this.formatHours(
+                                    paycheck.hours
+                                )}
+                            </td>
+
+                            <td class="money-positive">
+                                ${this.formatCurrency(
+                                    paycheck.amount
+                                )}
+                            </td>
+
+                        </tr>
+
+                    `).join("")}
+
+                </tbody>
+
+            </table>
+
+        `;
+
+    },
+
+
+    /* =====================================================
+       12. BILL TABLE
+       ===================================================== */
+
+    renderBillTable(bills) {
+
+        const container =
+            document.getElementById(
+                "bill-list"
             );
 
 
-            /*
-                Summary cards
-            */
+        if (!container) {
+            return;
+        }
 
-            this.setText(
-                "total-income",
-                this.formatMoney(
-                    summary.income
-                )
+
+        if (
+            bills.length === 0
+        ) {
+
+            container.innerHTML = `
+
+                <p class="empty-message">
+                    No bills added.
+                </p>
+
+            `;
+
+            return;
+
+        }
+
+
+        const sorted =
+            [...bills].sort(
+                (a, b) =>
+                    this.compareDates(
+                        a.dueDate,
+                        b.dueDate
+                    )
             );
 
 
-            this.setText(
-                "total-bills",
-                this.formatMoney(
-                    summary.bills
-                )
+        container.innerHTML = `
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Bill</th>
+                        <th>Due</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Repeats</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    ${sorted.map(bill => `
+
+                        <tr>
+
+                            <td>
+                                ${this.escapeHTML(
+                                    bill.name
+                                )}
+                            </td>
+
+                            <td>
+                                ${this.formatDate(
+                                    bill.dueDate
+                                )}
+                            </td>
+
+                            <td>
+                                ${this.escapeHTML(
+                                    bill.category ||
+                                    "Other"
+                                )}
+                            </td>
+
+                            <td class="money-negative">
+                                ${this.formatCurrency(
+                                    bill.amount
+                                )}
+                            </td>
+
+                            <td>
+                                ${bill.recurring
+                                    ? "Yes"
+                                    : "No"}
+                            </td>
+
+                        </tr>
+
+                    `).join("")}
+
+                </tbody>
+
+            </table>
+
+        `;
+
+    },
+
+
+    /* =====================================================
+       13. EXPENSE TABLE
+       ===================================================== */
+
+    renderExpenseTable(expenses) {
+
+        const container =
+            document.getElementById(
+                "expense-list"
             );
 
 
-            this.setText(
-                "total-expenses",
-                this.formatMoney(
-                    summary.expenses
-                )
+        if (!container) {
+            return;
+        }
+
+
+        if (
+            expenses.length === 0
+        ) {
+
+            container.innerHTML = `
+
+                <p class="empty-message">
+                    No expenses added.
+                </p>
+
+            `;
+
+            return;
+
+        }
+
+
+        const sorted =
+            [...expenses].sort(
+                (a, b) =>
+                    this.compareDates(
+                        b.date,
+                        a.date
+                    )
             );
 
 
-            this.setText(
-                "total-savings",
-                this.formatMoney(
-                    summary.savings
-                )
+        container.innerHTML = `
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Expense</th>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    ${sorted.map(expense => `
+
+                        <tr>
+
+                            <td>
+                                ${this.escapeHTML(
+                                    expense.name
+                                )}
+                            </td>
+
+                            <td>
+                                ${this.formatDate(
+                                    expense.date
+                                )}
+                            </td>
+
+                            <td>
+                                ${this.escapeHTML(
+                                    expense.category ||
+                                    "Other"
+                                )}
+                            </td>
+
+                            <td class="money-negative">
+                                ${this.formatCurrency(
+                                    expense.amount
+                                )}
+                            </td>
+
+                        </tr>
+
+                    `).join("")}
+
+                </tbody>
+
+            </table>
+
+        `;
+
+    },
+
+
+    /* =====================================================
+       14. TRANSACTION / ACTIVITY PAGE
+       ===================================================== */
+
+    renderTransactions(snapshot) {
+
+        const container =
+            document.getElementById(
+                "transaction-list"
             );
 
 
-            /*
-                Starting balance
-            */
-
-            this.setText(
-                "starting-balance",
-                this.formatMoney(
-                    summary.startingBalance
-                )
-            );
+        if (!container) {
+            return;
+        }
 
 
-            this.renderUpcomingBills();
-
-            this.renderNextPaycheck();
-
-        },
+        const transactions =
+            snapshot.transactions;
 
 
-        /* =================================================
-           15. CREATE RUNNING BALANCE LOOKUP
-           ================================================= */
+        if (
+            transactions.length === 0
+        ) {
 
-        getRunningBalanceMap() {
+            container.innerHTML = `
 
-            const running =
-                BudgetStorage.getRunningBalance(
-                    this.currentMonthKey
-                );
+                <p class="empty-message">
+                    No transactions yet.
+                </p>
+
+            `;
+
+            return;
+
+        }
 
 
-            const map =
-                new Map();
-
-
-            running.forEach(
+        container.innerHTML =
+            transactions.map(
                 transaction => {
 
-                    map.set(
-                        transaction.id,
-                        transaction
-                    );
+                    const amount =
+                        Number(
+                            transaction.amount
+                        ) || 0;
 
-                }
-            );
 
+                    const isIncome =
+                        amount >= 0;
 
-            return map;
 
-        },
+                    const icon =
+                        this.getTransactionIcon(
+                            transaction
+                        );
 
 
-        /* =================================================
-           16. PAYCHECK TABLE
-           ================================================= */
+                    const subtitle =
+                        this.getTransactionSubtitle(
+                            transaction
+                        );
 
-        renderPaychecks() {
 
-            const container =
-                document.getElementById(
-                    "paycheck-list"
-                );
+                    return `
 
-
-            if (!container) {
-                return;
-            }
-
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-
-            if (!month.paychecks.length) {
-
-                container.innerHTML = `
-                    <p class="empty-message">
-                        No paychecks added.
-                    </p>
-                `;
-
-                return;
-
-            }
-
-
-            const balances =
-                this.getRunningBalanceMap();
-
-
-            const paychecks =
-                [...month.paychecks]
-                    .sort(
-                        (a, b) =>
-                            a.payDate.localeCompare(
-                                b.payDate
-                            )
-                    );
-
-
-            const rows =
-                paychecks
-                    .map(paycheck => {
-
-                        const running =
-                            balances.get(
-                                paycheck.id
-                            );
-
-
-                        return `
-                            <tr>
-
-                                <td>
-                                    ${this.formatDate(
-                                        paycheck.payDate
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${this.escapeHTML(
-                                        paycheck.name
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${Number(
-                                        paycheck.hours
-                                    ).toFixed(1)}
-                                </td>
-
-                                <td class="money-positive">
-                                    +${this.formatMoney(
-                                        paycheck.amount
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${this.formatMoney(
-                                        running?.balanceBefore
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${this.formatMoney(
-                                        running?.balanceAfter
-                                    )}
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="text-button"
-                                        data-action="edit-paycheck"
-                                        data-id="${paycheck.id}"
-                                        type="button"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    &nbsp;
-
-                                    <button
-                                        class="text-button"
-                                        data-action="delete-paycheck"
-                                        data-id="${paycheck.id}"
-                                        type="button"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </td>
-
-                            </tr>
-                        `;
-
-                    })
-                    .join("");
-
-
-            container.innerHTML = `
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Pay Date</th>
-
-                            <th>Paycheck</th>
-
-                            <th>Hours</th>
-
-                            <th>Amount</th>
-
-                            <th>Before</th>
-
-                            <th>After</th>
-
-                            <th></th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        ${rows}
-
-                    </tbody>
-
-                </table>
-
-            `;
-
-        },
-
-
-        /* =================================================
-           17. BILLS TABLE
-           ================================================= */
-
-        renderBills() {
-
-            const container =
-                document.getElementById(
-                    "bill-list"
-                );
-
-
-            if (!container) {
-                return;
-            }
-
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-
-            if (!month.bills.length) {
-
-                container.innerHTML = `
-                    <p class="empty-message">
-                        No bills added.
-                    </p>
-                `;
-
-                return;
-
-            }
-
-
-            const balances =
-                this.getRunningBalanceMap();
-
-
-            const bills =
-                [...month.bills]
-                    .sort(
-                        (a, b) =>
-                            a.dueDate.localeCompare(
-                                b.dueDate
-                            )
-                    );
-
-
-            const rows =
-                bills
-                    .map(bill => {
-
-                        const running =
-                            balances.get(
-                                bill.id
-                            );
-
-
-                        return `
-
-                            <tr>
-
-                                <td>
-                                    ${this.escapeHTML(
-                                        bill.name
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${this.formatDate(
-                                        bill.dueDate
-                                    )}
-                                </td>
-
-                                <td class="money-negative">
-                                    -${this.formatMoney(
-                                        bill.amount
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${
-                                        bill.paid
-                                            ? "Paid"
-                                            : "Upcoming"
-                                    }
-                                </td>
-
-                                <td>
-                                    ${this.formatMoney(
-                                        running?.balanceBefore
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${this.formatMoney(
-                                        running?.balanceAfter
-                                    )}
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="text-button"
-                                        data-action="toggle-bill"
-                                        data-id="${bill.id}"
-                                        type="button"
-                                    >
-                                        ${
-                                            bill.paid
-                                                ? "Unpay"
-                                                : "Paid"
-                                        }
-                                    </button>
-
-                                    &nbsp;
-
-                                    <button
-                                        class="text-button"
-                                        data-action="edit-bill"
-                                        data-id="${bill.id}"
-                                        type="button"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    &nbsp;
-
-                                    <button
-                                        class="text-button"
-                                        data-action="delete-bill"
-                                        data-id="${bill.id}"
-                                        type="button"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        `;
-
-                    })
-                    .join("");
-
-
-            container.innerHTML = `
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Bill</th>
-
-                            <th>Due</th>
-
-                            <th>Amount</th>
-
-                            <th>Status</th>
-
-                            <th>Before</th>
-
-                            <th>After</th>
-
-                            <th></th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        ${rows}
-
-                    </tbody>
-
-                </table>
-
-            `;
-
-        },
-
-
-        /* =================================================
-           18. EXPENSE TABLE
-           ================================================= */
-
-        renderExpenses() {
-
-            const container =
-                document.getElementById(
-                    "expense-list"
-                );
-
-
-            if (!container) {
-                return;
-            }
-
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-
-            if (!month.expenses.length) {
-
-                container.innerHTML = `
-                    <p class="empty-message">
-                        No expenses added.
-                    </p>
-                `;
-
-                return;
-
-            }
-
-
-            const balances =
-                this.getRunningBalanceMap();
-
-
-            const expenses =
-                [...month.expenses]
-                    .sort(
-                        (a, b) =>
-                            a.date.localeCompare(
-                                b.date
-                            )
-                    );
-
-
-            const rows =
-                expenses
-                    .map(expense => {
-
-                        const running =
-                            balances.get(
-                                expense.id
-                            );
-
-
-                        return `
-
-                            <tr>
-
-                                <td>
-                                    ${this.escapeHTML(
-                                        expense.name
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${this.formatDate(
-                                        expense.date
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${this.escapeHTML(
-                                        expense.category
-                                    )}
-                                </td>
-
-                                <td class="money-negative">
-                                    -${this.formatMoney(
-                                        expense.amount
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${this.formatMoney(
-                                        running?.balanceBefore
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${this.formatMoney(
-                                        running?.balanceAfter
-                                    )}
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="text-button"
-                                        data-action="edit-expense"
-                                        data-id="${expense.id}"
-                                        type="button"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    &nbsp;
-
-                                    <button
-                                        class="text-button"
-                                        data-action="delete-expense"
-                                        data-id="${expense.id}"
-                                        type="button"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        `;
-
-                    })
-                    .join("");
-
-
-            container.innerHTML = `
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Expense</th>
-
-                            <th>Date</th>
-
-                            <th>Category</th>
-
-                            <th>Amount</th>
-
-                            <th>Before</th>
-
-                            <th>After</th>
-
-                            <th></th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        ${rows}
-
-                    </tbody>
-
-                </table>
-
-            `;
-
-        },
-
-
-        /* =================================================
-           19. UPCOMING BILLS
-           ================================================= */
-
-        renderUpcomingBills() {
-
-            const container =
-                document.getElementById(
-                    "upcoming-bills"
-                );
-
-
-            if (!container) {
-                return;
-            }
-
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-
-            const upcoming =
-                month.bills
-
-                    .filter(
-                        bill => !bill.paid
-                    )
-
-                    .sort(
-                        (a, b) =>
-                            a.dueDate.localeCompare(
-                                b.dueDate
-                            )
-                    )
-
-                    .slice(0, 5);
-
-
-            if (!upcoming.length) {
-
-                container.innerHTML = `
-                    <p class="empty-message">
-                        No upcoming bills.
-                    </p>
-                `;
-
-                return;
-
-            }
-
-
-            container.innerHTML =
-                upcoming
-                    .map(bill => `
-
-                        <div class="transaction-item">
+                        <article class="transaction-item">
 
                             <div class="transaction-icon">
-                                $
+                                ${icon}
                             </div>
+
 
                             <div class="transaction-info">
 
                                 <strong>
                                     ${this.escapeHTML(
-                                        bill.name
+                                        transaction.description ||
+                                        transaction.name ||
+                                        "Transaction"
                                     )}
                                 </strong>
 
+
                                 <span>
-                                    Due ${this.formatDate(
-                                        bill.dueDate
+                                    ${this.escapeHTML(
+                                        subtitle
                                     )}
+
+                                    ${transaction.date
+                                        ? ` · ${this.formatDate(
+                                            transaction.date
+                                        )}`
+                                        : ""
+                                    }
                                 </span>
 
                             </div>
 
-                            <div class="transaction-amount expense">
 
-                                -${this.formatMoney(
-                                    bill.amount
+                            <div class="
+                                transaction-amount
+                                ${isIncome
+                                    ? "income"
+                                    : "expense"}
+                            ">
+                                ${this.formatSignedCurrency(
+                                    amount
                                 )}
-
                             </div>
 
-                        </div>
+                        </article>
 
-                    `)
-                    .join("");
-
-        },
-
-
-        /* =================================================
-           20. NEXT PAYCHECK
-           ================================================= */
-
-        renderNextPaycheck() {
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-
-            const today =
-                this.getToday();
-
-
-            const paychecks =
-                [...month.paychecks]
-                    .sort(
-                        (a, b) =>
-                            a.payDate.localeCompare(
-                                b.payDate
-                            )
-                    );
-
-
-            let next =
-                paychecks.find(
-                    paycheck =>
-                        paycheck.payDate >= today
-                );
-
-
-            /*
-                If all paycheck dates already passed,
-                display the last paycheck.
-            */
-
-            if (!next && paychecks.length) {
-
-                next =
-                    paychecks[
-                        paychecks.length - 1
-                    ];
-
-            }
-
-
-            if (!next) {
-
-                this.setText(
-                    "next-pay-date",
-                    "—"
-                );
-
-                this.setText(
-                    "next-pay-amount",
-                    this.formatMoney(0)
-                );
-
-                return;
-
-            }
-
-
-            this.setText(
-                "next-pay-date",
-                this.formatDate(
-                    next.payDate
-                )
-            );
-
-
-            this.setText(
-                "next-pay-amount",
-                this.formatMoney(
-                    next.amount
-                )
-            );
-
-        },
-
-
-        /* =================================================
-           21. TRANSACTIONS PAGE
-           ================================================= */
-
-        renderTransactions() {
-
-            const container =
-                document.getElementById(
-                    "transaction-list"
-                );
-
-
-            if (!container) {
-                return;
-            }
-
-
-            const transactions =
-                BudgetStorage.getTransactions(
-                    this.currentMonthKey
-                );
-
-
-            if (!transactions.length) {
-
-                container.innerHTML = `
-                    <p class="empty-message">
-                        No transactions yet.
-                    </p>
-                `;
-
-                return;
-
-            }
-
-
-            const running =
-                BudgetStorage.getRunningBalance(
-                    this.currentMonthKey
-                );
-
-
-            const balanceMap =
-                new Map();
-
-
-            running.forEach(
-                transaction => {
-
-                    balanceMap.set(
-                        transaction.id,
-                        transaction.balanceAfter
-                    );
-
-                }
-            );
-
-
-            container.innerHTML =
-                transactions
-                    .map(transaction => {
-
-                        const positive =
-                            transaction.amount >= 0;
-
-
-                        return `
-
-                            <article class="transaction-item">
-
-                                <div class="transaction-icon">
-
-                                    ${
-                                        positive
-                                            ? "+"
-                                            : "$"
-                                    }
-
-                                </div>
-
-
-                                <div class="transaction-info">
-
-                                    <strong>
-
-                                        ${this.escapeHTML(
-                                            transaction.name
-                                        )}
-
-                                    </strong>
-
-                                    <span>
-
-                                        ${this.escapeHTML(
-                                            transaction.category
-                                        )}
-
-                                        ·
-
-                                        ${this.formatDate(
-                                            transaction.date
-                                        )}
-
-                                        · Balance:
-
-                                        ${this.formatMoney(
-                                            balanceMap.get(
-                                                transaction.id
-                                            )
-                                        )}
-
-                                    </span>
-
-                                </div>
-
-
-                                <div
-                                    class="transaction-amount ${
-                                        positive
-                                            ? "income"
-                                            : "expense"
-                                    }"
-                                >
-
-                                    ${
-                                        positive
-                                            ? "+"
-                                            : "-"
-                                    }
-
-                                    ${this.formatMoney(
-                                        Math.abs(
-                                            transaction.amount
-                                        )
-                                    )}
-
-                                </div>
-
-                            </article>
-
-                        `;
-
-                    })
-                    .join("");
-
-        },
-
-
-        /* =================================================
-           22. SAVINGS
-           ================================================= */
-
-        renderSavings() {
-
-            const goals =
-                BudgetStorage.getSavingsGoals();
-
-
-            const goalsContainer =
-                document.getElementById(
-                    "savings-goals"
-                );
-
-
-            const overviewContainer =
-                document.getElementById(
-                    "savings-overview"
-                );
-
-
-            const totalSavings =
-                goals.reduce(
-                    (total, goal) =>
-                        total +
-                        Number(
-                            goal.currentAmount
-                        ),
-
-                    0
-                );
-
-
-            this.setText(
-                "savings-balance",
-                this.formatMoney(
-                    totalSavings
-                )
-            );
-
-
-            if (!goals.length) {
-
-                if (goalsContainer) {
-
-                    goalsContainer.innerHTML = `
-                        <p class="empty-message">
-                            No savings goals created.
-                        </p>
                     `;
 
                 }
+            ).join("");
 
+    },
 
-                if (overviewContainer) {
 
-                    overviewContainer.innerHTML = `
-                        <p class="empty-message">
-                            No savings goals yet.
-                        </p>
-                    `;
+    /* =====================================================
+       15. TRANSACTION ICON
+       ===================================================== */
 
-                }
+    getTransactionIcon(
+        transaction
+    ) {
 
+        switch (
+            transaction.sourceType
+        ) {
 
-                return;
+            case "paycheck":
+                return "💵";
 
-            }
 
+            case "bill":
+                return "🧾";
 
-            const goalCards =
-                goals
-                    .map(goal => {
 
-                        let progress = 0;
+            case "expense":
+                return "🛒";
 
 
-                        if (
-                            Number(
-                                goal.targetAmount
-                            ) > 0
-                        ) {
+            case "savings-deposit":
+                return "🏦";
 
-                            progress =
-                                (
-                                    Number(
-                                        goal.currentAmount
-                                    )
-                                    /
-                                    Number(
-                                        goal.targetAmount
-                                    )
-                                )
-                                * 100;
 
-                        }
+            case "transaction":
 
-
-                        progress =
-                            Math.min(
-                                Math.max(
-                                    progress,
-                                    0
-                                ),
-                                100
-                            );
-
-
-                        const remaining =
-                            Math.max(
-                                Number(
-                                    goal.targetAmount
-                                )
-                                -
-                                Number(
-                                    goal.currentAmount
-                                ),
-
-                                0
-                            );
-
-
-                        return `
-
-                            <article class="savings-goal-card">
-
-                                <div class="savings-goal-header">
-
-                                    <div>
-
-                                        <strong>
-                                            ${this.escapeHTML(
-                                                goal.name
-                                            )}
-                                        </strong>
-
-                                        <div>
-
-                                            ${this.formatMoney(
-                                                goal.currentAmount
-                                            )}
-
-                                            /
-
-                                            ${this.formatMoney(
-                                                goal.targetAmount
-                                            )}
-
-                                        </div>
-
-                                    </div>
-
-                                    <strong>
-                                        ${Math.round(
-                                            progress
-                                        )}%
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="savings-progress">
-
-                                    <div
-                                        class="savings-progress-bar"
-                                        style="width: ${progress}%"
-                                    ></div>
-
-                                </div>
-
-
-                                <p
-                                    style="
-                                        margin-top: 10px;
-                                        color: var(--muted);
-                                        font-size: .82rem;
-                                    "
-                                >
-
-                                    Still needed:
-
-                                    ${this.formatMoney(
-                                        remaining
-                                    )}
-
-                                </p>
-
-
-                                <div
-                                    style="
-                                        display: flex;
-                                        gap: 12px;
-                                        margin-top: 12px;
-                                    "
-                                >
-
-                                    <button
-                                        class="text-button"
-                                        data-action="add-goal-money"
-                                        data-id="${goal.id}"
-                                        type="button"
-                                    >
-                                        + Add Money
-                                    </button>
-
-
-                                    <button
-                                        class="text-button"
-                                        data-action="edit-goal"
-                                        data-id="${goal.id}"
-                                        type="button"
-                                    >
-                                        Edit
-                                    </button>
-
-
-                                    <button
-                                        class="text-button"
-                                        data-action="delete-goal"
-                                        data-id="${goal.id}"
-                                        type="button"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </div>
-
-                            </article>
-
-                        `;
-
-                    })
-                    .join("");
-
-
-            if (goalsContainer) {
-
-                goalsContainer.innerHTML =
-                    goalCards;
-
-            }
-
-
-            if (overviewContainer) {
-
-                overviewContainer.innerHTML =
-                    goals
-                        .slice(0, 3)
-                        .map(goal => `
-
-                            <div class="transaction-item">
-
-                                <div class="transaction-icon">
-                                    $
-                                </div>
-
-                                <div class="transaction-info">
-
-                                    <strong>
-                                        ${this.escapeHTML(
-                                            goal.name
-                                        )}
-                                    </strong>
-
-                                    <span>
-                                        Goal:
-                                        ${this.formatMoney(
-                                            goal.targetAmount
-                                        )}
-                                    </span>
-
-                                </div>
-
-                                <div class="transaction-amount income">
-
-                                    ${this.formatMoney(
-                                        goal.currentAmount
-                                    )}
-
-                                </div>
-
-                            </div>
-
-                        `)
-                        .join("");
-
-            }
-
-        },
-
-
-        /* =================================================
-           23. REPORTS
-           ================================================= */
-
-        renderReports() {
-
-            const container =
-                document.getElementById(
-                    "monthly-chart"
+                return (
+                    Number(
+                        transaction.amount
+                    ) >= 0
+                        ? "+"
+                        : "−"
                 );
 
 
-            if (!container) {
-                return;
-            }
+            default:
+                return "$";
+
+        }
+
+    },
 
 
-            const summary =
-                BudgetStorage.getMonthlySummary(
-                    this.currentMonthKey
-                );
+    /* =====================================================
+       16. TRANSACTION SUBTITLE
+       ===================================================== */
 
+    getTransactionSubtitle(
+        transaction
+    ) {
+
+        if (
+            transaction.sourceType ===
+            "bill"
+        ) {
+
+            return transaction.paid
+                ? `${transaction.category || "Bill"} · Paid`
+                : `${transaction.category || "Bill"} · Planned bill`;
+
+        }
+
+
+        return (
+            transaction.category ||
+            "Transaction"
+        );
+
+    },
+
+
+    /* =====================================================
+       17. SAVINGS PAGE
+       ===================================================== */
+
+    renderSavings(snapshot) {
+
+        const balance =
+            this.calculateOverallSavings();
+
+
+        this.setMoneyText(
+            "savings-balance",
+            balance
+        );
+
+
+        const container =
+            document.getElementById(
+                "savings-goals"
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        const goals =
+            snapshot.savingsGoals;
+
+
+        if (
+            goals.length === 0
+        ) {
 
             container.innerHTML = `
 
-                <div
-                    style="
-                        width: 100%;
-                        display: grid;
-                        gap: 14px;
-                    "
-                >
-
-                    <div>
-                        Income:
-                        <strong>
-                            ${this.formatMoney(
-                                summary.income
-                            )}
-                        </strong>
-                    </div>
-
-                    <div>
-                        Bills:
-                        <strong>
-                            ${this.formatMoney(
-                                summary.bills
-                            )}
-                        </strong>
-                    </div>
-
-                    <div>
-                        Expenses:
-                        <strong>
-                            ${this.formatMoney(
-                                summary.expenses
-                            )}
-                        </strong>
-                    </div>
-
-                    <div>
-                        Savings:
-                        <strong>
-                            ${this.formatMoney(
-                                summary.savings
-                            )}
-                        </strong>
-                    </div>
-
-                    <hr>
-
-                    <div>
-
-                        Projected Ending Balance:
-
-                        <strong>
-                            ${this.formatMoney(
-                                summary.endingBalance
-                            )}
-                        </strong>
-
-                    </div>
-
-                </div>
+                <p class="empty-message">
+                    No savings goals created.
+                </p>
 
             `;
 
-        },
+            return;
 
+        }
 
-        /* =================================================
-           24. CONNECT MAIN BUTTONS
-           ================================================= */
 
-        connectButtons() {
+        container.innerHTML =
+            goals.map(
+                goal =>
+                    this.createSavingsGoalHTML(
+                        goal
+                    )
+            ).join("");
 
-            document
-                .getElementById(
-                    "add-paycheck-button"
-                )
-                ?.addEventListener(
-                    "click",
-                    () => this.addPaycheck()
-                );
+    },
 
 
-            document
-                .getElementById(
-                    "add-bill-button"
-                )
-                ?.addEventListener(
-                    "click",
-                    () => this.addBill()
-                );
+    /* =====================================================
+       18. CREATE SAVINGS GOAL CARD
+       ===================================================== */
 
+    createSavingsGoalHTML(goal) {
 
-            document
-                .getElementById(
-                    "add-expense-button"
-                )
-                ?.addEventListener(
-                    "click",
-                    () => this.addExpense()
-                );
+        const target =
+            Number(
+                goal.targetAmount
+            ) || 0;
 
 
-            document
-                .getElementById(
-                    "add-savings-button"
-                )
-                ?.addEventListener(
-                    "click",
-                    () => this.addSavingsGoal()
-                );
+        const current =
+            Number(
+                goal.currentAmount
+            ) || 0;
 
 
-            document
-                .getElementById(
-                    "add-transaction-button"
-                )
-                ?.addEventListener(
-                    "click",
-                    () => this.addTransaction()
-                );
+        let percent = 0;
 
 
-            document
-                .getElementById(
-                    "change-starting-balance"
-                )
-                ?.addEventListener(
-                    "click",
-                    () =>
-                        this.changeStartingBalance()
-                );
-
-
-            document
-                .getElementById(
-                    "export-data"
-                )
-                ?.addEventListener(
-                    "click",
-                    () => this.exportData()
-                );
-
-
-            document
-                .getElementById(
-                    "clear-data"
-                )
-                ?.addEventListener(
-                    "click",
-                    () => this.resetData()
-                );
-
-        },
-
-
-        /* =================================================
-           25. DYNAMIC BUTTON ACTIONS
-           ================================================= */
-
-        connectDynamicActions() {
-
-            document.addEventListener(
-                "click",
-                event => {
-
-                    const button =
-                        event.target.closest(
-                            "[data-action]"
-                        );
-
-
-                    if (!button) {
-                        return;
-                    }
-
-
-                    const action =
-                        button.dataset.action;
-
-                    const id =
-                        button.dataset.id;
-
-
-                    switch (action) {
-
-
-                        case "delete-paycheck":
-
-                            this.deletePaycheck(id);
-
-                            break;
-
-
-                        case "edit-paycheck":
-
-                            this.editPaycheck(id);
-
-                            break;
-
-
-                        case "delete-bill":
-
-                            this.deleteBill(id);
-
-                            break;
-
-
-                        case "edit-bill":
-
-                            this.editBill(id);
-
-                            break;
-
-
-                        case "toggle-bill":
-
-                            this.toggleBill(id);
-
-                            break;
-
-
-                        case "delete-expense":
-
-                            this.deleteExpense(id);
-
-                            break;
-
-
-                        case "edit-expense":
-
-                            this.editExpense(id);
-
-                            break;
-
-
-                        case "add-goal-money":
-
-                            this.addMoneyToGoal(id);
-
-                            break;
-
-
-                        case "edit-goal":
-
-                            this.editSavingsGoal(id);
-
-                            break;
-
-
-                        case "delete-goal":
-
-                            this.deleteSavingsGoal(id);
-
-                            break;
-
-                    }
-
-                }
-            );
-
-        },
-
-
-        /* =================================================
-           25B. SETUP FORM HANDLERS
-           ================================================= */
-
-        setupFormHandlers() {
-
-            // Paycheck form submission
-            document.getElementById("paycheck-form")?.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const form = e.target;
-                const data = {
-                    name: form.name.value,
-                    payDate: form.payDate.value,
-                    hours: Number(form.hours.value) || 0,
-                    amount: Number(form.amount.value) || 0
-                };
-
-                if (ModalManager.currentEditId) {
-                    BudgetStorage.updatePaycheck(
-                        ModalManager.currentEditId,
-                        data,
-                        this.currentMonthKey
-                    );
-                } else {
-                    BudgetStorage.addPaycheck(data, this.currentMonthKey);
-                }
-
-                ModalManager.closeModal("paycheck-modal");
-                this.renderAll();
-            });
-
-            // Bill form submission
-            document.getElementById("bill-form")?.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const form = e.target;
-                const data = {
-                    name: form.name.value,
-                    dueDate: form.dueDate.value,
-                    amount: Number(form.amount.value) || 0,
-                    category: form.category.value,
-                    recurring: form.recurring.checked
-                };
-
-                if (ModalManager.currentEditId) {
-                    BudgetStorage.updateBill(
-                        ModalManager.currentEditId,
-                        data,
-                        this.currentMonthKey
-                    );
-                } else {
-                    data.paid = false;
-                    BudgetStorage.addBill(data, this.currentMonthKey);
-                }
-
-                ModalManager.closeModal("bill-modal");
-                this.renderAll();
-            });
-
-            // Expense form submission
-            document.getElementById("expense-form")?.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const form = e.target;
-                const data = {
-                    name: form.name.value,
-                    date: form.date.value,
-                    category: form.category.value,
-                    amount: Number(form.amount.value) || 0
-                };
-
-                if (ModalManager.currentEditId) {
-                    BudgetStorage.updateExpense(
-                        ModalManager.currentEditId,
-                        data,
-                        this.currentMonthKey
-                    );
-                } else {
-                    BudgetStorage.addExpense(data, this.currentMonthKey);
-                }
-
-                ModalManager.closeModal("expense-modal");
-                this.renderAll();
-            });
-
-            // Savings goal form submission
-            document.getElementById("savings-form")?.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const form = e.target;
-                const data = {
-                    name: form.name.value,
-                    targetAmount: Number(form.targetAmount.value) || 0,
-                    currentAmount: Number(form.currentAmount.value) || 0
-                };
-
-                if (ModalManager.currentEditId) {
-                    BudgetStorage.updateSavingsGoal(
-                        ModalManager.currentEditId,
-                        data
-                    );
-                } else {
-                    BudgetStorage.addSavingsGoal(data);
-                }
-
-                ModalManager.closeModal("savings-modal");
-                this.renderAll();
-            });
-
-            // Add money to savings goal form submission
-            document.getElementById("add-savings-money-form")?.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const form = e.target;
-                const amount = Number(form.amount.value) || 0;
-
-                if (ModalManager.currentEditId && amount > 0) {
-                    const goals = BudgetStorage.getSavingsGoals();
-                    const goal = goals.find(g => g.id === ModalManager.currentEditId);
-
-                    if (goal) {
-                        const newAmount = Number(goal.currentAmount) + amount;
-                        BudgetStorage.updateSavingsGoal(
-                            ModalManager.currentEditId,
-                            {
-                                name: goal.name,
-                                targetAmount: goal.targetAmount,
-                                currentAmount: newAmount
-                            }
-                        );
-                        this.renderAll();
-                    }
-                }
-
-                ModalManager.closeModal("add-savings-money-modal");
-            });
-
-            // Starting balance form submission
-            document.getElementById("starting-balance-form")?.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const form = e.target;
-                const amount = Number(form.balance.value) || 0;
-
-                BudgetStorage.setStartingBalance(
-                    amount,
-                    this.currentMonthKey
-                );
-
-                ModalManager.closeModal("starting-balance-modal");
-                this.renderAll();
-            });
-
-        },
-
-
-        /* =================================================
-           26. ASK FOR MONEY (Legacy - kept for reference)
-           ================================================= */
-
-        promptMoney(
-            message,
-            defaultValue = ""
+        if (
+            target > 0
         ) {
 
-            // This function is no longer used with modal forms
-            // Keeping for backward compatibility
-            const number = Number(defaultValue) || 0;
-            return number;
+            percent =
+                (
+                    current /
+                    target
+                ) * 100;
 
-        },
-
-
-        /* =================================================
-           27. ADD PAYCHECK
-           ================================================= */
-
-        addPaycheck() {
-
-            ModalManager.currentEditId = null;
-
-            const form = document.getElementById("paycheck-form");
-            const modal = document.getElementById("paycheck-modal");
-
-            // Reset form
-            if (form) {
-                form.reset();
-                document.getElementById("paycheck-date").value = this.getToday();
-                document.getElementById("paycheck-name").value = "Paycheck";
-            }
-
-            // Update title for add mode
-            const title = document.getElementById("paycheck-modal-title");
-            if (title) title.textContent = "Add Paycheck";
-
-            ModalManager.openModal("paycheck-modal");
-
-        },
+        }
 
 
-        /* =================================================
-           28. EDIT PAYCHECK
-           ================================================= */
-
-        editPaycheck(id) {
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
+        percent =
+            Math.min(
+                Math.max(
+                    percent,
+                    0
+                ),
+                100
+            );
 
 
-            const paycheck =
-                month.paychecks.find(
-                    item => item.id === id
-                );
+        return `
 
-            if (!paycheck) {
-                return;
-            }
+            <article class="savings-goal-card">
 
-            ModalManager.currentEditId = id;
+                <div class="savings-goal-header">
 
-            // Populate form with existing data
-            document.getElementById("paycheck-name").value = paycheck.name;
-            document.getElementById("paycheck-date").value = paycheck.payDate;
-            document.getElementById("paycheck-hours").value = paycheck.hours;
-            document.getElementById("paycheck-amount").value = paycheck.amount;
+                    <div>
 
-            // Update title for edit mode
-            const title = document.getElementById("paycheck-modal-title");
-            if (title) title.textContent = "Edit Paycheck";
+                        <strong>
+                            ${this.escapeHTML(
+                                goal.name
+                            )}
+                        </strong>
 
-            ModalManager.openModal("paycheck-modal");
-
-        },
+                    </div>
 
 
-        /* =================================================
-           29. DELETE PAYCHECK
-           ================================================= */
+                    <strong>
+                        ${this.formatCurrency(
+                            current
+                        )}
+                        /
+                        ${this.formatCurrency(
+                            target
+                        )}
+                    </strong>
 
-        deletePaycheck(id) {
+                </div>
 
-            if (
-                !confirm(
-                    "Delete this paycheck?"
+
+                <div
+                    class="savings-progress"
+                    role="progressbar"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="${percent.toFixed(0)}"
+                >
+
+                    <div
+                        class="savings-progress-bar"
+                        style="width: ${percent}%"
+                    ></div>
+
+                </div>
+
+            </article>
+
+        `;
+
+    },
+
+
+    /* =====================================================
+       19. CALCULATE OVERALL SAVINGS
+       ===================================================== */
+
+    /*
+        Goal-linked deposits are already represented by
+        goal.currentAmount.
+
+        Therefore:
+
+        overall savings =
+            all goal current amounts
+            +
+            savings deposits NOT assigned to a goal
+
+        This prevents goal deposits from being counted twice.
+    */
+
+    calculateOverallSavings() {
+
+        const data =
+            BudgetStorage.load();
+
+
+        const goalTotal =
+            data.savingsGoals.reduce(
+                (total, goal) =>
+
+                    total +
+                    Number(
+                        goal.currentAmount
+                    ),
+
+                0
+            );
+
+
+        let generalSavings =
+            0;
+
+
+        Object.values(
+            data.months
+        ).forEach(month => {
+
+            const deposits =
+                Array.isArray(
+                    month.savingsDeposits
                 )
-            ) {
-                return;
-            }
+                    ? month.savingsDeposits
+                    : [];
 
 
-            BudgetStorage.deletePaycheck(
-                id,
-                this.currentMonthKey
-            );
+            deposits.forEach(
+                deposit => {
 
+                    if (!deposit.goalId) {
 
-            this.renderAll();
+                        generalSavings +=
+                            Number(
+                                deposit.amount
+                            ) || 0;
 
-        },
-
-
-        /* =================================================
-           30. ADD BILL
-           ================================================= */
-
-        addBill() {
-
-            ModalManager.currentEditId = null;
-
-            // Reset form
-            const form = document.getElementById("bill-form");
-            if (form) {
-                form.reset();
-                document.getElementById("bill-date").value = this.getToday();
-                document.getElementById("bill-category").value = "Bills";
-                document.getElementById("bill-recurring").checked = false;
-            }
-
-            // Update title for add mode
-            const title = document.getElementById("bill-modal-title");
-            if (title) title.textContent = "Add Bill";
-
-            ModalManager.openModal("bill-modal");
-
-        },
-
-
-        /* =================================================
-           31. EDIT BILL
-           ================================================= */
-
-        editBill(id) {
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-
-            const bill =
-                month.bills.find(
-                    item => item.id === id
-                );
-
-
-            if (!bill) {
-                return;
-            }
-
-            ModalManager.currentEditId = id;
-
-            // Populate form with existing data
-            document.getElementById("bill-name").value = bill.name;
-            document.getElementById("bill-date").value = bill.dueDate;
-            document.getElementById("bill-amount").value = bill.amount;
-            document.getElementById("bill-category").value = bill.category;
-            document.getElementById("bill-recurring").checked = bill.recurring;
-
-            // Update title for edit mode
-            const title = document.getElementById("bill-modal-title");
-            if (title) title.textContent = "Edit Bill";
-
-            ModalManager.openModal("bill-modal");
-
-        },
-
-
-        /* =================================================
-           32. TOGGLE BILL PAID
-           ================================================= */
-
-        toggleBill(id) {
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-
-            const bill =
-                month.bills.find(
-                    item => item.id === id
-                );
-
-
-            if (!bill) {
-                return;
-            }
-
-
-            BudgetStorage.markBillPaid(
-                id,
-                !bill.paid,
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
-
-        },
-
-
-        /* =================================================
-           33. DELETE BILL
-           ================================================= */
-
-        deleteBill(id) {
-
-            if (
-                !confirm(
-                    "Delete this bill?"
-                )
-            ) {
-                return;
-            }
-
-
-            BudgetStorage.deleteBill(
-                id,
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
-
-        },
-
-
-        /* =================================================
-           34. ADD EXPENSE
-           ================================================= */
-
-        addExpense() {
-
-            ModalManager.currentEditId = null;
-
-            // Reset form
-            const form = document.getElementById("expense-form");
-            if (form) {
-                form.reset();
-                document.getElementById("expense-date").value = this.getToday();
-            }
-
-            // Update title for add mode
-            const title = document.getElementById("expense-modal-title");
-            if (title) title.textContent = "Add Expense";
-
-            ModalManager.openModal("expense-modal");
-
-        },
-
-
-        /* =================================================
-           35. EDIT EXPENSE
-           ================================================= */
-
-        editExpense(id) {
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-
-            const expense =
-                month.expenses.find(
-                    item => item.id === id
-                );
-
-
-            if (!expense) {
-                return;
-            }
-
-            ModalManager.currentEditId = id;
-
-            // Populate form with existing data
-            document.getElementById("expense-name").value = expense.name;
-            document.getElementById("expense-date").value = expense.date;
-            document.getElementById("expense-amount").value = expense.amount;
-            document.getElementById("expense-category").value = expense.category;
-
-            // Update title for edit mode
-            const title = document.getElementById("expense-modal-title");
-            if (title) title.textContent = "Edit Expense";
-
-            ModalManager.openModal("expense-modal");
-
-        },
-
-
-        /* =================================================
-           36. DELETE EXPENSE
-           ================================================= */
-
-        deleteExpense(id) {
-
-            if (
-                !confirm(
-                    "Delete this expense?"
-                )
-            ) {
-                return;
-            }
-
-
-            BudgetStorage.deleteExpense(
-                id,
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
-
-        },
-
-
-        /* =================================================
-           37. ADD SAVINGS GOAL
-           ================================================= */
-
-        addSavingsGoal() {
-
-            ModalManager.currentEditId = null;
-
-            // Reset form
-            const form = document.getElementById("savings-form");
-            if (form) {
-                form.reset();
-            }
-
-            // Update title for add mode
-            const title = document.getElementById("savings-modal-title");
-            if (title) title.textContent = "Add Savings Goal";
-
-            ModalManager.openModal("savings-modal");
-
-        },
-
-
-        /* =================================================
-           38. ADD MONEY TO GOAL
-           ================================================= */
-
-        addMoneyToGoal(id) {
-
-            ModalManager.currentEditId = id;
-
-            // Reset form
-            const form = document.getElementById("add-savings-money-form");
-            if (form) {
-                form.reset();
-            }
-
-            ModalManager.openModal("add-savings-money-modal");
-
-        },
-
-
-        /* =================================================
-           39. EDIT SAVINGS GOAL
-           ================================================= */
-
-        editSavingsGoal(id) {
-
-            const goals =
-                BudgetStorage.getSavingsGoals();
-
-
-            const goal =
-                goals.find(
-                    item => item.id === id
-                );
-
-
-            if (!goal) {
-                return;
-            }
-
-            ModalManager.currentEditId = id;
-
-            // Populate form with existing data
-            document.getElementById("savings-name").value = goal.name;
-            document.getElementById("savings-target").value = goal.targetAmount;
-            document.getElementById("savings-current").value = goal.currentAmount;
-
-            // Update title for edit mode
-            const title = document.getElementById("savings-modal-title");
-            if (title) title.textContent = "Edit Savings Goal";
-
-            ModalManager.openModal("savings-modal");
-
-        },
-
-
-        /* =================================================
-           40. DELETE SAVINGS GOAL
-           ================================================= */
-
-        deleteSavingsGoal(id) {
-
-            if (
-                !confirm(
-                    "Delete this savings goal?"
-                )
-            ) {
-                return;
-            }
-
-
-            BudgetStorage.deleteSavingsGoal(
-                id
-            );
-
-
-            this.renderAll();
-
-        },
-
-
-        /* =================================================
-           41. ADD GENERAL TRANSACTION
-           ================================================= */
-
-        addTransaction() {
-
-            const type =
-                prompt(
-                    "What are you adding?\n\n" +
-                    "income\n" +
-                    "bill\n" +
-                    "expense\n" +
-                    "savings"
-                );
-
-
-            if (!type) {
-                return;
-            }
-
-
-            switch (
-                type.toLowerCase().trim()
-            ) {
-
-
-                case "income":
-
-                case "paycheck":
-
-                    this.addPaycheck();
-
-                    break;
-
-
-                case "bill":
-
-                    this.addBill();
-
-                    break;
-
-
-                case "expense":
-
-                    this.addExpense();
-
-                    break;
-
-
-                case "savings":
-
-                    this.addSavingsTransfer();
-
-                    break;
-
-
-                default:
-
-                    alert(
-                        "Please enter income, bill, expense, or savings."
-                    );
-
-            }
-
-        },
-
-
-        /* =================================================
-           42. ADD GENERAL SAVINGS TRANSFER
-           ================================================= */
-
-        addSavingsTransfer() {
-
-            const goals =
-                BudgetStorage.getSavingsGoals();
-
-
-            let message =
-                "Savings amount:";
-
-
-            if (goals.length) {
-
-                message =
-                    "How much are you moving into savings?";
-
-            }
-
-
-            const amount =
-                this.promptMoney(
-                    message
-                );
-
-
-            if (
-                amount === null
-                ||
-                amount === 0
-            ) {
-                return;
-            }
-
-
-            BudgetStorage.addSavingsTransfer(
-                {
-
-                    name: "Savings",
-
-                    date: this.getToday(),
-
-                    amount
-
-                },
-
-                this.currentMonthKey
-            );
-
-
-            this.renderAll();
-
-        },
-
-
-        /* =================================================
-           43. STARTING BALANCE
-           ================================================= */
-
-        changeStartingBalance() {
-
-            const month =
-                BudgetStorage.getMonth(
-                    this.currentMonthKey
-                );
-
-            // Populate form with current balance
-            document.getElementById("starting-balance-input").value = month.startingBalance;
-
-            ModalManager.openModal("starting-balance-modal");
-
-        },
-
-
-        /* =================================================
-           44. EXPORT DATA
-           ================================================= */
-
-        exportData() {
-
-            const json =
-                BudgetStorage.exportData();
-
-
-            const blob =
-                new Blob(
-                    [json],
-                    {
-                        type:
-                            "application/json"
                     }
-                );
 
-
-            const url =
-                URL.createObjectURL(
-                    blob
-                );
-
-
-            const link =
-                document.createElement(
-                    "a"
-                );
-
-
-            link.href = url;
-
-            link.download =
-                `budget-backup-${this.getToday()}.json`;
-
-
-            document.body.appendChild(
-                link
+                }
             );
 
-
-            link.click();
-
-            link.remove();
+        });
 
 
-            URL.revokeObjectURL(
-                url
-            );
+        return (
+            goalTotal +
+            generalSavings
+        );
 
-        },
-
-
-        /* =================================================
-           45. RESET APP DATA
-           ================================================= */
-
-        resetData() {
-
-            const confirmed =
-                confirm(
-                    "This will permanently delete all budget data saved in this browser.\n\nAre you sure?"
-                );
+    },
 
 
-            if (!confirmed) {
-                return;
+    /* =====================================================
+       20. FORMAT CURRENCY
+       ===================================================== */
+
+    formatCurrency(value) {
+
+        const amount =
+            Number(value) || 0;
+
+
+        let currency =
+            "USD";
+
+
+        try {
+
+            const data =
+                BudgetStorage.load();
+
+
+            currency =
+                data.settings?.currency ||
+                "USD";
+
+        }
+
+        catch (error) {
+
+            currency =
+                "USD";
+
+        }
+
+
+        return new Intl.NumberFormat(
+            "en-US",
+            {
+                style: "currency",
+                currency
             }
+        ).format(amount);
+
+    },
 
 
-            const secondCheck =
-                confirm(
-                    "Last chance — delete everything?"
-                );
+    /* =====================================================
+       21. FORMAT SIGNED CURRENCY
+       ===================================================== */
+
+    formatSignedCurrency(value) {
+
+        const amount =
+            Number(value) || 0;
 
 
-            if (!secondCheck) {
-                return;
-            }
+        if (
+            amount > 0
+        ) {
 
-
-            BudgetStorage.clearAllData();
-
-
-            this.prepareCurrentMonth();
-
-            this.renderAll();
-
-
-            alert(
-                "Budget data has been reset."
+            return (
+                "+" +
+                this.formatCurrency(
+                    amount
+                )
             );
 
         }
 
-    };
+
+        return this.formatCurrency(
+            amount
+        );
+
+    },
 
 
     /* =====================================================
-       46. START APP
+       22. FORMAT DATE
        ===================================================== */
+
+    formatDate(dateValue) {
+
+        if (!dateValue) {
+            return "—";
+        }
+
+
+        /*
+            Handle YYYY-MM-DD without UTC timezone shifting.
+        */
+
+        const parts =
+            String(
+                dateValue
+            ).split("-");
+
+
+        if (
+            parts.length === 3
+        ) {
+
+            const [
+                year,
+                month,
+                day
+            ] = parts;
+
+
+            const date =
+                new Date(
+                    Number(year),
+                    Number(month) - 1,
+                    Number(day)
+                );
+
+
+            if (
+                !Number.isNaN(
+                    date.getTime()
+                )
+            ) {
+
+                return new Intl.DateTimeFormat(
+                    "en-US",
+                    {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric"
+                    }
+                ).format(date);
+
+            }
+
+        }
+
+
+        return dateValue;
+
+    },
+
+
+    /* =====================================================
+       23. FORMAT HOURS
+       ===================================================== */
+
+    formatHours(value) {
+
+        const hours =
+            Number(value) || 0;
+
+
+        return hours.toLocaleString(
+            "en-US",
+            {
+                maximumFractionDigits: 2
+            }
+        );
+
+    },
+
+
+    /* =====================================================
+       24. DATE COMPARISON
+       ===================================================== */
+
+    compareDates(
+        first,
+        second
+    ) {
+
+        if (
+            !first &&
+            !second
+        ) {
+            return 0;
+        }
+
+
+        if (!first) {
+            return 1;
+        }
+
+
+        if (!second) {
+            return -1;
+        }
+
+
+        return String(first)
+            .localeCompare(
+                String(second)
+            );
+
+    },
+
+
+    /* =====================================================
+       25. TODAY KEY
+       ===================================================== */
+
+    getTodayKey() {
+
+        const today =
+            new Date();
+
+
+        const year =
+            today.getFullYear();
+
+
+        const month =
+            String(
+                today.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        const day =
+            String(
+                today.getDate()
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        return (
+            `${year}-` +
+            `${month}-` +
+            `${day}`
+        );
+
+    },
+
+
+    /* =====================================================
+       26. SET MONEY ELEMENT
+       ===================================================== */
+
+    setMoneyText(
+        elementId,
+        value
+    ) {
+
+        const element =
+            document.getElementById(
+                elementId
+            );
+
+
+        if (!element) {
+            return;
+        }
+
+
+        element.textContent =
+            this.formatCurrency(
+                value
+            );
+
+    },
+
+
+    /* =====================================================
+       27. ESCAPE HTML
+       ===================================================== */
+
+    /*
+        Prevent user-entered names such as bill names
+        from accidentally becoming HTML.
+    */
+
+    escapeHTML(value) {
+
+        return String(
+            value ?? ""
+        )
+
+            .replaceAll(
+                "&",
+                "&amp;"
+            )
+
+            .replaceAll(
+                "<",
+                "&lt;"
+            )
+
+            .replaceAll(
+                ">",
+                "&gt;"
+            )
+
+            .replaceAll(
+                '"',
+                "&quot;"
+            )
+
+            .replaceAll(
+                "'",
+                "&#039;"
+            );
+
+    },
+
+
+    /* =====================================================
+       28. SETTINGS ACTIONS
+       ===================================================== */
+
+    bindSettingsActions() {
+
+        const exportButton =
+            document.getElementById(
+                "export-data"
+            );
+
+
+        const clearButton =
+            document.getElementById(
+                "clear-data"
+            );
+
+
+        if (exportButton) {
+
+            exportButton.addEventListener(
+                "click",
+                () => {
+
+                    this.exportBudgetData();
+
+                }
+            );
+
+        }
+
+
+        if (clearButton) {
+
+            clearButton.addEventListener(
+                "click",
+                () => {
+
+                    this.resetBudgetData();
+
+                }
+            );
+
+        }
+
+    },
+
+
+    /* =====================================================
+       29. EXPORT BUDGET DATA
+       ===================================================== */
+
+    exportBudgetData() {
+
+        const json =
+            BudgetStorage.exportData();
+
+
+        const blob =
+            new Blob(
+                [json],
+                {
+                    type:
+                        "application/json"
+                }
+            );
+
+
+        const url =
+            URL.createObjectURL(
+                blob
+            );
+
+
+        const link =
+            document.createElement(
+                "a"
+            );
+
+
+        link.href =
+            url;
+
+
+        link.download =
+            `budget-tracker-${this.getTodayKey()}.json`;
+
+
+        document.body.appendChild(
+            link
+        );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+        URL.revokeObjectURL(
+            url
+        );
+
+    },
+
+
+    /* =====================================================
+       30. RESET BUDGET DATA
+       ===================================================== */
+
+    resetBudgetData() {
+
+        const confirmed =
+            window.confirm(
+                "Reset all Budget Tracker data? This cannot be undone."
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        BudgetStorage.clearAllData();
+
+
+        this.refresh();
+
+    }
+
+};
+
+
+/* =========================================================
+   31. EXPOSE APP GLOBALLY
+   ========================================================= */
+
+window.BudgetApp =
+    BudgetApp;
+
+
+/* =========================================================
+   32. START APP
+   ========================================================= */
+
+if (
+    document.readyState ===
+    "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+
+            BudgetApp.init();
+
+        }
+    );
+
+}
+
+else {
 
     BudgetApp.init();
 
+}
 
-    /* =====================================================
-       47. MAKE APP AVAILABLE IN CONSOLE
-       ===================================================== */
 
-    window.BudgetApp =
-        BudgetApp;
-
-});
+/* =========================================================
+   END APP.JS
+   ========================================================= */
