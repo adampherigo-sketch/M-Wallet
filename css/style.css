@@ -1,5 +1,5 @@
 /* =========================================================
-   BUDGET TRACKER
+   M-WALLET
    Main Theme + Layout + PWA Support
    ========================================================= */
 
@@ -167,26 +167,49 @@ button:disabled {
 }
 
 .header-content {
+    position: relative;
+
     width: min(1100px, 100%);
     margin: 0 auto;
 
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
 
     padding: 20px 22px;
 }
 
-.header-label {
+
+/* M-Wallet Logo + Name */
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
     margin-bottom: 3px;
+}
+
+.header-logo {
+    width: 30px;
+    height: 30px;
+
+    flex-shrink: 0;
+
+    object-fit: contain;
+}
+
+.header-label {
+    margin: 0;
 
     color: var(--green);
 
-    font-size: 0.72rem;
+    font-size: 0.82rem;
     font-weight: 800;
 
+    text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.14em;
 }
@@ -199,6 +222,11 @@ button:disabled {
 }
 
 .header-button {
+    position: absolute;
+
+    top: 20px;
+    right: 22px;
+
     width: 44px;
     height: 44px;
 
@@ -237,12 +265,16 @@ button:disabled {
    ========================================================= */
 
 .header-month-area {
+    width: 100%;
     min-width: 0;
+
+    text-align: center;
 }
 
 .month-navigation {
     display: flex;
     align-items: center;
+    justify-content: center;
 
     gap: 8px;
 
@@ -343,17 +375,10 @@ button:disabled {
 }
 
 
-/* Current Month */
+/* Hidden Duplicate Month */
 
 .current-month-title {
-    margin-top: 8px;
-
-    color: var(--charcoal);
-
-    font-size: 1.05rem !important;
-    font-weight: 700;
-
-    opacity: 0.7;
+    display: none !important;
 }
 
 
@@ -1118,7 +1143,7 @@ tbody tr:hover {
 }
 
 
-/* Card content */
+/* Card Content */
 
 .money-action-content {
     min-width: 0;
@@ -1811,7 +1836,7 @@ input:invalid:not(:placeholder-shown) {
 }
 
 
-/* Reset / danger item */
+/* Reset / Danger Item */
 
 .danger-settings-item {
     color: var(--danger);
@@ -2027,7 +2052,7 @@ input:invalid:not(:placeholder-shown) {
 }
 
 
-/* Highlight Money button slightly */
+/* Highlight Money Button */
 
 .nav-button[data-page="money"] .nav-icon {
     width: 29px;
@@ -2073,11 +2098,6 @@ input:invalid:not(:placeholder-shown) {
         min-height: 100dvh;
     }
 
-    /*
-       Keeps the fixed bottom navigation from sitting
-       directly against the iPhone Home indicator.
-    */
-
     .bottom-nav {
         padding-bottom:
             calc(
@@ -2085,11 +2105,6 @@ input:invalid:not(:placeholder-shown) {
                 + env(safe-area-inset-bottom)
             );
     }
-
-    /*
-       Adds enough space below page content so the
-       bottom navigation never covers buttons/content.
-    */
 
     .app-content {
         padding-bottom:
@@ -2168,9 +2183,6 @@ input:invalid:not(:placeholder-shown) {
     background: var(--green);
 }
 
-
-/* Popup scrollbar */
-
 .money-modal-body::-webkit-scrollbar-track {
     background: var(--surface-soft);
 }
@@ -2224,11 +2236,43 @@ textarea:focus-visible {
     /* Header */
 
     .header-content {
-        padding: 17px 16px;
+        padding: 17px 16px 16px;
+    }
+
+    .header-month-area {
+        width: 100%;
+
+        text-align: center;
+    }
+
+    .header-brand {
+        padding: 0 52px;
+    }
+
+    .header-logo {
+        width: 28px;
+        height: 28px;
+    }
+
+    .header-label {
+        font-size: 0.78rem;
+    }
+
+    .header-button {
+        top: 17px;
+        right: 16px;
     }
 
     .month-navigation {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
         flex-wrap: wrap;
+
+        gap: 8px;
+
+        padding: 0 2px;
     }
 
     .month-select {
@@ -2456,6 +2500,59 @@ textarea:focus-visible {
 
 @media (max-width: 390px) {
 
+    /* Header */
+
+    .header-content {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .header-button {
+        right: 10px;
+
+        width: 40px;
+        height: 40px;
+    }
+
+    .header-brand {
+        padding: 0 46px;
+    }
+
+    .header-logo {
+        width: 26px;
+        height: 26px;
+    }
+
+    .header-label {
+        font-size: 0.74rem;
+    }
+
+    .month-navigation {
+        gap: 6px;
+    }
+
+    .month-select {
+        min-width: 108px;
+
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .year-select {
+        min-width: 76px;
+
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .month-arrow {
+        width: 34px;
+        height: 34px;
+    }
+
+
+    /* Summary */
+
     .summary-grid {
         grid-template-columns: 1fr;
     }
@@ -2465,14 +2562,14 @@ textarea:focus-visible {
     }
 
 
-    /* Stack Savings buttons */
+    /* Stack Savings Buttons */
 
     .page-actions {
         grid-template-columns: 1fr;
     }
 
 
-    /* Modal buttons */
+    /* Modal Buttons */
 
     .money-modal-actions {
         display: grid;
@@ -2485,7 +2582,7 @@ textarea:focus-visible {
     }
 
 
-    /* Smaller nav labels */
+    /* Smaller Nav Labels */
 
     .nav-button {
         font-size: 0.55rem;
@@ -2496,7 +2593,7 @@ textarea:focus-visible {
     }
 
 
-    /* Action card */
+    /* Action Card */
 
     .money-action-card {
         grid-template-columns:
@@ -2571,237 +2668,6 @@ textarea:focus-visible {
         animation-iteration-count: 1 !important;
 
         transition-duration: 0.01ms !important;
-    }
-
-}
-/* =========================================================
-   M-WALLET
-   HEADER UPDATE
-
-
-
-/* =========================================================
-   CENTER THE TOP HEADER
-   ========================================================= */
-
-.header-content {
-    position: relative;
-
-    width: min(1100px, 100%);
-    margin: 0 auto;
-
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-
-    padding: 20px 22px;
-}
-
-
-/* =========================================================
-   M-WALLET NAME
-   ========================================================= */
-
-.header-month-area {
-    width: 100%;
-    min-width: 0;
-
-    text-align: center;
-}
-
-.header-label {
-    margin-bottom: 3px;
-
-    color: var(--green);
-
-    font-size: 0.82rem;
-    font-weight: 800;
-
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-}
-
-
-/* =========================================================
-   MONTH / YEAR NAVIGATION
-   ========================================================= */
-
-.month-navigation {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    gap: 8px;
-
-    margin-top: 7px;
-}
-
-
-/* =========================================================
-   SETTINGS BUTTON
-   Keep it in the upper-right corner
-   ========================================================= */
-
-.header-button {
-    position: absolute;
-
-    top: 20px;
-    right: 22px;
-
-    width: 44px;
-    height: 44px;
-
-    display: grid;
-    place-items: center;
-
-    border: 1px solid var(--border);
-    border-radius: 50%;
-
-    background: var(--surface);
-
-    color: var(--green-dark);
-
-    font-size: 1.2rem;
-
-    box-shadow: var(--shadow-sm);
-
-    transition:
-        transform var(--transition),
-        background var(--transition),
-        border-color var(--transition);
-}
-
-.header-button:hover {
-    transform: translateY(-2px);
-
-    background: var(--green-soft);
-
-    border-color: var(--green-light);
-}
-
-
-/* =========================================================
-   REMOVE DUPLICATE MONTH TITLE
-   ========================================================= */
-
-.current-month-title {
-    display: none !important;
-}
-
-
-/* =========================================================
-   MOBILE HEADER
-   ========================================================= */
-
-@media (max-width: 600px) {
-
-    .header-content {
-        padding: 17px 16px 16px;
-    }
-
-
-    .header-month-area {
-        width: 100%;
-
-        text-align: center;
-    }
-
-
-    .header-label {
-        padding: 0 52px;
-
-        text-align: center;
-    }
-
-
-    .header-button {
-        top: 17px;
-        right: 16px;
-    }
-
-
-    .month-navigation {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-
-        flex-wrap: wrap;
-
-        gap: 8px;
-
-        padding: 0 2px;
-    }
-
-
-    .month-select {
-        min-width: 115px;
-    }
-
-
-    .year-select {
-        min-width: 80px;
-    }
-
-
-    .today-button {
-        padding: 8px 10px;
-    }
-
-}
-
-
-/* =========================================================
-   EXTRA SMALL PHONES
-   ========================================================= */
-
-@media (max-width: 390px) {
-
-    .header-content {
-        padding-left: 10px;
-        padding-right: 10px;
-    }
-
-
-    .header-button {
-        right: 10px;
-
-        width: 40px;
-        height: 40px;
-    }
-
-
-    .header-label {
-        padding: 0 46px;
-
-        font-size: 0.76rem;
-    }
-
-
-    .month-navigation {
-        gap: 6px;
-    }
-
-
-    .month-select {
-        min-width: 108px;
-
-        padding-left: 8px;
-        padding-right: 8px;
-    }
-
-
-    .year-select {
-        min-width: 76px;
-
-        padding-left: 8px;
-        padding-right: 8px;
-    }
-
-
-    .month-arrow {
-        width: 34px;
-        height: 34px;
     }
 
 }
