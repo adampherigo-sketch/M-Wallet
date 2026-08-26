@@ -4946,8 +4946,8 @@ function saveMoneyRecord(
     }
 
 
-    return saveMoneyRecordFallback(
-        record
+    throw new Error(
+        "Money entry saving is not available in storage.js."
     );
 
 }
@@ -5658,112 +5658,7 @@ function dispatchMoneyChangeEvents(
 
 
 /* =========================================================
-   42. FALLBACK STORAGE
-   ========================================================= */
-
-const MONEY_FALLBACK_STORAGE_KEY =
-    "mWalletMoneyEntries";
-
-
-function saveMoneyRecordFallback(
-    record
-) {
-
-    let records =
-        [];
-
-
-    try {
-
-        const saved =
-            localStorage.getItem(
-                MONEY_FALLBACK_STORAGE_KEY
-            );
-
-
-        if (
-            saved
-        ) {
-
-            records =
-                JSON.parse(
-                    saved
-                );
-
-        }
-
-    }
-
-    catch (error) {
-
-        records =
-            [];
-
-    }
-
-
-    if (
-        !Array.isArray(
-            records
-        )
-    ) {
-
-        records =
-            [];
-
-    }
-
-
-    if (
-        record.type ===
-        "starting-balance"
-    ) {
-
-        records =
-            records.filter(
-                existingRecord => {
-
-                    return !(
-
-                        existingRecord.type ===
-                            "starting-balance"
-
-                        &&
-
-                        existingRecord.monthKey ===
-                            record.monthKey
-
-                    );
-
-                }
-            );
-
-    }
-
-
-    records.push(
-        record
-    );
-
-
-    localStorage.setItem(
-
-        MONEY_FALLBACK_STORAGE_KEY,
-
-        JSON.stringify(
-            records
-        )
-
-    );
-
-
-    return record;
-
-}
-
-
-/* =========================================================
-   43. STATUS MESSAGE
+   42. STATUS MESSAGE
    ========================================================= */
 
 function showMoneyStatus(
