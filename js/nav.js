@@ -114,6 +114,8 @@ document.addEventListener(
 
             "savings",
 
+            "m-cash",
+
             "reports",
 
             "settings"

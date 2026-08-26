@@ -47,6 +47,14 @@ const BudgetApp = {
 
         this.initialized = true;
 
+        if (
+            window.MCash &&
+            typeof window.MCash.init ===
+                "function"
+        ) {
+            window.MCash.init();
+        }
+
         this.bindEvents();
         this.initializeReports();
         this.refresh();

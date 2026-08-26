@@ -85,6 +85,11 @@
         href="./css/style.css?v=6"
     >
 
+    <link
+        rel="stylesheet"
+        href="./css/m-cash.css?v=2"
+    >
+
 </head>
 
 
@@ -466,6 +471,8 @@
                         id="upcoming-bills"
                     >
 
+
+
                         <p class="empty-message">
                             No upcoming bills.
                         </p>
@@ -557,6 +564,64 @@
 
                 </section>
 
+
+
+                <!-- M-Cash -->
+
+                <section class="dashboard-section m-cash-home-entry">
+
+                    <div class="section-header">
+
+                        <h3>
+                            M-Cash
+                        </h3>
+
+
+                        <button
+                            type="button"
+                            class="primary-button"
+                            data-page="m-cash"
+                        >
+                            Open M-Cash
+                        </button>
+
+                    </div>
+
+
+                    <article class="info-card">
+
+                        <div>
+
+                            <span class="m-cash-symbol" aria-hidden="true">
+                                $
+                            </span>
+
+                            <strong>
+                                Cash tools are ready to set up.
+                            </strong>
+
+                        </div>
+
+                    </article>
+
+                </section>
+
+
+            </section>
+
+
+
+            <!-- ====================================
+                 M-CASH PAGE
+            ===================================== -->
+
+            <section
+                class="page"
+                id="m-cash-page"
+                data-page-content="m-cash"
+            >
+
+                <div id="m-cash-root"></div>
 
             </section>
 
@@ -2530,6 +2595,10 @@
     <script src="./js/storage.js?v=6"></script>
 
     <script src="./js/nav.js?v=6"></script>
+
+    <script src="./js/m-cash/cash-ui.js?v=2"></script>
+
+    <script src="./js/m-cash/cash.js?v=2"></script>
 
     <script src="./js/app.js?v=6"></script>
 
