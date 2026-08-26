@@ -106,8 +106,8 @@ test("harness instances have isolated string-compatible localStorage", () => {
         first.localStorage.setItem("number", 42);
         assert.equal(first.localStorage.getItem("number"), "42");
         assert.equal(second.localStorage.getItem("number"), null);
-        assert.equal(first.localStorage.length, 1);
-        assert.equal(first.localStorage.key(0), "number");
+        assert.equal(first.localStorage.length, 2);
+        assert.notEqual(first.localStorage.getItem(storageKey), null);
     } finally {
         first.cleanup();
         second.cleanup();

@@ -269,7 +269,7 @@ test("legacy expense, bill, and transaction category strings remain untouched", 
     assert.equal(expense.categoryId, null);
 
     assert.equal(bill.category, "Phone");
-    assert.equal(bill.categoryId, undefined);
+    assert.equal(bill.categoryId, null);
 
     assert.equal(transaction.category, "Other");
     assert.equal(transaction.categoryId, undefined);
@@ -747,6 +747,147 @@ test("an already-resolved categoryId is never overwritten by a later migration p
 
     assert.equal(expense.categoryId, "custom-preset");
     assert.equal(expense.subcategoryId, "custom-preset-sub");
+
+    harness.cleanup();
+});
+
+/* =========================================================
+   P2.6.3 - EXPENSE & BILL CATEGORY FORM INTEGRATION
+   (storage-level support for the money.js form changes)
+   ========================================================= */
+
+test("storage.addBill persists categoryId and subcategoryId for a brand-new bill", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+
+    const bill = storage.addBill({
+        name: "Phone Bill",
+        amount: 60,
+        category: "Utilities",
+        categoryId: "utilities",
+        subcategory: "Phone",
+        subcategoryId: "phone",
+        merchant: "Verizon"
+    });
+
+    assert.equal(bill.categoryId, "utilities");
+    assert.equal(bill.subcategoryId, "phone");
+    assert.equal(bill.merchant, "Verizon");
+
+    harness.cleanup();
+});
+
+test("storage.updateBill applies category/subcategory ids and merchant while preserving paid state", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+
+    const bill = storage.addBill({ name: "Phone Bill", amount: 60, category: "Phone" });
+    storage.markBillPaid(bill.id, true);
+
+    const updated = storage.updateBill(bill.id, {
+        category: "Utilities",
+        categoryId: "utilities",
+        subcategory: "Phone",
+        subcategoryId: "phone",
+        merchant: "Verizon"
+    });
+
+    assert.equal(updated.categoryId, "utilities");
+    assert.equal(updated.subcategoryId, "phone");
+    assert.equal(updated.merchant, "Verizon");
+    assert.equal(updated.paid, true);
+    assert.ok(updated.paidDate);
+    assert.equal(updated.id, bill.id);
+    assert.equal(updated.createdAt, bill.createdAt);
+
+    harness.cleanup();
+});
+
+test("omitting classification keys from a Bill update preserves the existing legacy category/subcategory/merchant", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+
+    const bill = storage.addBill({
+        name: "Grocery Store Card",
+        amount: 25,
+        category: "Grocerries",
+        merchant: "Original Merchant"
+    });
+
+    // Simulates the money.js "__legacy__ left unchanged" save path: only
+    // non-classification fields are included in the update payload.
+    const updated = storage.updateBill(bill.id, {
+        name: "Grocery Store Card",
+        dueDate: bill.dueDate,
+        amount: 30,
+        recurring: false
+    });
+
+    assert.equal(updated.amount, 30);
+    assert.equal(updated.category, "Grocerries");
+    assert.equal(updated.merchant, "Original Merchant");
+    assert.equal(updated.categoryId, null);
+    assert.equal(updated.subcategoryId, null);
+
+    harness.cleanup();
+});
+
+test("storage.updateExpense applies category/subcategory ids while preserving id and createdAt", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+
+    const expense = storage.addExpense({ name: "Grocery Run", amount: 42, category: "Other" });
+
+    const updated = storage.updateExpense(expense.id, {
+        category: "Groceries",
+        categoryId: "groceries",
+        subcategory: "Produce",
+        subcategoryId: "produce"
+    });
+
+    assert.equal(updated.categoryId, "groceries");
+    assert.equal(updated.subcategoryId, "produce");
+    assert.equal(updated.id, expense.id);
+    assert.equal(updated.createdAt, expense.createdAt);
+
+    harness.cleanup();
+});
+
+test("omitting classification keys from an Expense update preserves the existing legacy category and subcategory", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+
+    const expense = storage.addExpense({
+        name: "Grocery Run",
+        amount: 42,
+        category: "Grocerries",
+        subcategory: "Snacks"
+    });
+
+    // Simulates the money.js "__legacy__ left unchanged" save path: the
+    // update object omits category/categoryId/subcategory/subcategoryId.
+    const updated = storage.updateExpense(expense.id, {
+        name: "Grocery Run",
+        amount: 50
+    });
+
+    assert.equal(updated.amount, 50);
+    assert.equal(updated.category, "Grocerries");
+    assert.equal(updated.subcategory, "Snacks");
+    assert.equal(updated.categoryId, null);
+    assert.equal(updated.subcategoryId, null);
+    assert.equal(updated.id, expense.id);
+    assert.equal(updated.createdAt, expense.createdAt);
+
+    harness.cleanup();
+});
+
+test("storage.getSubcategory returns null for a subcategoryId that does not belong to the given category", () => {
+    const harness = freshHarness();
+    const storage = harness.storage;
+
+    assert.equal(storage.getSubcategory("utilities", "food"), null);
+    assert.ok(storage.getSubcategory("groceries", "food"));
 
     harness.cleanup();
 });

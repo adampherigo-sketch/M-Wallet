@@ -4917,6 +4917,19 @@ const BudgetStorage = {
                     bill.subcategory
                 ),
 
+            /*
+                P2.6.3: mirrors the categoryId/subcategoryId
+                passthrough normalizeExpense already applies (P2.6.2)
+                so new bills can persist centralized classification.
+            */
+            categoryId:
+                bill.categoryId ||
+                null,
+
+            subcategoryId:
+                bill.subcategoryId ||
+                null,
+
             merchant:
                 this.normalizeString(
                     bill.merchant

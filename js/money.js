@@ -95,6 +95,109 @@ function getGeneralSavingsBalance() {
 }
 
 
+/*
+    P2.6.3: dynamic category/subcategory options for the Bill and
+    Expense forms, sourced from the centralized category registry
+    established in P2.6.0-P2.6.2 instead of hardcoded arrays.
+*/
+function getCategoryFieldOptions() {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getCategories !==
+            "function"
+    ) {
+
+        return [];
+
+    }
+
+
+    return storage
+        .getCategories({
+            enabledOnly: true
+        })
+        .map(
+            category => ({
+
+                value:
+                    category.id,
+
+                label:
+                    category.name
+
+            })
+        );
+
+}
+
+
+// Reads the currently selected category directly from the live form.
+function getSubcategoryFieldOptions() {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        typeof storage.getSubcategories !==
+            "function" ||
+        !moneyModalBody
+    ) {
+
+        return [];
+
+    }
+
+
+    const categoryField =
+        moneyModalBody.querySelector(
+            '[name="categoryId"]'
+        );
+
+
+    const categoryId =
+        categoryField
+            ? categoryField.value
+            : "";
+
+
+    if (
+        !categoryId
+    ) {
+
+        return [];
+
+    }
+
+
+    return storage
+        .getSubcategories(
+            categoryId,
+            {
+                enabledOnly: true
+            }
+        )
+        .map(
+            subcategory => ({
+
+                value:
+                    subcategory.id,
+
+                label:
+                    subcategory.name
+
+            })
+        );
+
+}
+
+
 function getSavingsGoalOptions() {
 
     const storage =
@@ -415,24 +518,28 @@ const MONEY_FORMS = {
 
             {
                 type: "select",
-                name: "category",
+                name: "categoryId",
                 label: "Category",
                 placeholder: "Select a category",
                 required: true,
+                dynamicOptions:
+                    getCategoryFieldOptions
+            },
 
-                options: [
-                    "Housing",
-                    "Utilities",
-                    "Phone",
-                    "Internet",
-                    "Insurance",
-                    "Transportation",
-                    "Subscriptions",
-                    "Debt",
-                    "Health",
-                    "Pets",
-                    "Other"
-                ]
+            {
+                type: "select",
+                name: "subcategoryId",
+                label: "Subcategory",
+                placeholder: "No Subcategory",
+                dynamicOptions:
+                    getSubcategoryFieldOptions
+            },
+
+            {
+                type: "text",
+                name: "merchant",
+                label: "Merchant / Vendor / Payee",
+                placeholder: "Example: Verizon, City Water Dept."
             },
 
             {
@@ -489,37 +596,21 @@ const MONEY_FORMS = {
 
             {
                 type: "select",
-                name: "category",
+                name: "categoryId",
                 label: "Category",
                 placeholder: "Select a category",
                 required: true,
-
-                options: [
-                    "Housing",
-                    "Utilities",
-                    "Groceries",
-                    "Dining",
-                    "Transportation",
-                    "Shopping",
-                    "Entertainment",
-                    "Tickets & Events",
-                    "Health",
-                    "Personal Care",
-                    "Household",
-                    "Pets",
-                    "Travel",
-                    "Education",
-                    "Gifts",
-                    "Fees",
-                    "Other"
-                ]
+                dynamicOptions:
+                    getCategoryFieldOptions
             },
 
             {
-                type: "text",
-                name: "subcategory",
+                type: "select",
+                name: "subcategoryId",
                 label: "Subcategory",
-                placeholder: "Example: Fuel, Fast Food, Concert Ticket"
+                placeholder: "No Subcategory",
+                dynamicOptions:
+                    getSubcategoryFieldOptions
             },
 
             {
@@ -954,6 +1045,11 @@ let currentEditingSavingsGoalId =
 
 
 let originalFormState =
+    null;
+
+
+// Retained so undo can re-derive category/subcategory display state.
+let currentMoneyEditingRecord =
     null;
 
 
@@ -1965,6 +2061,572 @@ function updateConditionalMoneyFields() {
 
 
 /* =========================================================
+   15b. CATEGORY / SUBCATEGORY DYNAMIC FIELDS (P2.6.3)
+   ========================================================= */
+
+/*
+    Injects a one-off option (a disabled-but-currently-assigned
+    category/subcategory, or the "__legacy__" unresolved sentinel)
+    into an already-rendered select without touching dynamicOptions.
+    The option only lives for this modal instance.
+*/
+function injectMoneyExtraOption(
+    selectElement,
+    extraOption
+) {
+
+    if (
+        !selectElement ||
+        !extraOption
+    ) {
+        return;
+    }
+
+
+    const alreadyPresent =
+        Array.from(
+            selectElement.options
+        ).some(
+            option =>
+                option.value ===
+                extraOption.value
+        );
+
+
+    if (
+        alreadyPresent
+    ) {
+        return;
+    }
+
+
+    const option =
+        document.createElement(
+            "option"
+        );
+
+
+    option.value =
+        extraOption.value;
+
+    option.textContent =
+        extraOption.label;
+
+
+    selectElement.appendChild(
+        option
+    );
+
+}
+
+
+function rebuildMoneySubcategoryOptions(
+    {
+        selectedId = "",
+        extraOption = null
+    } = {}
+) {
+
+    if (
+        !moneyModalBody
+    ) {
+        return;
+    }
+
+
+    const subcategoryField =
+        moneyModalBody.querySelector(
+            '[name="subcategoryId"]'
+        );
+
+
+    if (
+        !subcategoryField
+    ) {
+        return;
+    }
+
+
+    const wrapper =
+        subcategoryField.closest(
+            "[data-money-field]"
+        );
+
+    const fieldConfig =
+        wrapper
+            ? wrapper._moneyFieldConfig
+            : null;
+
+
+    subcategoryField.innerHTML =
+        "";
+
+
+    const placeholderOption =
+        document.createElement(
+            "option"
+        );
+
+    placeholderOption.value =
+        "";
+
+    placeholderOption.textContent =
+        (
+            fieldConfig &&
+            fieldConfig.placeholder
+        ) ||
+        "No Subcategory";
+
+    placeholderOption.disabled =
+        true;
+
+    placeholderOption.selected =
+        true;
+
+    subcategoryField.appendChild(
+        placeholderOption
+    );
+
+
+    getSubcategoryFieldOptions().forEach(
+        optionDefinition => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                optionDefinition.value;
+
+            option.textContent =
+                optionDefinition.label;
+
+            subcategoryField.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    if (
+        extraOption
+    ) {
+
+        injectMoneyExtraOption(
+            subcategoryField,
+            extraOption
+        );
+
+    }
+
+
+    if (
+        selectedId
+    ) {
+
+        subcategoryField.value =
+            selectedId;
+
+
+        if (
+            subcategoryField.value ===
+            selectedId
+        ) {
+
+            placeholderOption.selected =
+                false;
+
+        }
+
+    }
+
+}
+
+
+// Clears/rebuilds Subcategory whenever Category changes so an
+// incompatible subcategory from another category can never persist.
+function handleMoneyCategoryFieldChange(
+    changedField
+) {
+
+    if (
+        !changedField ||
+        changedField.name !==
+            "categoryId"
+    ) {
+        return;
+    }
+
+
+    if (
+        currentMoneyAction !==
+            "bill" &&
+        currentMoneyAction !==
+            "expense"
+    ) {
+        return;
+    }
+
+
+    rebuildMoneySubcategoryOptions();
+
+}
+
+
+/*
+    Resolves how an existing Bill/Expense record's category and
+    subcategory should appear when the edit form opens: by stable
+    id, by safe P2.6.2 legacy resolution, by a disabled-but-still-
+    assigned option, or by a non-persistent "__legacy__" option
+    that preserves an unresolved historical string untouched.
+*/
+function populateMoneyCategoryFields(
+    record,
+    action
+) {
+
+    if (
+        !record ||
+        (
+            action !==
+                "bill" &&
+            action !==
+                "expense"
+        )
+    ) {
+        return;
+    }
+
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        !storage ||
+        !moneyModalBody
+    ) {
+        return;
+    }
+
+
+    const categoryField =
+        moneyModalBody.querySelector(
+            '[name="categoryId"]'
+        );
+
+
+    if (
+        !categoryField
+    ) {
+        return;
+    }
+
+
+    const categoryList =
+        typeof storage.getCategories ===
+            "function"
+
+            ? storage.getCategories()
+
+            : [];
+
+
+    let categoryId =
+        record.categoryId ||
+        null;
+
+    let subcategoryId =
+        record.subcategoryId ||
+        null;
+
+
+    if (
+        !categoryId &&
+        record.category &&
+        typeof storage.resolveCategoryIds ===
+            "function"
+    ) {
+
+        const resolved =
+            storage.resolveCategoryIds(
+                categoryList,
+                record.category,
+                record.subcategory
+            );
+
+
+        categoryId =
+            resolved.categoryId ||
+            null;
+
+        subcategoryId =
+            subcategoryId ||
+            resolved.subcategoryId ||
+            null;
+
+    }
+
+
+    let categoryExtraOption =
+        null;
+
+    let showLegacyNote =
+        false;
+
+
+    if (
+        categoryId
+    ) {
+
+        const category =
+            typeof storage.getCategory ===
+                "function"
+
+                ? storage.getCategory(
+                    categoryId
+                )
+
+                : null;
+
+
+        if (
+            category &&
+            category.enabled ===
+                false
+        ) {
+
+            categoryExtraOption = {
+
+                value:
+                    category.id,
+
+                label:
+                    `${category.name} (disabled)`
+
+            };
+
+        }
+
+    }
+
+    else if (
+        record.category
+    ) {
+
+        categoryId =
+            "__legacy__";
+
+        categoryExtraOption = {
+
+            value:
+                "__legacy__",
+
+            label:
+                `${record.category} (unresolved legacy)`
+
+        };
+
+        showLegacyNote =
+            true;
+
+    }
+
+
+    if (
+        categoryExtraOption
+    ) {
+
+        injectMoneyExtraOption(
+            categoryField,
+            categoryExtraOption
+        );
+
+    }
+
+
+    categoryField.value =
+        categoryId ||
+        "";
+
+
+    let subcategoryExtraOption =
+        null;
+
+
+    if (
+        categoryId &&
+        categoryId !==
+            "__legacy__" &&
+        subcategoryId
+    ) {
+
+        const subcategory =
+            typeof storage.getSubcategory ===
+                "function"
+
+                ? storage.getSubcategory(
+                    categoryId,
+                    subcategoryId
+                )
+
+                : null;
+
+
+        if (
+            !subcategory
+        ) {
+
+            subcategoryId =
+                null;
+
+        }
+
+        else if (
+            subcategory.enabled ===
+                false
+        ) {
+
+            subcategoryExtraOption = {
+
+                value:
+                    subcategory.id,
+
+                label:
+                    `${subcategory.name} (disabled)`
+
+            };
+
+        }
+
+    }
+
+    else if (
+        categoryId ===
+            "__legacy__" &&
+        record.subcategory
+    ) {
+
+        subcategoryId =
+            "__legacy__";
+
+        subcategoryExtraOption = {
+
+            value:
+                "__legacy__",
+
+            label:
+                `${record.subcategory} (unresolved legacy)`
+
+        };
+
+    }
+
+    else {
+
+        subcategoryId =
+            null;
+
+    }
+
+
+    rebuildMoneySubcategoryOptions(
+        {
+            selectedId:
+                subcategoryId ||
+                "",
+
+            extraOption:
+                subcategoryExtraOption
+        }
+    );
+
+
+    showMoneyLegacyCategoryNote(
+        categoryField,
+        showLegacyNote
+            ? record.category
+            : null
+    );
+
+}
+
+
+// Small inline help text explaining a preserved, unresolved legacy value.
+function showMoneyLegacyCategoryNote(
+    categoryField,
+    legacyText
+) {
+
+    const wrapper =
+        categoryField.closest(
+            "[data-money-field]"
+        );
+
+
+    if (
+        !wrapper
+    ) {
+        return;
+    }
+
+
+    let note =
+        wrapper.querySelector(
+            ".money-legacy-category-note"
+        );
+
+
+    if (
+        !legacyText
+    ) {
+
+        if (
+            note
+        ) {
+
+            note.remove();
+
+        }
+
+
+        return;
+
+    }
+
+
+    if (
+        !note
+    ) {
+
+        note =
+            document.createElement(
+                "small"
+            );
+
+        note.className =
+            "form-help money-legacy-category-note";
+
+        wrapper.appendChild(
+            note
+        );
+
+    }
+
+
+    note.textContent =
+        (
+            `This record's original category ("${legacyText}") ` +
+            "didn't match a known category and has been preserved " +
+            "unchanged. Choose a category above to reclassify it."
+        );
+
+}
+
+
+/* =========================================================
    16. UPDATE SAVINGS FORM INFORMATION
    ========================================================= */
 
@@ -2279,6 +2941,12 @@ function populateMoneyForm(
 
     updateSavingsFormInformation();
 
+
+    populateMoneyCategoryFields(
+        record,
+        currentMoneyAction
+    );
+
 }
 
 
@@ -2388,9 +3056,20 @@ function openMoneyModal(
         options.record
     ) {
 
+        currentMoneyEditingRecord =
+            options.record;
+
+
         populateMoneyForm(
             options.record
         );
+
+    }
+
+    else {
+
+        currentMoneyEditingRecord =
+            null;
 
     }
 
@@ -2874,6 +3553,10 @@ function closeMoneyModal() {
         null;
 
 
+    currentMoneyEditingRecord =
+        null;
+
+
     originalFormState =
         null;
 
@@ -3027,6 +3710,12 @@ function undoMoneyForm() {
     updateSavingsFormInformation();
 
 
+    populateMoneyCategoryFields(
+        currentMoneyEditingRecord,
+        currentMoneyAction
+    );
+
+
     showMoneyStatus(
         "Changes undone.",
         "success"
@@ -3125,10 +3814,120 @@ function getMoneyFormData() {
    30. CREATE MONEY RECORD
    ========================================================= */
 
+/*
+    Derives display strings from the centralized registry so
+    category/subcategory are never trusted from hidden/mirrored
+    inputs. A blank, "__legacy__", or unrecognized id clears the
+    classification entirely rather than guessing (e.g. "Other").
+*/
+function applyMoneyCategoryClassification(
+    record,
+    storage
+) {
+
+    const categoryId =
+        record.categoryId ||
+        "";
+
+    const subcategoryId =
+        record.subcategoryId ||
+        "";
+
+
+    if (
+        !categoryId ||
+        categoryId ===
+            "__legacy__"
+    ) {
+
+        delete record.categoryId;
+        delete record.category;
+        delete record.subcategoryId;
+        delete record.subcategory;
+
+        return;
+
+    }
+
+
+    const category =
+        storage &&
+        typeof storage.getCategory ===
+            "function"
+
+            ? storage.getCategory(
+                categoryId
+            )
+
+            : null;
+
+
+    record.categoryId =
+        categoryId;
+
+    record.category =
+        category
+            ? category.name
+            : "";
+
+
+    if (
+        !subcategoryId ||
+        subcategoryId ===
+            "__legacy__"
+    ) {
+
+        delete record.subcategoryId;
+        delete record.subcategory;
+
+        return;
+
+    }
+
+
+    const subcategory =
+        storage &&
+        typeof storage.getSubcategory ===
+            "function"
+
+            ? storage.getSubcategory(
+                categoryId,
+                subcategoryId
+            )
+
+            : null;
+
+
+    // Never persist a subcategoryId under the wrong category.
+    if (
+        !subcategory
+    ) {
+
+        delete record.subcategoryId;
+        delete record.subcategory;
+
+        return;
+
+    }
+
+
+    record.subcategoryId =
+        subcategoryId;
+
+    record.subcategory =
+        subcategory.name;
+
+}
+
+
 function createMoneyRecord() {
 
     const period =
         getSelectedBudgetPeriod();
+
+
+    const storage =
+        getMoneyStorage();
 
 
     const formData =
@@ -3305,10 +4104,10 @@ function createMoneyRecord() {
             );
 
 
-        record.category =
+        record.merchant =
             String(
-                record.category ||
-                "Other"
+                record.merchant ||
+                ""
             ).trim();
 
 
@@ -3316,6 +4115,12 @@ function createMoneyRecord() {
             Boolean(
                 record.recurring
             );
+
+
+        applyMoneyCategoryClassification(
+            record,
+            storage
+        );
 
     }
 
@@ -3343,13 +4148,6 @@ function createMoneyRecord() {
             ).trim();
 
 
-        record.subcategory =
-            String(
-                record.subcategory ||
-                ""
-            ).trim();
-
-
         record.notes =
             String(
                 record.notes ||
@@ -3373,6 +4171,12 @@ function createMoneyRecord() {
                 "";
 
         }
+
+
+        applyMoneyCategoryClassification(
+            record,
+            storage
+        );
 
     }
 
@@ -4015,13 +4819,50 @@ function saveMoneyRecord(
             amount:
                 record.amount,
 
-            category:
-                record.category,
-
             recurring:
                 record.recurring
 
         };
+
+
+        /*
+            Classification fields are only added when present on
+            record. An unresolved legacy selection left unchanged
+            deletes these keys upstream (createMoneyRecord), so
+            omitting them here — rather than assigning undefined —
+            is what lets storage.updateBill's Object.assign merge
+            leave the original legacy category/subcategory/merchant
+            completely untouched.
+        */
+        [
+            "category",
+            "categoryId",
+            "subcategory",
+            "subcategoryId",
+            "merchant"
+        ].forEach(
+            key => {
+
+                if (
+                    Object.prototype
+                        .hasOwnProperty
+                        .call(
+                            record,
+                            key
+                        )
+                ) {
+
+                    billUpdates[
+                        key
+                    ] =
+                        record[
+                            key
+                        ];
+
+                }
+
+            }
+        );
 
 
         return storage.updateBill(
@@ -5499,6 +6340,11 @@ if (
                 return;
 
             }
+
+
+            handleMoneyCategoryFieldChange(
+                field
+            );
 
 
             updateConditionalMoneyFields();
