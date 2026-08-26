@@ -5,6 +5,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const productionStoragePath = path.resolve(__dirname, "../../js/storage.js");
+const cashStoragePath = path.resolve(__dirname, "../../js/m-cash/cash-storage.js");
 const storageKey = "mWalletData";
 
 class MemoryStorage {
@@ -111,6 +112,9 @@ class StorageHarness {
 
         sandbox.window.window = sandbox.window;
         this.context = vm.createContext(sandbox);
+        vm.runInContext(fs.readFileSync(cashStoragePath, "utf8"), this.context, {
+            filename: cashStoragePath
+        });
         vm.runInContext(fs.readFileSync(productionStoragePath, "utf8"), this.context, {
             filename: productionStoragePath
         });

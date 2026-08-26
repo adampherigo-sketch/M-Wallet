@@ -823,9 +823,54 @@ const BudgetStorage = {
     },
 
 
+    getCashStorage() {
+
+        return window.MCashStorage || null;
+
+    },
+
+
     /* =====================================================
        2. DEFAULT DATA
        ===================================================== */
+
+    createDefaultCashState() {
+
+        const cashStorage =
+            this.getCashStorage();
+
+
+        const emptyWallet =
+            cashStorage
+                ? cashStorage.createEmptyWallet()
+                : { denominations: {} };
+
+
+        return {
+
+            initialized:
+                false,
+
+
+            wallet:
+                emptyWallet,
+
+
+            savings:
+                {
+                    denominations:
+                        { ...emptyWallet.denominations }
+                },
+
+
+            history: [],
+
+
+            settings: {}
+
+        };
+
+    },
 
     createDefaultData() {
 
@@ -888,6 +933,10 @@ const BudgetStorage = {
             savingsGoals: [],
 
             savingsTransfers: [],
+
+
+            cash:
+                this.createDefaultCashState(),
 
 
             accounts: {
@@ -2475,6 +2524,90 @@ const BudgetStorage = {
        4. MIGRATIONS
        ===================================================== */
 
+    normalizeCashState(
+        cash
+    ) {
+
+        const cashStorage =
+            this.getCashStorage();
+
+
+        const defaults =
+            this.createDefaultCashState();
+
+
+        if (
+            !cashStorage
+        ) {
+
+            return defaults;
+
+        }
+
+
+        const source =
+            cash &&
+            typeof cash ===
+                "object"
+                ? cash
+                : {};
+
+
+        const wallet =
+            cashStorage.normalizeWallet(
+                source.wallet
+            );
+
+
+        const savingsSource =
+            source.savings &&
+            typeof source.savings ===
+                "object"
+                ? source.savings
+                : {};
+
+
+        return {
+
+            initialized:
+                source.initialized === true,
+
+
+            wallet,
+
+
+            savings:
+                {
+                    denominations:
+                        cashStorage.normalizeDenominationQuantities(
+                            savingsSource.denominations
+                        )
+                },
+
+
+            history:
+                Array.isArray(
+                    source.history
+                )
+                    ? this.cloneJSON(
+                        source.history
+                    )
+                    : [],
+
+
+            settings:
+                source.settings &&
+                typeof source.settings ===
+                    "object"
+                    ? this.cloneJSON(
+                        source.settings
+                    )
+                    : {}
+
+        };
+
+    },
+
     migrateLegacyPaychecks(
         data
     ) {
@@ -3125,6 +3258,12 @@ const BudgetStorage = {
             );
 
 
+        data.cash =
+            this.normalizeCashState(
+                data.cash
+            );
+
+
         if (
             !data.accounts ||
             typeof data.accounts !==
@@ -3533,6 +3672,97 @@ const BudgetStorage = {
             return false;
 
         }
+
+    },
+
+
+    getCashState() {
+
+        const data =
+            this.load();
+
+
+        return this.cloneJSON(
+            data.cash
+        );
+
+    },
+
+
+    saveCashState(
+        cashState
+    ) {
+
+        const data =
+            this.load();
+
+
+        if (
+            data.recoveryMode === true
+        ) {
+
+            return false;
+
+        }
+
+
+        data.cash =
+            this.normalizeCashState(
+                cashState
+            );
+
+
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return false;
+
+        }
+
+
+        return this.cloneJSON(
+            data.cash
+        );
+
+    },
+
+
+    getCashWallet() {
+
+        return this.cloneJSON(
+            this.getCashState()
+                .wallet
+        );
+
+    },
+
+
+    saveCashWallet(
+        wallet
+    ) {
+
+        const cashState =
+            this.getCashState();
+
+
+        cashState.wallet =
+            wallet;
+
+
+        const savedState =
+            this.saveCashState(
+                cashState
+            );
+
+
+        return savedState
+            ? this.cloneJSON(
+                savedState.wallet
+            )
+            : false;
 
     },
 

@@ -128,6 +128,169 @@ test("save and reload preserve raw state", () => {
     }
 });
 
+test("new data receives a default cash state", () => {
+    const harness = new StorageHarness();
+
+    try {
+        const data = harness.reload();
+
+        assert.equal(data.version, 5);
+        assert.equal(data.cash.initialized, false);
+        assert.equal(Object.keys(data.cash.wallet.denominations).length, 13);
+        assert.ok(Object.values(data.cash.wallet.denominations).every(quantity => quantity === 0));
+        assert.deepEqual(
+            JSON.parse(JSON.stringify(data.cash.savings.denominations)),
+            JSON.parse(JSON.stringify(data.cash.wallet.denominations))
+        );
+        assert.deepEqual(JSON.parse(JSON.stringify(data.cash.history)), []);
+        assert.deepEqual(JSON.parse(JSON.stringify(data.cash.settings)), {});
+    } finally {
+        harness.cleanup();
+    }
+});
+
+test("version-5 data receives cash defaults without changing existing values", () => {
+    const harness = new StorageHarness({
+        preloadedData: {
+            version: 5,
+            marker: "preserve-me",
+            income: [{ id: "income-1", amount: 1250, name: "Paycheck", date: "2026-08-01" }],
+            months: {},
+            settings: { currency: "USD" }
+        }
+    });
+
+    try {
+        const data = harness.reload();
+
+        assert.equal(data.marker, "preserve-me");
+        assert.equal(data.income[0].amount, 1250);
+        assert.equal(data.settings.currency, "USD");
+        assert.equal(data.cash.initialized, false);
+        assert.equal(data.cash.wallet.denominations["bill-1"], 0);
+    } finally {
+        harness.cleanup();
+    }
+});
+
+test("cash wallet counts persist through save and reload", () => {
+    const harness = new StorageHarness();
+
+    try {
+        const saved = harness.storage.saveCashWallet({
+            denominations: {
+                "bill-2": 4,
+                "coin-penny": 7,
+                "coin-half-dollar": 2,
+                "coin-dollar": 3
+            }
+        });
+        const reloaded = harness.storage.getCashWallet();
+
+        assert.equal(saved.denominations["bill-2"], 4);
+        assert.equal(reloaded.denominations["bill-2"], 4);
+        assert.equal(reloaded.denominations["coin-penny"], 7);
+        assert.equal(reloaded.denominations["coin-half-dollar"], 2);
+        assert.equal(reloaded.denominations["coin-dollar"], 3);
+    } finally {
+        harness.cleanup();
+    }
+});
+
+test("cash normalization fills missing keys and rejects malformed quantities", () => {
+    const harness = new StorageHarness();
+
+    try {
+        const normalized = harness.storage.normalizeCashState({
+            initialized: true,
+            wallet: {
+                denominations: {
+                    "bill-2": 2,
+                    "coin-penny": "4",
+                    "coin-quarter": -1,
+                    "coin-half-dollar": 1.5,
+                    "coin-dollar": "invalid",
+                    unknown: 99
+                }
+            }
+        });
+
+        assert.equal(normalized.initialized, true);
+        assert.equal(normalized.wallet.denominations["bill-2"], 2);
+        assert.equal(normalized.wallet.denominations["coin-penny"], 4);
+        assert.equal(normalized.wallet.denominations["coin-quarter"], 0);
+        assert.equal(normalized.wallet.denominations["coin-half-dollar"], 0);
+        assert.equal(normalized.wallet.denominations["coin-dollar"], 0);
+        assert.equal(Object.hasOwn(normalized.wallet.denominations, "unknown"), false);
+    } finally {
+        harness.cleanup();
+    }
+});
+
+test("cash state and wallet getters return defensive copies", () => {
+    const harness = new StorageHarness();
+
+    try {
+        harness.storage.saveCashWallet({
+            denominations: { "bill-20": 2 }
+        });
+
+        const state = harness.storage.getCashState();
+        const wallet = harness.storage.getCashWallet();
+
+        state.wallet.denominations["bill-20"] = 9;
+        wallet.denominations["bill-20"] = 8;
+
+        assert.equal(harness.storage.getCashWallet().denominations["bill-20"], 2);
+    } finally {
+        harness.cleanup();
+    }
+});
+
+test("cash save failure preserves the previously saved cash state", () => {
+    const harness = new StorageHarness();
+
+    try {
+        harness.storage.saveCashWallet({
+            denominations: { "bill-100": 1 }
+        });
+        harness.setFailWrites(true);
+
+        const result = harness.storage.saveCashWallet({
+            denominations: { "bill-100": 9 }
+        });
+
+        assert.equal(result, false);
+        assert.equal(harness.rawData.cash.wallet.denominations["bill-100"], 1);
+    } finally {
+        harness.cleanup();
+    }
+});
+
+test("cash normalization is idempotent and leaves non-cash data unchanged", () => {
+    const harness = new StorageHarness();
+
+    try {
+        const source = {
+            version: 5,
+            marker: "unchanged",
+            income: [{ id: "income-1", amount: 750, name: "Paycheck", date: "2026-08-01" }],
+            months: {},
+            cash: {
+                wallet: { denominations: { "bill-2": 3 } }
+            }
+        };
+        const first = harness.storage.normalizeData(JSON.parse(JSON.stringify(source)));
+        const second = harness.storage.normalizeData(JSON.parse(JSON.stringify(first)));
+
+        assert.deepEqual(JSON.parse(JSON.stringify(second.cash)), JSON.parse(JSON.stringify(first.cash)));
+        assert.equal(second.marker, "unchanged");
+        assert.equal(second.income[0].amount, 750);
+    } finally {
+        harness.cleanup();
+    }
+});
+
 test("IDs and timestamps are deterministic", () => {
     const harness = new StorageHarness({ timestamp: "2026-08-14T12:34:56.000Z" });
 
