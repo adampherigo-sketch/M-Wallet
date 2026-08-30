@@ -82,7 +82,7 @@
 
     <link
         rel="stylesheet"
-        href="./css/style.css?v=6"
+        href="./css/style.css?v=7"
     >
 
     <link
@@ -285,6 +285,7 @@
 
             <!-- ====================================
                  DASHBOARD PAGE
+                 UI CLEANUP 2
             ===================================== -->
 
             <section
@@ -303,19 +304,10 @@
                         </h2>
 
                         <p>
-                            Your monthly money overview.
+                            Your money at a glance for the selected month.
                         </p>
 
                     </div>
-
-
-                    <button
-                        type="button"
-                        class="primary-button"
-                        data-page="money"
-                    >
-                        + Manage Money
-                    </button>
 
                 </div>
 
@@ -376,9 +368,17 @@
 
                     <div class="section-header">
 
-                        <h3>
-                            Monthly Summary
-                        </h3>
+                        <div>
+
+                            <h3>
+                                Monthly Summary
+                            </h3>
+
+                            <p>
+                                The key numbers for this month.
+                            </p>
+
+                        </div>
 
                     </div>
 
@@ -450,18 +450,17 @@
 
                     <div class="section-header">
 
-                        <h3>
-                            Upcoming Bills
-                        </h3>
+                        <div>
 
+                            <h3>
+                                Upcoming Bills
+                            </h3>
 
-                        <button
-                            type="button"
-                            class="text-button"
-                            data-page="budget"
-                        >
-                            View All
-                        </button>
+                            <p>
+                                Your next unpaid bills for this month.
+                            </p>
+
+                        </div>
 
                     </div>
 
@@ -470,8 +469,6 @@
                         class="list-container"
                         id="upcoming-bills"
                     >
-
-
 
                         <p class="empty-message">
                             No upcoming bills.
@@ -489,9 +486,17 @@
 
                     <div class="section-header">
 
-                        <h3>
-                            Next Income
-                        </h3>
+                        <div>
+
+                            <h3>
+                                Next Income
+                            </h3>
+
+                            <p>
+                                The next expected income in this month.
+                            </p>
+
+                        </div>
 
                     </div>
 
@@ -535,18 +540,17 @@
 
                     <div class="section-header">
 
-                        <h3>
-                            Savings
-                        </h3>
+                        <div>
 
+                            <h3>
+                                Savings
+                            </h3>
 
-                        <button
-                            type="button"
-                            class="text-button"
-                            data-page="savings"
-                        >
-                            View Savings
-                        </button>
+                            <p>
+                                A quick look at your savings position.
+                            </p>
+
+                        </div>
 
                     </div>
 
@@ -557,7 +561,7 @@
                     >
 
                         <p class="empty-message">
-                            No savings goals yet.
+                            No savings yet.
                         </p>
 
                     </div>
@@ -572,37 +576,50 @@
 
                     <div class="section-header">
 
-                        <h3>
-                            M-Cash
-                        </h3>
+                        <div>
 
+                            <h3>
+                                M-Cash
+                            </h3>
 
-                        <button
-                            type="button"
-                            class="primary-button"
-                            data-page="m-cash"
-                        >
-                            Open M-Cash
-                        </button>
+                            <p>
+                                Track the physical cash in your wallet.
+                            </p>
+
+                        </div>
 
                     </div>
 
 
-                    <article class="info-card">
+                    <button
+                        type="button"
+                        class="money-action-card"
+                        data-page="m-cash"
+                    >
 
-                        <div>
+                        <span class="money-action-icon" aria-hidden="true">
+                            $
+                        </span>
 
-                            <span class="m-cash-symbol" aria-hidden="true">
-                                $
-                            </span>
+
+                        <span class="money-action-content">
 
                             <strong>
-                                Cash tools are ready to set up.
+                                Cash Wallet
                             </strong>
 
-                        </div>
+                            <small>
+                                View your cash balance, denominations, and M-Cash tools.
+                            </small>
 
-                    </article>
+                        </span>
+
+
+                        <span class="money-action-arrow" aria-hidden="true">
+                            ›
+                        </span>
+
+                    </button>
 
                 </section>
 
@@ -622,468 +639,6 @@
             >
 
                 <div id="m-cash-root"></div>
-
-            </section>
-
-
-
-            <!-- ====================================
-                 MONEY MANAGEMENT PAGE
-            ===================================== -->
-
-            <section
-                class="page"
-                id="money-page"
-                data-page-content="money"
-            >
-
-
-                <div class="page-heading">
-
-                    <div>
-
-                        <h2>
-                            Money Management
-                        </h2>
-
-                        <p>
-                            Add, move, and update money for this month.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-
-                <!-- Income -->
-
-                <section class="money-management-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Income
-                            </h3>
-
-                            <p>
-                                Record money coming into M-Wallet.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="money-action-grid">
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="income"
-                        >
-
-                            <span class="money-action-icon">
-                                💵
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Add Income
-                                </strong>
-
-                                <small>
-                                    Add work income, freelance money, benefits, gifts, or other income.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-                    </div>
-
-                </section>
-
-
-
-                <!-- Bills & Spending -->
-
-                <section class="money-management-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Bills & Spending
-                            </h3>
-
-                            <p>
-                                Record where your money is going.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="money-action-grid">
-
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="bill"
-                        >
-
-                            <span class="money-action-icon">
-                                🧾
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Add Bill
-                                </strong>
-
-                                <small>
-                                    Add a monthly or one-time bill.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="expense"
-                        >
-
-                            <span class="money-action-icon">
-                                🛒
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Add Expense
-                                </strong>
-
-                                <small>
-                                    Record everyday spending, merchants, categories, and recurring expenses.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="transaction"
-                        >
-
-                            <span class="money-action-icon">
-                                ⇄
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Add Transaction
-                                </strong>
-
-                                <small>
-                                    Manually record money in or out.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-
-                    </div>
-
-                </section>
-
-
-
-                <!-- Savings -->
-
-                <section class="money-management-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Savings
-                            </h3>
-
-                            <p>
-                                Move money into savings and organize it into funds.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="money-action-grid">
-
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="savings-deposit"
-                        >
-
-                            <span class="money-action-icon">
-                                ↓
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Add to Savings
-                                </strong>
-
-                                <small>
-                                    Move money from Checking into General Savings.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="savings-withdrawal"
-                        >
-
-                            <span class="money-action-icon">
-                                ↑
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Withdraw to Checking
-                                </strong>
-
-                                <small>
-                                    Move money from General Savings back into Checking.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="savings-allocation"
-                        >
-
-                            <span class="money-action-icon">
-                                ⇢
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Allocate to Fund
-                                </strong>
-
-                                <small>
-                                    Move General Savings into one of your savings goals.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="savings-release"
-                        >
-
-                            <span class="money-action-icon">
-                                ↩
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Return from Fund
-                                </strong>
-
-                                <small>
-                                    Move money from a savings goal back into General Savings.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="savings-goal"
-                        >
-
-                            <span class="money-action-icon">
-                                🎯
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Add Savings Goal
-                                </strong>
-
-                                <small>
-                                    Create a new fund with a savings target.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-
-                    </div>
-
-                </section>
-
-
-
-                <!-- Budget Setup -->
-
-                <section class="money-management-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Budget Setup
-                            </h3>
-
-                            <p>
-                                Adjust the starting point for this month's budget.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="money-action-grid">
-
-                        <button
-                            type="button"
-                            class="money-action-card"
-                            data-money-action="starting-balance"
-                        >
-
-                            <span class="money-action-icon">
-                                ⚙
-                            </span>
-
-
-                            <span class="money-action-content">
-
-                                <strong>
-                                    Change Starting Balance
-                                </strong>
-
-                                <small>
-                                    Update the balance this month starts with.
-                                </small>
-
-                            </span>
-
-
-                            <span class="money-action-arrow">
-                                ›
-                            </span>
-
-                        </button>
-
-                    </div>
-
-                </section>
-
 
             </section>
 
@@ -1115,13 +670,6 @@
                     </div>
 
 
-                    <button
-                        type="button"
-                        class="primary-button"
-                        data-page="money"
-                    >
-                        + Manage Money
-                    </button>
 
                 </div>
 
@@ -1379,11 +927,11 @@
                     <div>
 
                         <h2>
-                            Transactions
+                            Activity
                         </h2>
 
                         <p>
-                            Everything moving in and out.
+                            Your money movement for the selected month.
                         </p>
 
                     </div>
@@ -1691,14 +1239,6 @@
                             <p class="empty-message">
                                 No savings goals created.
                             </p>
-
-                            <button
-                                type="button"
-                                class="primary-button"
-                                data-money-action="savings-goal"
-                            >
-                                + Create Savings Goal
-                            </button>
 
                         </div>
 
@@ -2316,20 +1856,10 @@
                     <div class="settings-section-heading">
 
                         <h3>
-                            Budget Settings
+                            Data Management
                         </h3>
 
                     </div>
-
-
-                    <button
-                        type="button"
-                        class="settings-item"
-                        id="change-starting-balance"
-                        data-money-action="starting-balance"
-                    >
-                        Starting Balance
-                    </button>
 
 
                     <button
@@ -2406,7 +1936,11 @@
             <button
                 class="nav-button"
                 type="button"
-                data-page="money"
+                data-quick-add-toggle
+                aria-haspopup="dialog"
+                aria-controls="quick-add-menu"
+                aria-expanded="false"
+                aria-label="Add money"
             >
 
                 <span class="nav-icon">
@@ -2414,7 +1948,7 @@
                 </span>
 
                 <span>
-                    Money
+                    Add
                 </span>
 
             </button>
@@ -2479,6 +2013,197 @@
 
 
     <!-- ========================================
+         UNIVERSAL QUICK ADD
+    ========================================= -->
+
+    <div
+        class="money-modal quick-add-modal"
+        id="quick-add-menu"
+        aria-hidden="true"
+    >
+
+        <div
+            class="money-modal-overlay"
+            data-quick-add-close
+        >
+        </div>
+
+
+        <div
+            class="money-modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quick-add-title"
+        >
+
+            <div class="money-modal-header">
+
+                <div>
+
+                    <p class="money-modal-label">
+                        M-Wallet
+                    </p>
+
+                    <h3 id="quick-add-title">
+                        Add Money
+                    </h3>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="money-modal-close"
+                    data-quick-add-close
+                    aria-label="Close Add Money menu"
+                    title="Close"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="money-modal-body">
+
+                <div class="money-action-grid">
+
+
+                    <button
+                        type="button"
+                        class="money-action-card"
+                        data-money-action="income"
+                    >
+
+                        <span class="money-action-icon">
+                            💵
+                        </span>
+
+
+                        <span class="money-action-content">
+
+                            <strong>
+                                Income
+                            </strong>
+
+                            <small>
+                                Record money coming in.
+                            </small>
+
+                        </span>
+
+
+                        <span class="money-action-arrow">
+                            ›
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="money-action-card"
+                        data-money-action="bill"
+                    >
+
+                        <span class="money-action-icon">
+                            🧾
+                        </span>
+
+
+                        <span class="money-action-content">
+
+                            <strong>
+                                Bill
+                            </strong>
+
+                            <small>
+                                Add a one-time or recurring bill.
+                            </small>
+
+                        </span>
+
+
+                        <span class="money-action-arrow">
+                            ›
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="money-action-card"
+                        data-money-action="expense"
+                    >
+
+                        <span class="money-action-icon">
+                            🛒
+                        </span>
+
+
+                        <span class="money-action-content">
+
+                            <strong>
+                                Expense
+                            </strong>
+
+                            <small>
+                                Record everyday spending.
+                            </small>
+
+                        </span>
+
+
+                        <span class="money-action-arrow">
+                            ›
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="money-action-card"
+                        data-money-action="transaction"
+                    >
+
+                        <span class="money-action-icon">
+                            ⇄
+                        </span>
+
+
+                        <span class="money-action-content">
+
+                            <strong>
+                                Transaction
+                            </strong>
+
+                            <small>
+                                Manually record money in or out.
+                            </small>
+
+                        </span>
+
+
+                        <span class="money-action-arrow">
+                            ›
+                        </span>
+
+                    </button>
+
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ========================================
          UNIVERSAL MONEY POPUP
     ========================================= -->
 
@@ -2510,7 +2235,7 @@
                 <div>
 
                     <p class="money-modal-label">
-                        Money Management
+                        M-Wallet
                     </p>
 
                     <h3 id="money-modal-title">
@@ -2589,12 +2314,12 @@
 
     <!-- ========================================
          JAVASCRIPT
-         SAVINGS + REPORTS CACHE VERSION
+         UI CLEANUP 2 CACHE VERSION
     ========================================= -->
 
     <script src="./js/storage.js?v=6"></script>
 
-    <script src="./js/nav.js?v=6"></script>
+    <script src="./js/nav.js?v=7"></script>
 
     <script src="./js/m-cash/cash-ui.js?v=2"></script>
 
@@ -2602,7 +2327,7 @@
 
     <script src="./js/m-cash/cash.js?v=2"></script>
 
-    <script src="./js/app.js?v=6"></script>
+    <script src="./js/app.js?v=7"></script>
 
     <script src="./js/money.js?v=6"></script>
 

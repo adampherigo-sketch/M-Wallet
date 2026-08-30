@@ -4,6 +4,7 @@
    app.js
 
    Reports + Savings Upgrade
+   UI Cleanup 2: Cleaner Dashboard + Activity
    ========================================================= */
 
 const BudgetApp = {
@@ -60,7 +61,7 @@ const BudgetApp = {
         this.refresh();
 
         console.log(
-            "M-Wallet app loaded - Reports + Savings system ready."
+            "M-Wallet app loaded - cleaner Dashboard + Activity ready."
         );
     },
 
@@ -424,7 +425,7 @@ const BudgetApp = {
                 )
                 .slice(
                     0,
-                    5
+                    3
                 );
 
 
@@ -620,10 +621,22 @@ const BudgetApp = {
             this.getStorage();
 
 
+        const goals =
+            Array.isArray(
+                snapshot.savingsGoals
+            )
+                ? snapshot.savingsGoals
+                : [];
+
+
         const generalSavings =
             typeof storage?.getSavingsBalance ===
                 "function"
-                ? storage.getSavingsBalance()
+                ? (
+                    Number(
+                        storage.getSavingsBalance()
+                    ) || 0
+                )
                 : (
                     Number(
                         snapshot.generalSavingsBalance
@@ -631,53 +644,48 @@ const BudgetApp = {
                 );
 
 
-        const goals =
-            Array.isArray(
-                snapshot.savingsGoals
-            )
-                ? snapshot.savingsGoals
-                    .slice(
-                        0,
-                        3
-                    )
-                : [];
+        const allocatedSavings =
+            typeof storage?.getAllocatedSavingsTotal ===
+                "function"
+                ? (
+                    Number(
+                        storage.getAllocatedSavingsTotal()
+                    ) || 0
+                )
+                : goals.reduce(
+                    (total, goal) =>
+                        total +
+                        (
+                            Number(
+                                goal.currentAmount
+                            ) || 0
+                        ),
+                    0
+                );
+
+
+        const totalSavings =
+            typeof storage?.getTotalSavingsBalance ===
+                "function"
+                ? (
+                    Number(
+                        storage.getTotalSavingsBalance()
+                    ) || 0
+                )
+                : (
+                    generalSavings +
+                    allocatedSavings
+                );
 
 
         if (
+            totalSavings <= 0 &&
             goals.length === 0
         ) {
 
-            if (
-                generalSavings > 0
-            ) {
-
-                container.innerHTML = `
-                    <article class="savings-goal-card">
-
-                        <div class="savings-goal-header">
-
-                            <span>
-                                General Savings
-                            </span>
-
-                            <strong>
-                                ${this.formatCurrency(
-                                    generalSavings
-                                )}
-                            </strong>
-
-                        </div>
-
-                    </article>
-                `;
-
-                return;
-            }
-
-
             container.innerHTML = `
                 <p class="empty-message">
-                    No savings goals yet.
+                    No savings yet.
                 </p>
             `;
 
@@ -685,14 +693,48 @@ const BudgetApp = {
         }
 
 
-        container.innerHTML =
-            goals.map(
-                goal =>
-                    this.createSavingsGoalHTML(
-                        goal,
-                        false
-                    )
-            ).join("");
+        /*
+            Keep the Dashboard focused on the answer:
+
+            "How much do I have saved?"
+
+            Detailed goal cards and savings controls belong
+            on the Savings page instead of being repeated
+            here.
+        */
+
+        container.innerHTML = `
+            <article class="info-card">
+
+                <div>
+
+                    <span>
+                        Total Savings
+                    </span>
+
+                    <strong>
+                        ${this.formatCurrency(
+                            totalSavings
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Savings Funds
+                    </span>
+
+                    <strong>
+                        ${goals.length}
+                    </strong>
+
+                </div>
+
+            </article>
+        `;
     },
 
 
@@ -1478,7 +1520,35 @@ const BudgetApp = {
             Array.isArray(
                 snapshot.transactions
             )
-                ? snapshot.transactions
+                ? [...snapshot.transactions]
+                    .sort(
+                        (first, second) => {
+
+                            const dateOrder =
+                                this.compareDates(
+                                    second.date,
+                                    first.date
+                                );
+
+
+                            if (
+                                dateOrder !== 0
+                            ) {
+                                return dateOrder;
+                            }
+
+
+                            return String(
+                                second.createdAt ||
+                                ""
+                            ).localeCompare(
+                                String(
+                                    first.createdAt ||
+                                    ""
+                                )
+                            );
+                        }
+                    )
                 : [];
 
 
@@ -1889,16 +1959,8 @@ const BudgetApp = {
                 <div class="savings-empty-state">
 
                     <p class="empty-message">
-                        No savings goals created.
+                        No savings goals created yet.
                     </p>
-
-                    <button
-                        type="button"
-                        class="primary-button"
-                        data-money-action="savings-goal"
-                    >
-                        + Create Savings Goal
-                    </button>
 
                 </div>
             `;

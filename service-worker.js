@@ -3,8 +3,8 @@
    Service Worker
    GitHub / PWA Ready
 
-   P2.4.1
-   Offline Asset / Version Cache Fix
+   UI Cleanup 1
+   Offline Asset / Version Cache Refresh
    ========================================================= */
 
 
@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v3";
+const CACHE_NAME = "m-wallet-v4";
 
 
 /* =========================================================
@@ -49,12 +49,12 @@ const APP_SHELL = [
 /*
     M-Wallet uses version query strings such as:
 
-    ./js/app.js?v=6
-    ./css/style.css?v=6
+    ./js/nav.js?v=7
+    ./css/style.css?v=7
 
     The app shell itself precaches the clean URLs:
 
-    ./js/app.js
+    ./js/nav.js
     ./css/style.css
 
     ignoreSearch allows the service worker to treat those
@@ -200,8 +200,8 @@ self.addEventListener(
 
 
         /* -------------------------------------------------
-           Ignore non-GET requests.
-        ------------------------------------------------- */
+           IGNORE NON-GET REQUESTS
+           ------------------------------------------------- */
 
         if (
             event.request.method !==
@@ -220,8 +220,8 @@ self.addEventListener(
 
 
         /* -------------------------------------------------
-           Only manage M-Wallet's own resources.
-        ------------------------------------------------- */
+           ONLY MANAGE M-WALLET'S OWN RESOURCES
+           ------------------------------------------------- */
 
         if (
             requestURL.origin !==
@@ -284,7 +284,7 @@ self.addEventListener(
 
                     /* -------------------------------------
                        OFFLINE FALLBACK
-                    ------------------------------------- */
+                       ------------------------------------- */
 
                     .catch(
                         async () => {
@@ -379,7 +379,7 @@ self.addEventListener(
                                 Cache the exact online request.
 
                                 Example:
-                                ./js/app.js?v=6
+                                ./js/nav.js?v=7
                             */
 
                             await cache.put(
@@ -398,8 +398,8 @@ self.addEventListener(
                        OFFLINE FALLBACK
 
                        ignoreSearch means:
-                       app.js?v=6 can use cached app.js
-                    ------------------------------------- */
+                       nav.js?v=7 can use cached nav.js
+                       ------------------------------------- */
 
                     .catch(
                         () => {
@@ -485,3 +485,8 @@ self.addEventListener(
 
     }
 );
+
+
+/* =========================================================
+   END SERVICE-WORKER.JS
+   ========================================================= */

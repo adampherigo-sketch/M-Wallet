@@ -2,6 +2,8 @@
    M-WALLET
    Main Theme + Layout + PWA Support
    Reports + Savings Upgrade
+   UI Cleanup 1: Simplified Navigation + Quick Add
+   UI Cleanup 2: Cleaner Dashboard + Activity
    ========================================================= */
 
 
@@ -686,6 +688,239 @@ img {
 
     font-size: 0.82rem;
     line-height: 1.4;
+}
+
+
+
+/* =========================================================
+   DASHBOARD CLEANUP 2
+   ========================================================= */
+
+/*
+    Home should answer:
+    "What is happening with my money right now?"
+
+    These rules intentionally make the Dashboard calmer
+    without changing any financial data or rendering logic.
+*/
+
+#home-page .page-heading {
+    margin-bottom: 18px;
+}
+
+#home-page .page-heading > div {
+    max-width: 620px;
+}
+
+#home-page .balance-card {
+    margin-bottom: 18px;
+}
+
+#home-page .dashboard-section {
+    margin-bottom: 16px;
+    padding: 19px 20px;
+
+    border-radius: var(--radius-lg);
+
+    box-shadow:
+        0 3px 12px
+        rgba(20, 40, 30, 0.045);
+}
+
+#home-page .dashboard-section:last-child {
+    margin-bottom: 0;
+}
+
+#home-page .section-header {
+    margin-bottom: 13px;
+}
+
+#home-page .section-header h3 {
+    font-size: 0.98rem;
+}
+
+#home-page .section-header p {
+    margin-top: 3px;
+
+    font-size: 0.76rem;
+}
+
+#home-page .summary-grid {
+    gap: 10px;
+}
+
+#home-page .summary-card {
+    padding: 14px 15px;
+
+    background: #ffffff;
+}
+
+#home-page .summary-card span {
+    margin-bottom: 6px;
+
+    font-size: 0.73rem;
+}
+
+#home-page .summary-card strong {
+    font-size: 1.08rem;
+}
+
+
+/* ---------------------------------------------------------
+   Dashboard Upcoming Bills
+   --------------------------------------------------------- */
+
+#home-page #upcoming-bills .transaction-item {
+    gap: 12px;
+
+    padding: 12px 2px;
+}
+
+#home-page #upcoming-bills .transaction-icon {
+    width: 38px;
+    height: 38px;
+
+    font-size: 0.92rem;
+}
+
+#home-page #upcoming-bills .transaction-info strong {
+    font-size: 0.88rem;
+}
+
+#home-page #upcoming-bills .transaction-info span {
+    font-size: 0.72rem;
+}
+
+#home-page #upcoming-bills .transaction-amount {
+    font-size: 0.86rem;
+}
+
+
+/* ---------------------------------------------------------
+   Dashboard Next Income + Savings Summary
+   --------------------------------------------------------- */
+
+#home-page .info-card {
+    gap: 10px;
+}
+
+#home-page .info-card div {
+    padding: 14px 15px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    background: var(--surface-soft);
+}
+
+#home-page .info-card span {
+    margin-bottom: 4px;
+
+    font-size: 0.71rem;
+}
+
+#home-page .info-card strong {
+    font-size: 0.96rem;
+}
+
+#home-page #savings-overview .info-card div:first-child {
+    border-color: rgba(36, 92, 66, 0.14);
+
+    background: var(--green-soft);
+}
+
+#home-page #savings-overview .info-card div:last-child {
+    border-color: rgba(141, 108, 168, 0.14);
+
+    background: var(--purple-soft);
+}
+
+
+/* ---------------------------------------------------------
+   Dashboard M-Cash Entry
+   --------------------------------------------------------- */
+
+#home-page .m-cash-home-entry .money-action-card {
+    min-height: 78px;
+
+    padding: 14px 16px;
+
+    border-radius: var(--radius-md);
+
+    background:
+        linear-gradient(
+            145deg,
+            var(--surface-soft),
+            #ffffff
+        );
+
+    box-shadow: none;
+}
+
+#home-page .m-cash-home-entry .money-action-card:hover {
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 7px 18px
+        rgba(22, 59, 43, 0.07);
+}
+
+#home-page .m-cash-home-entry .money-action-icon {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 13px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--green-dark),
+            var(--green)
+        );
+
+    color: #ffffff;
+
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+#home-page .m-cash-home-entry .money-action-content strong {
+    margin-bottom: 3px;
+
+    font-size: 0.9rem;
+}
+
+#home-page .m-cash-home-entry .money-action-content small {
+    font-size: 0.72rem;
+}
+
+#home-page .m-cash-home-entry .money-action-arrow {
+    font-size: 1.45rem;
+}
+
+
+/* ---------------------------------------------------------
+   Activity Page
+   --------------------------------------------------------- */
+
+#transactions-page .transaction-list {
+    padding: 3px 20px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    background: var(--surface);
+
+    box-shadow: var(--shadow-sm);
+}
+
+#transactions-page .transaction-item {
+    padding: 14px 0;
+}
+
+#transactions-page .empty-message {
+    padding-top: 30px;
+    padding-bottom: 30px;
 }
 
 
@@ -1883,7 +2118,7 @@ tbody tr:last-child td {
 
 
 /* =========================================================
-   23. MONEY MANAGEMENT
+   23. MONEY ACTION CARDS / QUICK ADD
    ========================================================= */
 
 .money-management-section {
@@ -2171,6 +2406,102 @@ tbody tr:last-child td {
     color: #ffffff;
 
     transform: scale(1.07);
+}
+
+
+/* ---------------------------------------------------------
+   Universal Quick Add
+   --------------------------------------------------------- */
+
+.quick-add-modal {
+    z-index: 1100;
+}
+
+.quick-add-modal .money-modal-content {
+    width: min(500px, 100%);
+
+    max-height: min(82vh, 640px);
+    max-height: min(82dvh, 640px);
+}
+
+.quick-add-modal .money-modal-header {
+    padding-bottom: 16px;
+}
+
+.quick-add-modal .money-modal-body {
+    padding: 18px;
+}
+
+.quick-add-modal .money-action-grid {
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: 12px;
+}
+
+.quick-add-modal .money-action-card {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: flex-start;
+    justify-content: flex-start;
+
+    gap: 11px;
+
+    min-height: 146px;
+
+    padding: 17px;
+
+    border-radius: 18px;
+}
+
+.quick-add-modal .money-action-card:hover {
+    transform: translateY(-2px);
+}
+
+.quick-add-modal .money-action-card:nth-child(1) .money-action-icon {
+    background: var(--success-soft);
+
+    color: var(--success);
+}
+
+.quick-add-modal .money-action-card:nth-child(2) .money-action-icon {
+    background: var(--gold-soft);
+
+    color: #765f2f;
+}
+
+.quick-add-modal .money-action-card:nth-child(3) .money-action-icon {
+    background: var(--purple-soft);
+
+    color: #6f5088;
+}
+
+.quick-add-modal .money-action-card:nth-child(4) .money-action-icon {
+    background: var(--green-light);
+
+    color: var(--green-dark);
+}
+
+.quick-add-modal .money-action-content strong {
+    margin-bottom: 4px;
+
+    font-size: 0.94rem;
+}
+
+.quick-add-modal .money-action-content small {
+    font-size: 0.74rem;
+
+    line-height: 1.4;
+}
+
+.quick-add-modal .money-action-arrow {
+    display: none;
 }
 
 
@@ -3216,10 +3547,16 @@ input[type="date"] {
     width: min(760px, 100%);
 
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns:
+        repeat(
+            6,
+            minmax(0, 1fr)
+        );
+
+    align-items: end;
 
     padding:
-        8px
+        9px
         8px
         calc(
             8px +
@@ -3231,9 +3568,9 @@ input[type="date"] {
     border: 1px solid rgba(221, 217, 207, 0.9);
     border-bottom: none;
 
-    border-radius: 20px 20px 0 0;
+    border-radius: 22px 22px 0 0;
 
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.97);
 
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -3245,6 +3582,7 @@ input[type="date"] {
 
 .nav-button {
     min-width: 0;
+    min-height: 54px;
 
     display: flex;
     flex-direction: column;
@@ -3257,14 +3595,14 @@ input[type="date"] {
     padding: 8px 4px;
 
     border: none;
-    border-radius: 12px;
+    border-radius: 13px;
 
     background: transparent;
 
     color: var(--muted);
 
     font-size: 0.68rem;
-    font-weight: 650;
+    font-weight: 680;
 
     transition:
         color var(--transition),
@@ -3281,7 +3619,7 @@ input[type="date"] {
 .nav-button:hover {
     color: var(--green-dark);
 
-    background: rgba(237, 245, 236, 0.55);
+    background: rgba(237, 245, 236, 0.58);
 }
 
 .nav-button.active {
@@ -3290,30 +3628,92 @@ input[type="date"] {
     background: var(--green-soft);
 }
 
-.nav-button[data-page="money"] .nav-icon {
-    width: 29px;
-    height: 29px;
+
+/* ---------------------------------------------------------
+   Center Add Action
+
+   This is an action, not a navigation destination.
+   nav.js adds data-quick-add-toggle at startup.
+   --------------------------------------------------------- */
+
+.nav-button[data-quick-add-toggle] {
+    position: relative;
+
+    overflow: visible;
+
+    color: var(--green-dark);
+
+    background: transparent;
+}
+
+.nav-button[data-quick-add-toggle]:hover,
+.nav-button[data-quick-add-toggle]:focus-visible {
+    background: transparent;
+
+    transform: translateY(-1px);
+}
+
+.nav-button[data-quick-add-toggle] .nav-icon {
+    width: 52px;
+    height: 52px;
 
     display: grid;
     place-items: center;
 
-    margin-top: -6px;
+    flex: 0 0 52px;
 
+    margin-top: -27px;
+
+    border: 5px solid rgba(255, 255, 255, 0.98);
     border-radius: 50%;
 
-    background: var(--green-dark);
+    background:
+        linear-gradient(
+            135deg,
+            var(--green-dark),
+            var(--green)
+        );
 
     color: #ffffff;
 
-    font-size: 1.15rem;
+    font-size: 1.55rem;
+    font-weight: 500;
 
     box-shadow:
-        0 4px 10px
-        rgba(22, 59, 43, 0.2);
+        0 8px 20px
+        rgba(22, 59, 43, 0.28);
+
+    transition:
+        transform var(--transition),
+        background var(--transition),
+        box-shadow var(--transition);
 }
 
-.nav-button[data-page="money"].active .nav-icon {
-    background: var(--green);
+.nav-button[data-quick-add-toggle]:hover .nav-icon {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 11px 24px
+        rgba(22, 59, 43, 0.32);
+}
+
+.nav-button[data-quick-add-toggle][aria-expanded="true"] .nav-icon {
+    transform: rotate(45deg);
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--green),
+            #317354
+        );
+}
+
+.nav-button[data-quick-add-toggle] > span:last-child {
+    margin-top: -2px;
+
+    color: var(--green-dark);
+
+    font-weight: 800;
 }
 
 
@@ -3576,6 +3976,50 @@ textarea:focus-visible {
     }
 
 
+    /* Dashboard Cleanup */
+
+    #home-page .page-heading {
+        margin-bottom: 15px;
+    }
+
+    #home-page .balance-card {
+        margin-bottom: 14px;
+
+        padding: 22px 18px;
+    }
+
+    #home-page .dashboard-section {
+        margin-bottom: 14px;
+        padding: 16px;
+    }
+
+    #home-page .section-header {
+        margin-bottom: 11px;
+    }
+
+    #home-page .summary-card {
+        padding: 13px;
+    }
+
+    #home-page .info-card {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+    #home-page .m-cash-home-entry .money-action-card {
+        min-height: 72px;
+
+        padding: 13px 14px;
+    }
+
+    #transactions-page .transaction-list {
+        padding: 2px 14px;
+    }
+
+
     /* Summary */
 
     .summary-grid,
@@ -3797,10 +4241,14 @@ textarea:focus-visible {
     .bottom-nav {
         width: 100%;
 
-        border-radius: 18px 18px 0 0;
+        padding-top: 10px;
+
+        border-radius: 20px 20px 0 0;
     }
 
     .nav-button {
+        min-height: 52px;
+
         padding: 7px 2px;
 
         font-size: 0.6rem;
@@ -3810,11 +4258,56 @@ textarea:focus-visible {
         font-size: 1.1rem;
     }
 
-    .nav-button[data-page="money"] .nav-icon {
-        width: 27px;
-        height: 27px;
+    .nav-button[data-quick-add-toggle] .nav-icon {
+        width: 50px;
+        height: 50px;
 
-        font-size: 1rem;
+        flex-basis: 50px;
+
+        margin-top: -26px;
+
+        font-size: 1.45rem;
+    }
+
+
+    /* Quick Add */
+
+    .quick-add-modal .money-modal-content {
+        max-height: 88vh;
+        max-height: 88dvh;
+    }
+
+    .quick-add-modal .money-modal-body {
+        padding:
+            17px
+            15px
+            calc(
+                18px +
+                env(safe-area-inset-bottom)
+            );
+    }
+
+    .quick-add-modal .money-action-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        gap: 10px;
+    }
+
+    .quick-add-modal .money-action-card {
+        min-height: 132px;
+
+        padding: 14px;
+    }
+
+    .quick-add-modal .money-action-icon {
+        width: 42px;
+        height: 42px;
+
+        font-size: 1.15rem;
     }
 
 }
@@ -3919,6 +4412,24 @@ textarea:focus-visible {
         grid-template-columns: 1fr;
     }
 
+    /*
+        Keep the Dashboard summary compact even on
+        extra-small phones. Budget tables/cards retain
+        their normal single-column behavior.
+    */
+
+    #home-page .summary-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+    #home-page .info-card {
+        grid-template-columns: 1fr;
+    }
+
     .balance-details {
         grid-template-columns: 1fr;
     }
@@ -3976,11 +4487,51 @@ textarea:focus-visible {
     /* Bottom Nav */
 
     .nav-button {
-        font-size: 0.55rem;
+        font-size: 0.54rem;
     }
 
     .nav-icon {
         font-size: 1rem;
+    }
+
+    .nav-button[data-quick-add-toggle] .nav-icon {
+        width: 47px;
+        height: 47px;
+
+        flex-basis: 47px;
+
+        margin-top: -24px;
+
+        border-width: 4px;
+
+        font-size: 1.35rem;
+    }
+
+
+    /* Quick Add */
+
+    .quick-add-modal .money-action-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+    .quick-add-modal .money-action-card {
+        min-height: 126px;
+
+        gap: 9px;
+
+        padding: 12px;
+    }
+
+    .quick-add-modal .money-action-content strong {
+        font-size: 0.86rem;
+    }
+
+    .quick-add-modal .money-action-content small {
+        font-size: 0.67rem;
     }
 
 
