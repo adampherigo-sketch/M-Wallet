@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v17";
+const CACHE_NAME = "m-wallet-v18";
 
 
 /* =========================================================
@@ -52,10 +52,10 @@ const APP_SHELL = [
     "./js/m-cash/cash-savings.js",
     "./js/m-cash/cash.js",
 
-    "./icons/icon-192.png",
-    "./icons/icon-512.png",
-    "./icons/icon-512-maskable.png",
-    "./icons/apple-touch-icon.png"
+    "./icons/m-wallet-icon-192.png",
+    "./icons/m-wallet-icon-512.png",
+    "./icons/m-wallet-icon-512-maskable.png",
+    "./icons/m-wallet-apple-touch-icon.png"
 
 ];
 
