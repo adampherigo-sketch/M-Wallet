@@ -5294,5 +5294,123 @@ textarea:focus-visible {
 
 
 /* =========================================================
+   44. NAVIGATION ALIGNMENT CLEANUP   (post-ZG10)
+
+   Keeps the bottom nav symmetrical: every destination icon sits
+   on one baseline, the active state highlights without resizing
+   or lifting the item, and the centre Add action sits on the
+   true horizontal centre. Layout / placement only — no
+   behaviour, sizing-architecture, or safe-area change.
+   ========================================================= */
+
+.nav-button {
+    position: relative;
+}
+
+
+/* ---- Add action placement ----
+   With six equal columns the Add button (grid child 3) sits an
+   equal distance from both of its neighbours — the correct
+   spacing for a six-item bar. Its column stays 1fr like the rest
+   (see .bottom-nav grid); the raised circle is the emphasis, so
+   no horizontal offset is applied. Elevation is unchanged. */
+
+
+/* ---- Active state: highlight, not displacement ----
+   Colour + glow + a thin violet marker at the top edge. No fill
+   that changes the item's visual size, no upward shift. */
+
+.nav-button.active:not([data-quick-add-toggle]) {
+    background: none;
+    transform: none;
+}
+
+.nav-button.active:not([data-quick-add-toggle])::before {
+    content: "";
+
+    position: absolute;
+    top: 0;
+    left: 50%;
+
+    width: 24px;
+    height: 3px;
+
+    transform: translateX(-50%);
+
+    border-radius: 0 0 4px 4px;
+
+    background: var(--z-violet-bright, #b67aff);
+}
+
+.nav-button.active:not([data-quick-add-toggle]) .nav-icon {
+    color: var(--z-violet-bright, #b67aff);
+    text-shadow: 0 0 12px rgba(155, 92, 255, 0.4);
+}
+
+.nav-button.active:not([data-quick-add-toggle]) > span:last-child {
+    color: var(--z-violet-bright, #b67aff);
+}
+
+
+/* ---- Mobile: one icon baseline, no jump on nav ----
+   Every destination is the same fixed box with the label row
+   reserved, so the icon-centring area is identical whether or not
+   the label shows. The active label is absolutely pinned to the
+   button's bottom edge, so revealing it never lifts the icon. */
+
+@media (max-width: 600px) {
+
+    .nav-button:not([data-quick-add-toggle]) {
+        height: 52px;
+        min-height: 52px;
+
+        gap: 0;
+
+        padding: 4px 2px 14px;
+
+        justify-content: center;
+    }
+
+    .nav-button.active:not([data-quick-add-toggle]) .nav-icon {
+        display: inline-block;
+
+        width: auto;
+        height: auto;
+
+        border-radius: 0;
+        background: none;
+    }
+
+    .nav-button.active:not([data-quick-add-toggle]) > span:last-child {
+        position: absolute;
+
+        left: 0;
+        right: 0;
+        bottom: 3px;
+
+        width: auto;
+        height: auto;
+
+        margin: 0;
+        padding: 0 1px;
+
+        overflow: hidden;
+
+        clip: auto;
+        clip-path: none;
+
+        font-size: 0.56rem;
+        font-weight: 800;
+        line-height: 1;
+
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+}
+
+
+/* =========================================================
    END STYLE.CSS
    ========================================================= */
