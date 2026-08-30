@@ -18,3 +18,8 @@ node_modules/
 .env.test.local
 .env.production.local
 !.env.example
+
+# Local auth config override (holds a real Supabase URL + anon key for
+# local development). The committed js/auth/auth-config.example.js is the
+# template; js/auth/auth-config.js (the resolver) stays committed.
+js/auth/auth-config.local.js

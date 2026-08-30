@@ -437,12 +437,35 @@
         }
     }
 
+    /* BP2 — minimal auth-architecture status. Reads the explicit
+       state from MWalletAuth; shows nothing sensitive. */
+    function renderAuthStatus() {
+        var el = document.getElementById("settings-auth-status");
+        if (!el) {
+            return;
+        }
+        var auth = global.MWalletAuth;
+        if (!auth || typeof auth.getState !== "function") {
+            el.textContent = "Unavailable";
+            return;
+        }
+        var labels = {
+            unconfigured: "Not configured",
+            initializing: "Checking…",
+            signed_out: "Ready",
+            signed_in: "Signed in",
+            error: "Unavailable"
+        };
+        el.textContent = labels[auth.getState().status] || "—";
+    }
+
 
     function renderAll() {
         renderCategoryManager();
         renderStorageInfo();
         renderSystemStatus();
         renderVersionInfo();
+        renderAuthStatus();
         applyPendingFocus();
     }
 
@@ -809,6 +832,14 @@
                 renderAll();
             }
         });
+
+        /* keep the Accounts row live if auth state settles or
+           changes while Settings is open (one subscription) */
+        if (global.MWalletAuth && typeof global.MWalletAuth.subscribe === "function") {
+            global.MWalletAuth.subscribe(function () {
+                renderAuthStatus();
+            });
+        }
 
         renderAll();
     }
