@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v18";
+const CACHE_NAME = "m-wallet-v19";
 
 
 /* =========================================================
@@ -37,6 +37,7 @@ const APP_SHELL = [
     "./css/settings.css",
     "./css/zg9.css",
 
+    "./js/app-version.js",
     "./js/storage.js",
     "./js/nav.js",
     "./js/app.js",
@@ -65,13 +66,10 @@ const APP_SHELL = [
    ========================================================= */
 
 /*
-    M-Wallet uses version query strings such as:
-
-    ./js/app.js?v=8
-    ./css/style.css?v=8
-
-    The app shell precaches the clean URLs. ignoreSearch lets
-    versioned requests use those same cached files offline.
+    M-Wallet asset URLs carry a version query string (for example
+    ./js/app.js?v=N or ./css/style.css?v=N). The app shell
+    precaches the clean URLs; ignoreSearch lets those versioned
+    requests resolve to the same cached files offline.
 */
 
 async function matchCachedRequest(request) {

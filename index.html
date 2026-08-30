@@ -2335,9 +2335,23 @@
 
                         <div class="zg-set-section-head">
                             <span class="z-eyebrow" id="zg-set-system-label">
-                                System
+                                System &amp; Beta
                             </span>
-                            <p>App information and installation.</p>
+                            <p>App version, build channel, and installation.</p>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>
+                                    M-Wallet Beta
+                                    <span class="z-badge z-badge-violet">BETA</span>
+                                </strong>
+                                <small>
+                                    Pre-release build. Accounts, cloud backup, sync, and
+                                    recovery are still in progress — avoid entering
+                                    irreplaceable financial data for now.
+                                </small>
+                            </span>
                         </div>
 
                         <button
@@ -2379,10 +2393,20 @@
                         </div>
 
                         <div class="zg-set-identity">
-                            <div><span>App</span><strong>M-Wallet</strong></div>
+                            <div>
+                                <span>Version</span>
+                                <strong id="settings-app-version">—</strong>
+                            </div>
+                            <div>
+                                <span>Channel</span>
+                                <strong id="settings-app-channel">—</strong>
+                            </div>
                             <div><span>By</span><strong>Zevaryn Systems</strong></div>
                             <div><span>Interface</span><strong>Zevaryn Grid</strong></div>
-                            <div><span>Data schema</span><strong>v5</strong></div>
+                            <div>
+                                <span>Data schema</span>
+                                <strong id="settings-data-schema">—</strong>
+                            </div>
                         </div>
 
                     </section>
@@ -2858,6 +2882,8 @@
          MOBILE NAV HOTFIX CACHE VERSION
     ========================================= -->
 
+    <script src="./js/app-version.js?v=1"></script>
+
     <script src="./js/storage.js?v=7"></script>
 
     <script src="./js/nav.js?v=7"></script>
@@ -2874,7 +2900,7 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=1"></script>
+    <script src="./js/settings-ui.js?v=2"></script>
 
     <script src="./js/app.js?v=10"></script>
 

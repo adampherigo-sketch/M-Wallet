@@ -1,2 +1,20 @@
 # macOS
 .DS_Store
+
+# Editor / IDE
+.vscode/
+
+# Local working area (findings, probes, screenshots — never committed)
+scratchpad/
+
+# Dependencies (M-Wallet has none today; guard against future accidents)
+node_modules/
+
+# Local environment files — never commit real credentials.
+# .env.example IS allowed to be committed (see negation below).
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example

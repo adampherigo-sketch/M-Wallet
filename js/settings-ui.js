@@ -411,11 +411,38 @@
             : "Preparing offline support";
     }
 
+    function renderVersionInfo() {
+        var v = global.MWalletVersion || null;
+
+        var setText = function (id, value) {
+            var el = document.getElementById(id);
+            if (el && value != null && value !== "") {
+                el.textContent = value;
+            }
+        };
+
+        if (v) {
+            setText("settings-app-version", v.version);
+            setText(
+                "settings-app-channel",
+                v.channel
+                    ? v.channel.charAt(0).toUpperCase() + v.channel.slice(1)
+                    : null
+            );
+        }
+
+        var store = storage();
+        if (store && typeof store.version !== "undefined") {
+            setText("settings-data-schema", "v" + String(store.version));
+        }
+    }
+
 
     function renderAll() {
         renderCategoryManager();
         renderStorageInfo();
         renderSystemStatus();
+        renderVersionInfo();
         applyPendingFocus();
     }
 
