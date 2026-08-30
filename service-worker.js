@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v7";
+const CACHE_NAME = "m-wallet-v16";
 
 
 /* =========================================================
@@ -30,6 +30,12 @@ const APP_SHELL = [
     "./css/m-cash.css",
     "./css/zevaryn-grid.css",
     "./css/dashboard.css",
+    "./css/budget.css",
+    "./css/transactions.css",
+    "./css/savings.css",
+    "./css/reports.css",
+    "./css/settings.css",
+    "./css/zg9.css",
 
     "./js/storage.js",
     "./js/nav.js",
@@ -37,8 +43,13 @@ const APP_SHELL = [
     "./js/money.js",
     "./js/pwa.js",
 
+    "./js/reports-analytics.js",
+    "./js/settings-ui.js",
+
     "./js/m-cash/cash-ui.js",
     "./js/m-cash/cash-storage.js",
+    "./js/m-cash/cash-calculator.js",
+    "./js/m-cash/cash-savings.js",
     "./js/m-cash/cash.js",
 
     "./icons/icon-192.png",

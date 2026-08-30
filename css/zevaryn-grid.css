@@ -46,7 +46,8 @@
     /* Text */
     --z-text: #f4f6fb;
     --z-text-secondary: #9da6b5;
-    --z-text-muted: #687182;
+    /* ZG9: lifted from #687182 (~3.9:1 on panels) to ~4.7:1 for small-text legibility */
+    --z-text-muted: #838d9c;
 
     /* Violet — primary accent */
     --z-violet: #9b5cff;
@@ -1432,6 +1433,15 @@ tbody tr:hover {
         );
 }
 
+.z-progress-bar--danger {
+    background:
+        linear-gradient(
+            90deg,
+            var(--z-danger),
+            var(--z-danger-bright)
+        );
+}
+
 
 /* ---- Page-header language + system / module labels ---- */
 
@@ -1519,5 +1529,5 @@ tbody tr:hover {
 
 
 /* =========================================================
-   END ZEVARYN-GRID.CSS  ·  ZG1
+   END ZEVARYN-GRID.CSS  ·  ZG1 (+ ZG3 addition)
    ========================================================= */

@@ -1,0 +1,796 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   ZG3 — Budget command center
+
+   Loaded after zevaryn-grid.css + dashboard.css. Uses the ZG1
+   --z-* tokens and .z-* primitives (.z-eyebrow, .z-badge,
+   .z-progress). Everything here is scoped to #budget-page.
+   No financial logic. Values populated by BudgetApp.renderBudget*.
+   ========================================================= */
+
+
+/* =========================================================
+   1. SHELL
+   ========================================================= */
+
+#budget-page .zg-budget {
+    display: grid;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+#budget-page .zg-budget-heading {
+    margin-bottom: 6px;
+}
+
+#budget-page .zg-budget-heading .z-eyebrow {
+    margin-bottom: 8px;
+}
+
+#budget-page .zgb-card {
+    padding: clamp(16px, 3vw, 22px);
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-lg);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(19, 24, 33, 0.96),
+            rgba(12, 15, 22, 0.96)
+        );
+
+    box-shadow: var(--z-shadow-sm);
+}
+
+#budget-page .zgb-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 8px 12px;
+
+    margin-bottom: 14px;
+}
+
+#budget-page .zgb-head .z-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#budget-page .zgb-link {
+    flex-shrink: 0;
+
+    padding: 2px 0;
+    border: 0;
+    background: none;
+
+    color: var(--z-violet-bright);
+
+    font: inherit;
+    font-size: 0.74rem;
+    font-weight: 750;
+
+    white-space: nowrap;
+    cursor: pointer;
+
+    transition: color var(--transition);
+}
+
+#budget-page .zgb-link:hover {
+    color: var(--z-text);
+}
+
+#budget-page .zgb-row-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+
+/* =========================================================
+   2. MONTHLY OVERVIEW
+   ========================================================= */
+
+#budget-page .zg-bov-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#budget-page .zg-bov-stat {
+    min-width: 0;
+
+    padding: 13px 14px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background: var(--z-panel-hover);
+}
+
+#budget-page .zg-bov-stat span {
+    display: block;
+    margin-bottom: 6px;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.68rem;
+    font-weight: 750;
+
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+#budget-page .zg-bov-stat strong {
+    display: block;
+    overflow: hidden;
+
+    color: var(--z-text);
+
+    font-size: clamp(0.98rem, 2.7vw, 1.15rem);
+    font-weight: 770;
+
+    line-height: 1.15;
+
+    font-variant-numeric: tabular-nums;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#budget-page .zg-bov-stat--income {
+    border-top: 2px solid var(--z-success);
+}
+
+#budget-page .zg-bov-stat--bills {
+    border-top: 2px solid var(--z-teal);
+}
+
+#budget-page .zg-bov-stat--expenses {
+    border-top: 2px solid var(--z-danger);
+}
+
+#budget-page .zg-bov-stat--remaining {
+    border-top: 2px solid var(--z-violet-bright);
+}
+
+#budget-page .zg-bov-stat--remaining strong {
+    color: var(--z-violet-bright);
+}
+
+
+/* Progress */
+
+#budget-page #budget-progress-body {
+    margin-top: 16px;
+}
+
+#budget-page .zg-bov-progress-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+
+    margin-bottom: 4px;
+
+    flex-wrap: wrap;
+}
+
+#budget-page .zg-bov-pct {
+    color: #ffffff;
+
+    font-size: clamp(1.7rem, 5.5vw, 2.2rem);
+    font-weight: 780;
+
+    line-height: 1;
+    letter-spacing: -0.03em;
+
+    font-variant-numeric: tabular-nums;
+}
+
+#budget-page .zg-bov-of {
+    color: var(--z-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    overflow-wrap: anywhere;
+}
+
+#budget-page .zg-bov .z-progress {
+    margin: 12px 0 10px;
+}
+
+#budget-page .zg-bov-progress-foot {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.75rem;
+    font-weight: 650;
+}
+
+#budget-page .zg-bov-progress-foot strong {
+    color: var(--z-text-secondary);
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+#budget-page .zg-bov--warn .zg-bov-pct {
+    color: var(--z-warning);
+}
+
+#budget-page .zg-bov--warn .zg-bov-progress-foot strong,
+#budget-page .zg-bov--over .zg-bov-progress-foot strong {
+    color: var(--z-warning);
+}
+
+#budget-page .zg-bov--over .zg-bov-pct {
+    color: var(--z-danger);
+}
+
+#budget-page .zg-bov--over .zg-bov-progress-foot strong {
+    color: var(--z-danger);
+}
+
+
+/* Foot */
+
+#budget-page .zg-bov-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+
+    margin-top: 14px;
+    padding-top: 13px;
+
+    border-top: 1px solid var(--z-border);
+
+    color: var(--z-text-muted);
+
+    font-size: 0.75rem;
+    font-weight: 650;
+}
+
+#budget-page .zg-bov-foot strong {
+    color: var(--z-text-secondary);
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* =========================================================
+   3. SPENDING BY CATEGORY
+   ========================================================= */
+
+#budget-page #budget-category-breakdown {
+    display: grid;
+    gap: 13px;
+}
+
+#budget-page .zg-bcat-row {
+    padding: 13px 14px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background: var(--z-panel-hover);
+}
+
+#budget-page .zg-bcat-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+
+    gap: 12px;
+
+    margin-bottom: 9px;
+}
+
+#budget-page .zg-bcat-name {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+#budget-page .zg-bcat-name strong {
+    color: var(--z-text);
+    font-size: 0.9rem;
+    font-weight: 700;
+
+    overflow-wrap: anywhere;
+}
+
+#budget-page .zg-bcat-name span {
+    color: var(--z-text-muted);
+    font-size: 0.72rem;
+    font-weight: 650;
+
+    flex-shrink: 0;
+}
+
+#budget-page .zg-bcat-amount {
+    flex-shrink: 0;
+
+    color: #ffffff;
+    font-size: 0.92rem;
+    font-weight: 770;
+
+    font-variant-numeric: tabular-nums;
+}
+
+#budget-page .zg-bcat-track {
+    height: 8px;
+}
+
+#budget-page .zg-bcat-subs {
+    display: grid;
+    gap: 4px;
+
+    margin-top: 11px;
+    padding-top: 10px;
+
+    border-top: 1px dashed var(--z-border);
+}
+
+#budget-page .zg-bcat-sub {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+
+    color: var(--z-text-secondary);
+
+    font-size: 0.76rem;
+}
+
+#budget-page .zg-bcat-sub span:last-child {
+    color: var(--z-text);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* =========================================================
+   4. BILLS DUE (compact)
+   ========================================================= */
+
+#budget-page .zg-bdue-count {
+    display: inline-grid;
+    place-items: center;
+
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+
+    border-radius: 999px;
+
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0;
+}
+
+#budget-page .zg-bdue-count:empty {
+    display: none;
+}
+
+#budget-page .zg-bdue-summary {
+    margin-bottom: 8px;
+
+    color: var(--z-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+#budget-page .zg-bdue-summary strong {
+    color: #ffffff;
+    font-weight: 770;
+    font-variant-numeric: tabular-nums;
+}
+
+#budget-page .zg-bdue-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 9px 0;
+
+    border-bottom: 1px solid var(--z-border-soft);
+}
+
+#budget-page .zg-bdue-row:last-of-type {
+    border-bottom: none;
+}
+
+#budget-page .zg-bdue-info {
+    min-width: 0;
+}
+
+#budget-page .zg-bdue-info strong {
+    display: block;
+
+    color: var(--z-text);
+    font-size: 0.84rem;
+    font-weight: 700;
+
+    overflow-wrap: anywhere;
+}
+
+#budget-page .zg-bdue-info span {
+    display: block;
+    margin-top: 2px;
+
+    color: var(--z-text-muted);
+    font-size: 0.72rem;
+}
+
+#budget-page .zg-bdue-overdue {
+    color: var(--z-danger) !important;
+    font-weight: 700;
+}
+
+#budget-page .zg-bdue-amount {
+    flex-shrink: 0;
+
+    color: var(--z-danger);
+    font-size: 0.86rem;
+    font-weight: 750;
+
+    font-variant-numeric: tabular-nums;
+}
+
+#budget-page .zg-bdue-more {
+    margin-top: 9px;
+
+    color: var(--z-text-muted);
+    font-size: 0.73rem;
+    font-weight: 650;
+}
+
+
+/* =========================================================
+   5. BILL CARDS
+   ========================================================= */
+
+#budget-page .zg-bill-list {
+    display: grid;
+    gap: 12px;
+}
+
+#budget-page .zg-bill {
+    padding: 15px 16px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(21, 26, 36, 0.96),
+            rgba(13, 16, 23, 0.96)
+        );
+}
+
+#budget-page .zg-bill-main {
+    display: grid;
+    gap: 10px;
+}
+
+#budget-page .zg-bill--paid {
+    opacity: 0.72;
+}
+
+#budget-page .zg-bill-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+
+    gap: 12px;
+}
+
+#budget-page .zg-bill-name {
+    color: var(--z-text);
+    font-size: 0.98rem;
+    font-weight: 750;
+
+    overflow-wrap: anywhere;
+}
+
+#budget-page .zg-bill-amount {
+    flex-shrink: 0;
+
+    color: var(--z-danger);
+    font-size: 1rem;
+    font-weight: 770;
+
+    font-variant-numeric: tabular-nums;
+}
+
+#budget-page .zg-bill--paid .zg-bill-amount {
+    color: var(--z-text-secondary);
+}
+
+#budget-page .zg-bill-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 12px;
+
+    color: var(--z-text-muted);
+    font-size: 0.75rem;
+}
+
+#budget-page .zg-bill-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+#budget-page .zg-bill-notes {
+    color: var(--z-text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.45;
+
+    padding: 8px 10px;
+    border-radius: var(--z-radius-sm);
+    background: var(--z-panel-hover);
+}
+
+#budget-page .zg-bill-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+
+    margin-top: 12px;
+    padding-top: 12px;
+
+    border-top: 1px solid var(--z-border);
+}
+
+
+/* Shared compact action buttons (bills + ledger) */
+
+#budget-page .zg-bill-btn {
+    flex: 1 1 auto;
+    min-width: 90px;
+    min-height: 38px;
+
+    padding: 8px 12px;
+
+    border: 1px solid var(--z-border);
+    border-radius: 999px;
+
+    background: var(--z-panel-hover);
+
+    color: var(--z-text);
+
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 750;
+
+    cursor: pointer;
+
+    transition:
+        background var(--transition),
+        border-color var(--transition),
+        color var(--transition);
+}
+
+#budget-page .zg-bill-btn:hover {
+    border-color: var(--z-border-strong);
+    background: var(--z-violet-soft);
+}
+
+#budget-page .zg-bill-btn--pay {
+    border-color: rgba(53, 223, 193, 0.32);
+    background: var(--z-teal-soft);
+    color: var(--z-teal);
+}
+
+#budget-page .zg-bill-btn--pay:hover {
+    background: rgba(53, 223, 193, 0.22);
+    color: var(--z-teal-bright);
+}
+
+#budget-page .zg-bill-btn--danger {
+    border-color: rgba(255, 101, 119, 0.28);
+    background: rgba(255, 101, 119, 0.14);
+    color: var(--z-danger);
+}
+
+#budget-page .zg-bill-btn--danger:hover {
+    background: rgba(255, 101, 119, 0.24);
+    color: var(--z-danger-bright);
+}
+
+#budget-page .zg-bill-btn:focus-visible,
+#budget-page .zgb-link:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   6. LEDGER (income + expenses)
+   ========================================================= */
+
+#budget-page .zg-ledger {
+    display: grid;
+    gap: 2px;
+}
+
+#budget-page .zg-ledger-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 14px;
+
+    padding: 13px 0;
+
+    border-bottom: 1px solid var(--z-border);
+}
+
+#budget-page .zg-ledger-row:last-child {
+    border-bottom: none;
+}
+
+#budget-page .zg-ledger-info {
+    min-width: 0;
+}
+
+#budget-page .zg-ledger-info strong {
+    display: block;
+
+    color: var(--z-text);
+    font-size: 0.9rem;
+    font-weight: 700;
+
+    overflow-wrap: anywhere;
+}
+
+#budget-page .zg-ledger-meta {
+    display: block;
+    margin-top: 3px;
+
+    color: var(--z-text-muted);
+    font-size: 0.73rem;
+    line-height: 1.45;
+
+    overflow-wrap: anywhere;
+}
+
+#budget-page .zg-ledger-note {
+    display: block;
+    margin-top: 4px;
+
+    color: var(--z-text-secondary);
+    font-size: 0.73rem;
+    line-height: 1.4;
+}
+
+#budget-page .zg-ledger-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+
+    gap: 8px;
+
+    flex-shrink: 0;
+}
+
+#budget-page .zg-ledger-amount {
+    font-size: 0.92rem;
+    font-weight: 760;
+
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+#budget-page .zg-ledger-actions {
+    display: flex;
+    gap: 6px;
+}
+
+#budget-page .zg-ledger-actions .zg-bill-btn {
+    flex: 0 0 auto;
+    min-width: 0;
+    min-height: 32px;
+
+    padding: 5px 11px;
+
+    font-size: 0.72rem;
+}
+
+
+/* =========================================================
+   7. EMPTY STATES
+   ========================================================= */
+
+#budget-page .zgb-card .empty-message {
+    padding: 20px 8px;
+    font-size: 0.82rem;
+}
+
+
+/* =========================================================
+   8. RESPONSIVE
+   ========================================================= */
+
+/* Tablet — 2-up module row, wider overview grid */
+
+@media (min-width: 620px) {
+
+    #budget-page .zg-bov-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 620px) {
+
+    /* bill + ledger action buttons stop stretching once there is room */
+    #budget-page .zg-bill-actions {
+        justify-content: flex-end;
+    }
+
+    #budget-page .zg-bill-actions .zg-bill-btn {
+        flex: 0 0 auto;
+        min-width: 100px;
+    }
+}
+
+@media (min-width: 760px) {
+
+    #budget-page .zgb-row-2 {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
+@media (min-width: 1000px) {
+
+    #budget-page .zg-budget {
+        gap: 18px;
+    }
+}
+
+/* Small phones */
+
+@media (max-width: 560px) {
+
+    #budget-page .zg-ledger-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #budget-page .zg-ledger-right {
+        align-items: flex-start;
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+    }
+}
+
+
+/* Motion */
+
+@media (prefers-reduced-motion: reduce) {
+
+    #budget-page .zg-bill-btn,
+    #budget-page .zgb-link {
+        transition: none;
+    }
+}
+
+
+/* =========================================================
+   END BUDGET.CSS  ·  ZG3
+   ========================================================= */

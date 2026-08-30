@@ -87,7 +87,7 @@
 
     <link
         rel="stylesheet"
-        href="./css/m-cash.css?v=2"
+        href="./css/m-cash.css?v=3"
     >
 
 
@@ -99,7 +99,7 @@
 
     <link
         rel="stylesheet"
-        href="./css/zevaryn-grid.css?v=1"
+        href="./css/zevaryn-grid.css?v=2"
     >
 
 
@@ -112,6 +112,72 @@
     <link
         rel="stylesheet"
         href="./css/dashboard.css?v=1"
+    >
+
+
+    <!-- =====================================================
+         ZEVARYN GRID  ·  BUDGET (ZG3)
+         Page-specific styling for #budget-page.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/budget.css?v=1"
+    >
+
+
+    <!-- =====================================================
+         ZEVARYN GRID  ·  TRANSACTIONS (ZG4)
+         Page-specific styling for #transactions-page.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/transactions.css?v=1"
+    >
+
+
+    <!-- =====================================================
+         ZEVARYN GRID  ·  SAVINGS (ZG5)
+         Page-specific styling for #savings-page.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/savings.css?v=1"
+    >
+
+
+    <!-- =====================================================
+         ZEVARYN GRID  ·  REPORTS (ZG7)
+         Page-specific styling for #reports-page.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/reports.css?v=1"
+    >
+
+
+    <!-- =====================================================
+         ZEVARYN GRID  ·  SETTINGS (ZG8)
+         Page-specific styling for #settings-page.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/settings.css?v=1"
+    >
+
+
+    <!-- =====================================================
+         ZEVARYN GRID  ·  ZG9 RESPONSIVE + ACCESSIBILITY
+         Loads last — global quality-pass overrides.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/zg9.css?v=1"
     >
 
 </head>
@@ -734,264 +800,266 @@
             >
 
 
-                <div class="page-heading">
+                <div class="page-heading zg-budget-heading">
 
                     <div>
 
+                        <span class="z-eyebrow">
+                            M-Wallet / Budget
+                        </span>
+
                         <h2>
-                            Monthly Budget
+                            Budget
                         </h2>
 
                         <p>
-                            Plan your income, bills, expenses, and savings.
+                            Plan and track
+                            <span id="budget-period-label">this month</span>.
                         </p>
 
                     </div>
-
-
 
                 </div>
 
 
-
-                <!-- Starting Balance -->
-
-                <section class="budget-block">
-
-                    <div class="section-header">
-
-                        <h3>
-                            Starting Balance
-                        </h3>
+                <div class="zg-budget">
 
 
-                        <button
-                            type="button"
-                            class="text-button"
-                            data-money-action="starting-balance"
-                        >
-                            Change
-                        </button>
+                    <!-- ============================
+                         1. MONTHLY OVERVIEW
+                    ============================= -->
 
-                    </div>
+                    <section
+                        class="zgb-card zg-bov"
+                        id="budget-overview"
+                        aria-labelledby="zg-bov-label"
+                    >
+
+                        <div class="zgb-head">
+
+                            <span class="z-eyebrow" id="zg-bov-label">
+                                Monthly Overview
+                            </span>
+
+                            <button
+                                type="button"
+                                class="zgb-link"
+                                data-money-action="starting-balance"
+                            >
+                                Change starting balance
+                            </button>
+
+                        </div>
 
 
-                    <div class="amount-display">
+                        <div class="zg-bov-grid">
 
-                        <span>
-                            Checking Balance
-                        </span>
+                            <article class="zg-bov-stat zg-bov-stat--income">
+                                <span>Income</span>
+                                <strong id="monthly-income-total">$0.00</strong>
+                            </article>
+
+                            <article class="zg-bov-stat zg-bov-stat--bills">
+                                <span>Bills</span>
+                                <strong id="budget-bills-total">$0.00</strong>
+                            </article>
+
+                            <article class="zg-bov-stat zg-bov-stat--expenses">
+                                <span>Expenses</span>
+                                <strong id="monthly-expense-total">$0.00</strong>
+                            </article>
+
+                            <article class="zg-bov-stat zg-bov-stat--remaining">
+                                <span>Remaining</span>
+                                <strong id="budget-remaining">$0.00</strong>
+                            </article>
+
+                        </div>
 
 
-                        <strong id="starting-balance">
-                            $0.00
-                        </strong>
+                        <div id="budget-progress-body">
 
-                    </div>
-
-                </section>
-
-
-
-                <!-- Income -->
-
-                <section class="budget-block">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Income
-                            </h3>
-
-                            <p>
-                                Income expected during this month.
+                            <p class="empty-message">
+                                Add income to see how much of your budget is committed.
                             </p>
 
                         </div>
 
 
-                        <button
-                            class="add-button"
-                            id="add-income-button"
-                            type="button"
-                            data-money-action="income"
-                        >
-                            + Add
-                        </button>
-
-                    </div>
-
-
-                    <div class="summary-grid">
-
-
-                        <article class="summary-card">
-
+                        <p class="zg-bov-foot">
                             <span>
-                                Monthly Income
+                                Starting balance
+                                <strong id="starting-balance">$0.00</strong>
                             </span>
-
-                            <strong id="monthly-income-total">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                        <article class="summary-card">
-
                             <span>
-                                Yearly Income
+                                Yearly income
+                                <strong id="yearly-income-total">$0.00</strong>
                             </span>
-
-                            <strong id="yearly-income-total">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                    </div>
-
-
-                    <div
-                        class="table-container"
-                        id="income-list"
-                    >
-
-                        <p class="empty-message">
-                            No income added.
+                            <span>
+                                Yearly expenses
+                                <strong id="yearly-expense-total">$0.00</strong>
+                            </span>
                         </p>
 
+                    </section>
+
+
+                    <!-- ============================
+                         2. CATEGORY + BILLS DUE
+                    ============================= -->
+
+                    <div class="zgb-row-2">
+
+
+                        <section
+                            class="zgb-card zg-bcat"
+                            aria-labelledby="zg-bcat-label"
+                        >
+
+                            <div class="zgb-head">
+                                <span class="z-eyebrow" id="zg-bcat-label">
+                                    Spending by Category
+                                </span>
+                            </div>
+
+                            <div id="budget-category-breakdown">
+                                <p class="empty-message">
+                                    No categorized spending yet.
+                                </p>
+                            </div>
+
+                        </section>
+
+
+                        <section
+                            class="zgb-card zg-bdue"
+                            aria-labelledby="zg-bdue-label"
+                        >
+
+                            <div class="zgb-head">
+                                <span class="z-eyebrow" id="zg-bdue-label">
+                                    Bills Due
+                                    <span class="zg-bdue-count" id="budget-bills-due-count"></span>
+                                </span>
+                            </div>
+
+                            <div id="budget-bills-due">
+                                <p class="empty-message">
+                                    No bills for this month.
+                                </p>
+                            </div>
+
+                        </section>
+
                     </div>
 
-                </section>
 
+                    <!-- ============================
+                         3. MONTHLY BILLS
+                    ============================= -->
 
+                    <section
+                        class="zgb-card zg-bills-section"
+                        aria-labelledby="zgb-bills-label"
+                    >
 
-                <!-- Bills -->
+                        <div class="zgb-head">
 
-                <section class="budget-block">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
+                            <span class="z-eyebrow" id="zgb-bills-label">
                                 Monthly Bills
-                            </h3>
+                            </span>
 
-                            <p>
-                                Track one-time and recurring bills due this month.
-                            </p>
+                            <button
+                                class="add-button"
+                                id="add-bill-button"
+                                type="button"
+                                data-money-action="bill"
+                            >
+                                + Add Bill
+                            </button>
 
                         </div>
 
+                        <div id="bill-list">
+                            <p class="empty-message">
+                                No bills for this month.
+                            </p>
+                        </div>
 
-                        <button
-                            class="add-button"
-                            id="add-bill-button"
-                            type="button"
-                            data-money-action="bill"
-                        >
-                            + Add
-                        </button>
-
-                    </div>
+                    </section>
 
 
-                    <div
-                        class="table-container"
-                        id="bill-list"
+                    <!-- ============================
+                         4. EXPENSES
+                    ============================= -->
+
+                    <section
+                        class="zgb-card zg-exp-section"
+                        aria-labelledby="zg-exp-label"
                     >
 
-                        <p class="empty-message">
-                            No bills added.
-                        </p>
+                        <div class="zgb-head">
 
-                    </div>
+                            <span class="z-eyebrow" id="zg-exp-label">
+                                Expenses
+                            </span>
 
-                </section>
-
-
-
-                <!-- Expenses -->
-
-                <section class="budget-block">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Monthly Expenses
-                            </h3>
-
-                            <p>
-                                Track one-time and recurring spending for this month.
-                            </p>
+                            <button
+                                class="add-button"
+                                id="add-expense-button"
+                                type="button"
+                                data-money-action="expense"
+                            >
+                                + Add Expense
+                            </button>
 
                         </div>
 
+                        <div id="expense-list">
+                            <p class="empty-message">
+                                No expenses recorded yet.
+                            </p>
+                        </div>
 
-                        <button
-                            class="add-button"
-                            id="add-expense-button"
-                            type="button"
-                            data-money-action="expense"
-                        >
-                            + Add
-                        </button>
-
-                    </div>
+                    </section>
 
 
-                    <div class="summary-grid">
+                    <!-- ============================
+                         5. INCOME
+                    ============================= -->
 
-
-                        <article class="summary-card">
-
-                            <span>
-                                Monthly Expenses
-                            </span>
-
-                            <strong id="monthly-expense-total">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                        <article class="summary-card">
-
-                            <span>
-                                Yearly Expenses
-                            </span>
-
-                            <strong id="yearly-expense-total">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                    </div>
-
-
-                    <div
-                        class="table-container"
-                        id="expense-list"
+                    <section
+                        class="zgb-card zg-inc-section"
+                        aria-labelledby="zg-inc-label"
                     >
 
-                        <p class="empty-message">
-                            No expenses added.
-                        </p>
+                        <div class="zgb-head">
 
-                    </div>
+                            <span class="z-eyebrow" id="zg-inc-label">
+                                Income
+                            </span>
 
-                </section>
+                            <button
+                                class="add-button"
+                                id="add-income-button"
+                                type="button"
+                                data-money-action="income"
+                            >
+                                + Add Income
+                            </button>
+
+                        </div>
+
+                        <div id="income-list">
+                            <p class="empty-message">
+                                No income planned for this month.
+                            </p>
+                        </div>
+
+                    </section>
+
+
+                </div>
 
 
             </section>
@@ -1009,16 +1077,21 @@
             >
 
 
-                <div class="page-heading">
+                <div class="page-heading zg-tx-heading">
 
                     <div>
 
+                        <span class="z-eyebrow">
+                            M-Wallet / Transactions
+                        </span>
+
                         <h2>
-                            Activity
+                            Transactions
                         </h2>
 
                         <p>
-                            Your money movement for the selected month. Use Add when you need to record a manual transaction.
+                            Search and review your activity for
+                            <span id="tx-period-label">this month</span>.
                         </p>
 
                     </div>
@@ -1026,14 +1099,147 @@
                 </div>
 
 
-                <div
-                    class="transaction-list"
-                    id="transaction-list"
-                >
+                <div class="zg-tx">
 
-                    <p class="empty-message">
-                        No transactions yet.
-                    </p>
+
+                    <!-- ============================
+                         1. TRANSACTION OVERVIEW
+                    ============================= -->
+
+                    <section
+                        class="zgt-card zg-tx-overview"
+                        aria-labelledby="zg-tx-ov-label"
+                    >
+
+                        <span class="z-eyebrow" id="zg-tx-ov-label">
+                            Transaction Overview
+                        </span>
+
+                        <div class="zg-tx-ov-grid">
+
+                            <article class="zg-tx-ov-stat zg-tx-ov-stat--income">
+                                <span>Income</span>
+                                <strong id="tx-total-income">$0.00</strong>
+                            </article>
+
+                            <article class="zg-tx-ov-stat zg-tx-ov-stat--spending">
+                                <span>Spending</span>
+                                <strong id="tx-total-spending">$0.00</strong>
+                            </article>
+
+                            <article class="zg-tx-ov-stat zg-tx-ov-stat--net">
+                                <span>Net</span>
+                                <strong id="tx-total-net">$0.00</strong>
+                            </article>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- ============================
+                         2. SEARCH + FILTERS
+                    ============================= -->
+
+                    <section
+                        class="zgt-card zg-tx-controls"
+                        aria-labelledby="zg-tx-ctl-label"
+                    >
+
+                        <span class="z-eyebrow" id="zg-tx-ctl-label">
+                            Search &amp; Filter
+                        </span>
+
+                        <div class="zg-tx-search">
+
+                            <label class="zg-tx-search-label" for="tx-search">
+                                Search transactions
+                            </label>
+
+                            <input
+                                type="search"
+                                id="tx-search"
+                                class="zg-tx-search-input"
+                                placeholder="Merchant, description, category, notes…"
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+                        <div
+                            class="zg-tx-filters"
+                            role="group"
+                            aria-label="Filter by type"
+                        >
+
+                            <button
+                                type="button"
+                                class="zg-tx-chip is-active"
+                                data-tx-filter="all"
+                                aria-pressed="true"
+                            >
+                                All
+                            </button>
+
+                            <button
+                                type="button"
+                                class="zg-tx-chip zg-tx-chip--income"
+                                data-tx-filter="income"
+                                aria-pressed="false"
+                            >
+                                Income
+                            </button>
+
+                            <button
+                                type="button"
+                                class="zg-tx-chip zg-tx-chip--expense"
+                                data-tx-filter="expense"
+                                aria-pressed="false"
+                            >
+                                Expenses
+                            </button>
+
+                            <select
+                                id="tx-category-filter"
+                                class="zg-tx-select"
+                                aria-label="Filter by category"
+                            >
+                                <option value="">All categories</option>
+                            </select>
+
+                        </div>
+
+                        <p class="zg-tx-count" id="tx-results-count"></p>
+
+                    </section>
+
+
+                    <!-- ============================
+                         3. LEDGER
+                    ============================= -->
+
+                    <section
+                        class="zgt-card zg-tx-ledger-card"
+                        aria-labelledby="zg-tx-ledger-label"
+                    >
+
+                        <span class="z-eyebrow" id="zg-tx-ledger-label">
+                            Activity Ledger
+                        </span>
+
+                        <div
+                            class="transaction-list"
+                            id="transaction-list"
+                        >
+
+                            <p class="empty-message">
+                                No transactions yet.
+                            </p>
+
+                        </div>
+
+                    </section>
+
 
                 </div>
 
@@ -1053,20 +1259,20 @@
             >
 
 
-                <div class="page-heading savings-page-heading">
+                <div class="page-heading zg-sav-heading">
 
-                    <div class="savings-heading-content">
+                    <div>
 
-                        <p class="savings-eyebrow">
-                            M-Wallet Savings
-                        </p>
+                        <span class="z-eyebrow">
+                            M-Wallet / Savings
+                        </span>
 
                         <h2>
                             Savings
                         </h2>
 
                         <p>
-                            Build your General Savings balance and organize money into individual funds.
+                            Build and organize your financial reserves.
                         </p>
 
                     </div>
@@ -1074,104 +1280,65 @@
                 </div>
 
 
-
-                <!-- ====================================
-                     SAVINGS BALANCE OVERVIEW
-                ===================================== -->
-
-                <section class="savings-balance-card">
+                <div class="zg-sav">
 
 
-                    <div class="savings-balance-main">
+                    <!-- ============================
+                         1. SAVINGS BALANCE HERO
+                    ============================= -->
 
-                        <p>
-                            General Savings
-                        </p>
+                    <section
+                        class="zgs-card zg-sav-hero"
+                        aria-labelledby="zg-sav-hero-label"
+                    >
 
-                        <h2 id="savings-balance">
-                            $0.00
-                        </h2>
-
-                        <span>
-                            Money available to allocate to your savings funds.
+                        <span class="z-eyebrow" id="zg-sav-hero-label">
+                            Savings Balance
                         </span>
 
-                    </div>
+                        <p class="zg-sav-hero-value" id="savings-total-balance">
+                            $0.00
+                        </p>
 
+                        <p class="zg-sav-hero-sub">
+                            Total currently held in Savings
+                        </p>
 
-                    <div class="savings-balance-summary">
+                        <div class="zg-sav-breakdown">
 
+                            <article class="zg-sav-bd zg-sav-bd--available">
+                                <span>Available to allocate</span>
+                                <strong id="savings-balance">$0.00</strong>
+                            </article>
 
-                        <article class="savings-balance-stat">
-
-                            <span>
-                                General Savings
-                            </span>
-
-                            <strong id="savings-general-balance">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                        <article class="savings-balance-stat">
-
-                            <span>
-                                Allocated to Funds
-                            </span>
-
-                            <strong id="savings-allocated-balance">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                        <article class="savings-balance-stat total">
-
-                            <span>
-                                Total Savings
-                            </span>
-
-                            <strong id="savings-total-balance">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                    </div>
-
-
-                </section>
-
-
-
-                <!-- ====================================
-                     SAVINGS QUICK ACTIONS
-                ===================================== -->
-
-                <section class="savings-actions-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Savings Actions
-                            </h3>
-
-                            <p>
-                                Move money between Checking and General Savings, or create a new savings fund.
-                            </p>
+                            <article class="zg-sav-bd zg-sav-bd--allocated">
+                                <span>Allocated to funds</span>
+                                <strong id="savings-allocated-balance">$0.00</strong>
+                            </article>
 
                         </div>
 
-                    </div>
+                    </section>
 
 
-                    <div class="savings-quick-actions">
+                    <!-- ============================
+                         2. SAVINGS ACTIONS
+                    ============================= -->
+
+                    <section
+                        class="zgs-card zg-sav-actions"
+                        aria-labelledby="zg-sav-actions-label"
+                    >
+
+                        <span class="z-eyebrow" id="zg-sav-actions-label">
+                            Savings Actions
+                        </span>
+
+                        <p class="zg-sav-actions-hint">
+                            Move money between Checking and General Savings, or create a new fund.
+                        </p>
+
+                        <div class="savings-quick-actions">
 
 
                         <button
@@ -1253,51 +1420,72 @@
                         </button>
 
 
-                    </div>
-
-                </section>
-
-
-
-                <!-- ====================================
-                     SAVINGS GOALS
-                ===================================== -->
-
-                <section class="dashboard-section savings-goals-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Savings Funds
-                            </h3>
-
-                            <p>
-                                Allocate General Savings into individual goals without changing your total savings.
-                            </p>
-
                         </div>
 
-                    </div>
+                    </section>
 
 
-                    <div
-                        class="savings-goals"
-                        id="savings-goals"
+                    <!-- ============================
+                         3. SAVINGS GOALS
+                    ============================= -->
+
+                    <section
+                        class="zgs-card zg-sav-goals"
+                        aria-labelledby="zg-sav-goals-label"
                     >
 
-                        <div class="savings-empty-state">
+                        <div class="zgs-head">
 
-                            <p class="empty-message">
-                                No savings goals created.
-                            </p>
+                            <span class="z-eyebrow" id="zg-sav-goals-label">
+                                Savings Goals
+                            </span>
+
+                            <span class="zg-sav-goals-hint">
+                                Organize money already in Savings — allocation never changes your total.
+                            </span>
 
                         </div>
 
-                    </div>
+                        <div
+                            class="savings-goals"
+                            id="savings-goals"
+                        >
 
-                </section>
+                            <div class="savings-empty-state">
+
+                                <p class="empty-message">
+                                    No savings goals yet.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- ============================
+                         4. SAVINGS ACTIVITY
+                    ============================= -->
+
+                    <section
+                        class="zgs-card zg-sav-activity"
+                        id="savings-activity-section"
+                        aria-labelledby="zg-sav-activity-label"
+                        hidden
+                    >
+
+                        <span class="z-eyebrow" id="zg-sav-activity-label">
+                            Savings Activity
+                            <span id="savings-activity-period"></span>
+                        </span>
+
+                        <div id="savings-activity"></div>
+
+                    </section>
+
+
+                </div>
 
 
             </section>
@@ -1315,20 +1503,20 @@
             >
 
 
-                <div class="page-heading reports-heading">
+                <div class="page-heading reports-heading zg-rep-heading">
 
                     <div>
 
-                        <p class="reports-eyebrow">
-                            M-Wallet Analytics
-                        </p>
+                        <span class="z-eyebrow">
+                            M-Wallet / Reports
+                        </span>
 
                         <h2>
                             Reports
                         </h2>
 
                         <p>
-                            Review your money by month, year, or a custom month-to-month range.
+                            Understand where your money is going.
                         </p>
 
                     </div>
@@ -1338,10 +1526,58 @@
 
 
                 <!-- ====================================
+                     ZG7 — REPORT MODE SWITCHER
+                ===================================== -->
+
+                <div
+                    class="zg-rep-modes"
+                    role="tablist"
+                    aria-label="Report mode"
+                >
+
+                    <button
+                        type="button"
+                        class="zg-rep-mode is-active"
+                        data-report-mode="monthly"
+                        role="tab"
+                        aria-selected="true"
+                    >
+                        Monthly
+                    </button>
+
+                    <button
+                        type="button"
+                        class="zg-rep-mode"
+                        data-report-mode="yearly"
+                        role="tab"
+                        aria-selected="false"
+                    >
+                        Yearly
+                    </button>
+
+                    <button
+                        type="button"
+                        class="zg-rep-mode"
+                        data-report-mode="range"
+                        role="tab"
+                        aria-selected="false"
+                    >
+                        Date-to-Date
+                    </button>
+
+                </div>
+
+
+
+                <div class="zg-rep">
+
+
+
+                <!-- ====================================
                      REPORT PERIOD CONTROLS
                 ===================================== -->
 
-                <section class="report-control-card">
+                <section class="report-control-card zgr-card">
 
                     <div class="report-control-heading">
 
@@ -1601,7 +1837,7 @@
 
                 <!-- Report Period -->
 
-                <section class="report-period-summary">
+                <section class="report-period-summary zg-rep-viewing">
 
                     <span>
                         Viewing
@@ -1614,15 +1850,27 @@
                 </section>
 
 
+                <p
+                    class="zg-rep-empty-notice"
+                    id="report-empty-notice"
+                    hidden
+                >
+                    No financial activity for this period.
+                </p>
+
+
 
                 <!-- Report Summary -->
 
-                <section class="report-summary-section">
+                <section
+                    class="report-summary-section zg-rep-summary"
+                    aria-label="Report summary"
+                >
 
-                    <div class="report-summary-grid">
+                    <div class="zg-rep-stat-grid">
 
 
-                        <article class="report-summary-card income">
+                        <article class="zg-rep-stat zg-rep-stat--income">
 
                             <span>
                                 Income
@@ -1635,7 +1883,33 @@
                         </article>
 
 
-                        <article class="report-summary-card bills">
+                        <article class="zg-rep-stat zg-rep-stat--spending">
+
+                            <span>
+                                Total Spending
+                            </span>
+
+                            <strong id="report-total-spending">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                        <article class="zg-rep-stat zg-rep-stat--net">
+
+                            <span>
+                                Net
+                            </span>
+
+                            <strong id="report-net-remaining">
+                                $0.00
+                            </strong>
+
+                        </article>
+
+
+                        <article class="zg-rep-stat zg-rep-stat--bills">
 
                             <span>
                                 Bills
@@ -1648,7 +1922,7 @@
                         </article>
 
 
-                        <article class="report-summary-card expenses">
+                        <article class="zg-rep-stat zg-rep-stat--expenses">
 
                             <span>
                                 Expenses
@@ -1661,7 +1935,7 @@
                         </article>
 
 
-                        <article class="report-summary-card savings">
+                        <article class="zg-rep-stat zg-rep-stat--savings">
 
                             <span>
                                 Savings
@@ -1674,130 +1948,165 @@
                         </article>
 
 
-                        <article class="report-summary-card net">
+                    </div>
 
-                            <span>
-                                Net Remaining
+                </section>
+
+
+
+                <!-- ====================================
+                     ZG7 — ANALYTICS GRID
+                ===================================== -->
+
+                <div class="zg-rep-grid">
+
+
+                    <!-- Spending Trend -->
+
+                    <section
+                        class="report-section zgr-card zg-rep-panel"
+                        aria-labelledby="zg-rep-trend-label"
+                    >
+
+                        <div class="zg-rep-panel-head">
+                            <span class="z-eyebrow" id="zg-rep-trend-label">
+                                Spending Trend
                             </span>
-
-                            <strong id="report-net-remaining">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                    </div>
-
-                </section>
-
-
-
-                <!-- Money Overview -->
-
-                <section class="report-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Money Overview
-                            </h3>
-
                             <p>
-                                Income compared with bills, expenses, and savings.
+                                How spending is distributed across the period.
                             </p>
-
                         </div>
 
-                    </div>
+                        <div
+                            class="report-chart-area"
+                            id="report-trend-chart"
+                        >
+                            <p class="empty-message">
+                                Spending trend will appear here.
+                            </p>
+                        </div>
+
+                    </section>
 
 
-                    <div
-                        class="report-chart-area"
-                        id="report-overview-chart"
+                    <!-- Income vs Spending -->
+
+                    <section
+                        class="report-section zgr-card zg-rep-panel"
+                        aria-labelledby="zg-rep-overview-label"
                     >
 
-                        <p class="empty-message">
-                            Report overview will appear here.
-                        </p>
-
-                    </div>
-
-                </section>
-
-
-
-                <!-- Category Breakdown -->
-
-                <section class="report-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Spending by Category
-                            </h3>
-
+                        <div class="zg-rep-panel-head">
+                            <span class="z-eyebrow" id="zg-rep-overview-label">
+                                Income vs Spending
+                            </span>
                             <p>
-                                See which categories received the most money.
+                                Income measured against bills, expenses, and savings movement.
                             </p>
-
                         </div>
 
-                    </div>
+                        <div
+                            class="report-chart-area"
+                            id="report-overview-chart"
+                        >
+                            <p class="empty-message">
+                                Report overview will appear here.
+                            </p>
+                        </div>
 
+                    </section>
+
+
+                    <!-- Top Categories -->
+
+                    <section
+                        class="report-section zgr-card zg-rep-panel"
+                        aria-labelledby="zg-rep-cat-label"
+                    >
+
+                        <div class="zg-rep-panel-head">
+                            <span class="z-eyebrow" id="zg-rep-cat-label">
+                                Top Categories
+                            </span>
+                            <p>
+                                Where categorized spending went.
+                            </p>
+                        </div>
+
+                        <div
+                            class="report-breakdown-list"
+                            id="report-category-breakdown"
+                        >
+                            <p class="empty-message">
+                                Category data will appear here.
+                            </p>
+                        </div>
+
+                    </section>
+
+
+                    <!-- Top Merchants -->
+
+                    <section
+                        class="report-section zgr-card zg-rep-panel"
+                        aria-labelledby="zg-rep-merch-label"
+                    >
+
+                        <div class="zg-rep-panel-head">
+                            <span class="z-eyebrow" id="zg-rep-merch-label">
+                                Top Merchants
+                            </span>
+                            <p>
+                                Merchants and vendors you paid.
+                            </p>
+                        </div>
+
+                        <div
+                            class="report-breakdown-list"
+                            id="report-merchant-breakdown"
+                        >
+                            <p class="empty-message">
+                                Merchant data will appear here.
+                            </p>
+                        </div>
+
+                    </section>
+
+
+                </div>
+
+
+
+                <!-- Detailed Breakdown -->
+
+                <section
+                    class="report-section zgr-card zg-rep-panel zg-rep-panel--wide"
+                    aria-labelledby="zg-rep-detail-label"
+                >
+
+                    <div class="zg-rep-panel-head">
+                        <span class="z-eyebrow" id="zg-rep-detail-label">
+                            Detailed Breakdown
+                        </span>
+                        <p>
+                            Category and subcategory detail for the period.
+                        </p>
+                    </div>
 
                     <div
                         class="report-breakdown-list"
-                        id="report-category-breakdown"
+                        id="report-detail-breakdown"
                     >
-
                         <p class="empty-message">
-                            Category data will appear here.
+                            Detailed breakdown will appear here.
                         </p>
-
                     </div>
 
                 </section>
 
 
-
-                <!-- Merchant Breakdown -->
-
-                <section class="report-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Spending by Merchant
-                            </h3>
-
-                            <p>
-                                See where you spent your money.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="report-breakdown-list"
-                        id="report-merchant-breakdown"
-                    >
-
-                        <p class="empty-message">
-                            Merchant data will appear here.
-                        </p>
-
-                    </div>
-
-                </section>
+                </div>
+                <!-- /.zg-rep -->
 
 
             </section>
@@ -1815,16 +2124,20 @@
             >
 
 
-                <div class="page-heading">
+                <div class="page-heading zg-set-heading">
 
                     <div>
+
+                        <span class="z-eyebrow">
+                            M-Wallet / Settings
+                        </span>
 
                         <h2>
                             Settings
                         </h2>
 
                         <p>
-                            Manage your M-Wallet.
+                            Configure your M-Wallet experience.
                         </p>
 
                     </div>
@@ -1832,143 +2145,282 @@
                 </div>
 
 
-
-                <section class="settings-section">
-
-                    <div class="settings-section-heading">
-
-                        <h3>
-                            M-Wallet App
-                        </h3>
-
-                        <p>
-                            Install M-Wallet on this device for an app-like experience.
-                        </p>
-
-                    </div>
+                <p
+                    class="zg-set-status"
+                    id="settings-status"
+                    role="status"
+                    aria-live="polite"
+                    hidden
+                ></p>
 
 
-                    <button
-                        type="button"
-                        class="settings-item install-app-button"
-                        id="installAppButton"
-                        hidden
+                <div class="zg-set">
+
+
+                    <!-- ============ GENERAL ============ -->
+
+                    <section
+                        class="zg-set-section zg-set-section--pair"
+                        aria-labelledby="zg-set-general-label"
                     >
 
-                        <span class="settings-item-content">
-
-                            <strong>
-                                Install M-Wallet
-                            </strong>
-
-                            <small>
-                                Add the app to your Home Screen or desktop.
-                            </small>
-
-                        </span>
-
-
-                        <span class="settings-item-arrow">
-                            ›
-                        </span>
-
-                    </button>
-
-
-                    <div
-                        class="app-installed-message"
-                        id="app-installed-message"
-                        hidden
-                    >
-
-                        <span class="app-installed-icon">
-                            ✓
-                        </span>
-
-
-                        <div>
-
-                            <strong>
-                                App Installed
-                            </strong>
-
-                            <small>
-                                M-Wallet is running as an installed app.
-                            </small>
-
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-general-label">
+                                General
+                            </span>
+                            <p>App-wide preferences.</p>
                         </div>
 
-                    </div>
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Currency</strong>
+                                <small>Used to format every amount shown in M-Wallet.</small>
+                            </span>
+                            <span
+                                class="zg-set-row-value"
+                                id="settings-currency-value"
+                            >
+                                US Dollar · USD ($)
+                            </span>
+                        </div>
 
-                </section>
-
-
-
-                <section class="settings-section">
-
-                    <div class="settings-section-heading">
-
-                        <h3>
-                            Data & Backup
-                        </h3>
-
-                        <p>
-                            Export a copy of your M-Wallet data or reset the app when you intentionally want a fresh start.
-                        </p>
-
-                    </div>
+                    </section>
 
 
-                    <button
-                        type="button"
-                        class="settings-item"
-                        id="export-data"
+                    <!-- ============ M-CASH ============ -->
+
+                    <section
+                        class="zg-set-section zg-set-section--pair"
+                        aria-labelledby="zg-set-mcash-label"
                     >
 
-                        <span class="settings-item-content">
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-mcash-label">
+                                M-Cash
+                            </span>
+                            <p>Physical cash-drawer settings live on the M-Cash screen.</p>
+                        </div>
 
-                            <strong>
-                                Export M-Wallet Data
-                            </strong>
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            data-page="m-cash"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>M-Cash Starting Balance</strong>
+                                <small>Set your counted cash total with Recount on the M-Cash screen.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
 
-                            <small>
-                                Save a JSON backup of the data currently stored in M-Wallet.
-                            </small>
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            data-page="m-cash"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Open Cash Drawer</strong>
+                                <small>Add cash, spend with the calculator, and manage Cash Savings.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
 
-                        </span>
-
-                        <span class="settings-item-arrow" aria-hidden="true">
-                            ↓
-                        </span>
-
-                    </button>
+                    </section>
 
 
-                    <button
-                        type="button"
-                        class="settings-item danger-settings-item"
-                        id="clear-data"
+                    <!-- ============ FINANCIAL ============ -->
+
+                    <section
+                        class="zg-set-section"
+                        aria-labelledby="zg-set-financial-label"
                     >
 
-                        <span class="settings-item-content">
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-financial-label">
+                                Financial
+                            </span>
+                            <p>
+                                The category library used by Budget, Transactions, and Reports.
+                            </p>
+                        </div>
 
-                            <strong>
-                                Reset M-Wallet Data
-                            </strong>
-
+                        <div class="zg-set-subhead">
+                            <strong>Categories &amp; Subcategories</strong>
                             <small>
-                                Permanently clear the data stored by this M-Wallet installation.
+                                System categories can be renamed or disabled but not deleted.
+                                Custom categories can be fully managed.
                             </small>
+                        </div>
 
-                        </span>
+                        <div
+                            id="settings-category-manager"
+                            class="zg-set-cat-manager"
+                        >
+                            <p class="zg-set-empty">Loading categories…</p>
+                        </div>
 
-                        <span class="settings-item-arrow" aria-hidden="true">
-                            ×
-                        </span>
+                    </section>
 
-                    </button>
 
-                </section>
+                    <!-- ============ DATA & STORAGE ============ -->
+
+                    <section
+                        class="zg-set-section"
+                        aria-labelledby="zg-set-data-label"
+                    >
+
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-data-label">
+                                Data &amp; Storage
+                            </span>
+                            <p>Back up, restore, and review the data stored on this device.</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="export-data"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Export M-Wallet Data</strong>
+                                <small>Download a JSON backup of everything stored in M-Wallet.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">↓</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="settings-import-trigger"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Import M-Wallet Data</strong>
+                                <small>Replace all current data with a previously exported backup file.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">↑</span>
+                        </button>
+
+                        <input
+                            type="file"
+                            id="settings-import-input"
+                            accept="application/json,.json"
+                            hidden
+                        >
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Local Storage</strong>
+                                <small>
+                                    M-Wallet data is stored only in this browser, on this device.
+                                    Clearing site data removes it.
+                                </small>
+                            </span>
+                            <span
+                                class="zg-set-row-value"
+                                id="settings-storage-info"
+                            >
+                                —
+                            </span>
+                        </div>
+
+                    </section>
+
+
+                    <!-- ============ SYSTEM ============ -->
+
+                    <section
+                        class="zg-set-section"
+                        aria-labelledby="zg-set-system-label"
+                    >
+
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-system-label">
+                                System
+                            </span>
+                            <p>App information and installation.</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="settings-item install-app-button zg-set-row zg-set-row--install"
+                            id="installAppButton"
+                            hidden
+                        >
+                            <span class="settings-item-content zg-set-row-text">
+                                <strong>Install M-Wallet</strong>
+                                <small>Add the app to your Home Screen or desktop.</small>
+                            </span>
+                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
+                        <div
+                            class="app-installed-message zg-set-installed"
+                            id="app-installed-message"
+                            hidden
+                        >
+                            <span class="app-installed-icon">✓</span>
+                            <div>
+                                <strong>App Installed</strong>
+                                <small>M-Wallet is running as an installed app.</small>
+                            </div>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Offline Support</strong>
+                                <small>Service worker status on this device.</small>
+                            </span>
+                            <span
+                                class="zg-set-row-value"
+                                id="settings-sw-status"
+                            >
+                                —
+                            </span>
+                        </div>
+
+                        <div class="zg-set-identity">
+                            <div><span>App</span><strong>M-Wallet</strong></div>
+                            <div><span>By</span><strong>Zevaryn Systems</strong></div>
+                            <div><span>Interface</span><strong>Zevaryn Grid</strong></div>
+                            <div><span>Data schema</span><strong>v5</strong></div>
+                        </div>
+
+                    </section>
+
+
+                    <!-- ============ DANGER ZONE ============ -->
+
+                    <section
+                        class="zg-set-section zg-set-section--danger"
+                        aria-labelledby="zg-set-danger-label"
+                    >
+
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-danger-label">
+                                Danger Zone
+                            </span>
+                            <p>These actions permanently change local data.</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="settings-item danger-settings-item zg-set-row zg-set-row--danger"
+                            id="clear-data"
+                        >
+                            <span class="settings-item-content zg-set-row-text">
+                                <strong>Reset M-Wallet Data</strong>
+                                <small>
+                                    Permanently clear everything stored by this M-Wallet
+                                    installation and start fresh.
+                                </small>
+                            </span>
+                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">×</span>
+                        </button>
+
+                    </section>
+
+
+                </div>
 
 
             </section>
@@ -2406,21 +2858,29 @@
          MOBILE NAV HOTFIX CACHE VERSION
     ========================================= -->
 
-    <script src="./js/storage.js?v=6"></script>
+    <script src="./js/storage.js?v=7"></script>
 
     <script src="./js/nav.js?v=7"></script>
 
-    <script src="./js/m-cash/cash-ui.js?v=2"></script>
-
     <script src="./js/m-cash/cash-storage.js?v=2"></script>
+
+    <script src="./js/m-cash/cash-calculator.js?v=1"></script>
+
+    <script src="./js/m-cash/cash-savings.js?v=1"></script>
+
+    <script src="./js/m-cash/cash-ui.js?v=3"></script>
 
     <script src="./js/m-cash/cash.js?v=2"></script>
 
-    <script src="./js/app.js?v=8"></script>
+    <script src="./js/reports-analytics.js?v=1"></script>
+
+    <script src="./js/settings-ui.js?v=1"></script>
+
+    <script src="./js/app.js?v=10"></script>
 
     <script src="./js/money.js?v=6"></script>
 
-    <script src="./js/pwa.js?v=6"></script>
+    <script src="./js/pwa.js?v=7"></script>
 
 
 </body>

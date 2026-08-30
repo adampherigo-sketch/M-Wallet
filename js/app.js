@@ -450,7 +450,6 @@ const BudgetApp = {
         if (
             !storage ||
             !cashStorage ||
-            typeof storage.getCashWallet !== "function" ||
             typeof cashStorage.calculateTotalCashCents !== "function"
         ) {
             return 0;
@@ -458,16 +457,31 @@ const BudgetApp = {
 
         try {
 
-            const wallet =
-                storage.getCashWallet();
+            /* Total physical cash = spendable wallet + Cash Savings
+               allocation, mirroring how the Savings card shows the
+               full balance including goal allocations. */
+            const state =
+                typeof storage.getCashState === "function"
+                    ? storage.getCashState()
+                    : {
+                        wallet: storage.getCashWallet
+                            ? storage.getCashWallet()
+                            : { denominations: {} }
+                    };
 
-            const cents =
+            const walletCents =
                 cashStorage.calculateTotalCashCents(
-                    wallet
+                    state.wallet || { denominations: {} }
                 );
 
+            const savedCents =
+                state.savings
+                    ? cashStorage.calculateTotalCashCents(state.savings)
+                    : 0;
+
             return (
-                Number(cents) || 0
+                (Number(walletCents) || 0) +
+                (Number(savedCents) || 0)
             ) / 100;
 
         }
@@ -697,6 +711,7 @@ const BudgetApp = {
             <div
                 class="z-progress"
                 role="progressbar"
+                aria-label="Monthly budget used"
                 aria-valuemin="0"
                 aria-valuemax="100"
                 aria-valuenow="${Math.round(fillPercent)}"
@@ -1314,6 +1329,7 @@ const BudgetApp = {
             <div
                 class="z-progress"
                 role="progressbar"
+                aria-label="${this.escapeHTML(top.goal.name || "Savings Fund")} funding progress"
                 aria-valuemin="0"
                 aria-valuemax="100"
                 aria-valuenow="${Math.round(percent)}"
@@ -1438,6 +1454,595 @@ const BudgetApp = {
         this.renderExpenseTable(
             snapshot.expenses || []
         );
+
+
+        /* ZG3 — Zevaryn Grid Budget command-center modules.
+           Display-only; every value derives from the snapshot /
+           existing storage getters. */
+
+        this.renderBudgetPeriodLabel();
+
+        this.renderBudgetOverview(
+            snapshot,
+            {
+                monthlyIncome,
+                monthlyExpenses
+            }
+        );
+
+        this.renderBudgetCategoryBreakdown(
+            snapshot
+        );
+
+        this.renderBudgetBillsDue(
+            snapshot
+        );
+    },
+
+
+    /* =====================================================
+       10a. ZG3 — BUDGET PERIOD LABEL
+       ===================================================== */
+
+    renderBudgetPeriodLabel() {
+
+        const label =
+            document.getElementById(
+                "budget-period-label"
+            );
+
+        const title =
+            document.getElementById(
+                "current-month"
+            );
+
+        if (
+            !label ||
+            !title
+        ) {
+            return;
+        }
+
+        const text =
+            String(
+                title.textContent || ""
+            ).trim();
+
+        label.textContent =
+            text || "this month";
+    },
+
+
+    /* =====================================================
+       10b. ZG3 — BUDGET OVERVIEW + PROGRESS
+       ===================================================== */
+
+    renderBudgetOverview(snapshot, totals) {
+
+        const summary =
+            snapshot.summary || {};
+
+
+        const income =
+            Number(
+                (totals && totals.monthlyIncome) ??
+                summary.income
+            ) || 0;
+
+        const bills =
+            Number(summary.bills) || 0;
+
+        const expenses =
+            Number(summary.expenses) || 0;
+
+        const remaining =
+            Number(summary.remaining);
+
+        const spent =
+            bills + expenses;
+
+
+        this.setMoneyText(
+            "budget-bills-total",
+            bills
+        );
+
+        this.setMoneyText(
+            "budget-remaining",
+            Number.isFinite(remaining)
+                ? remaining
+                : income - spent
+        );
+
+
+        const body =
+            document.getElementById(
+                "budget-progress-body"
+            );
+
+        const card =
+            document.getElementById(
+                "budget-overview"
+            );
+
+        if (!body) {
+            return;
+        }
+
+
+        if (card) {
+            card.classList.remove(
+                "zg-bov--warn",
+                "zg-bov--over"
+            );
+        }
+
+
+        if (income <= 0) {
+
+            body.innerHTML = `
+                <p class="empty-message">
+                    Add income to see how much of your budget is committed.
+                </p>
+            `;
+
+            return;
+        }
+
+
+        const rawPercent =
+            (spent / income) * 100;
+
+        const fillPercent =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    rawPercent
+                )
+            );
+
+        const leftover =
+            income - spent;
+
+        const overBudget =
+            spent > income;
+
+        const approaching =
+            !overBudget &&
+            rawPercent >= 85;
+
+
+        let barClass =
+            "z-progress-bar z-progress-bar--teal";
+
+        if (overBudget) {
+
+            barClass =
+                "z-progress-bar z-progress-bar--danger";
+
+            if (card) {
+                card.classList.add(
+                    "zg-bov--over"
+                );
+            }
+
+        }
+        else if (approaching) {
+
+            barClass =
+                "z-progress-bar z-progress-bar--warning";
+
+            if (card) {
+                card.classList.add(
+                    "zg-bov--warn"
+                );
+            }
+
+        }
+
+
+        const headline =
+            overBudget
+                ? "Over budget"
+                : (
+                    approaching
+                        ? "Almost committed"
+                        : "Committed this month"
+                );
+
+
+        const footText =
+            overBudget
+                ? `<strong>${this.escapeHTML(
+                    this.formatCurrency(
+                        Math.abs(leftover)
+                    )
+                )}</strong> over`
+                : `<strong>${this.escapeHTML(
+                    this.formatCurrency(leftover)
+                )}</strong> remaining`;
+
+
+        body.innerHTML = `
+            <div class="zg-bov-progress-head">
+                <span class="zg-bov-pct">${Math.round(rawPercent)}%</span>
+                <span class="zg-bov-of">
+                    ${this.escapeHTML(headline)}
+                    &middot;
+                    ${this.escapeHTML(
+                        this.formatCurrency(spent)
+                    )}
+                    of
+                    ${this.escapeHTML(
+                        this.formatCurrency(income)
+                    )}
+                </span>
+            </div>
+
+            <div
+                class="z-progress"
+                role="progressbar"
+                aria-label="Income committed to bills and expenses"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="${Math.round(fillPercent)}"
+            >
+                <div
+                    class="${barClass}"
+                    style="width: ${fillPercent}%"
+                ></div>
+            </div>
+
+            <p class="zg-bov-progress-foot">
+                <span>Bills + expenses committed</span>
+                <span>${footText}</span>
+            </p>
+        `;
+    },
+
+
+    /* =====================================================
+       10c. ZG3 — SPENDING BY CATEGORY (+ subcategories)
+       ===================================================== */
+
+    buildBudgetCategoryTree(expenses) {
+
+        const list =
+            Array.isArray(expenses)
+                ? expenses
+                : [];
+
+        const map =
+            new Map();
+
+        list.forEach(
+            expense => {
+
+                const amount =
+                    Math.abs(
+                        Number(expense.amount) || 0
+                    );
+
+                if (amount <= 0) {
+                    return;
+                }
+
+                const category =
+                    String(
+                        expense.category || "Other"
+                    ).trim() || "Other";
+
+                const subcategory =
+                    String(
+                        expense.subcategory || ""
+                    ).trim();
+
+
+                if (!map.has(category)) {
+                    map.set(category, {
+                        name: category,
+                        total: 0,
+                        subs: new Map()
+                    });
+                }
+
+                const entry =
+                    map.get(category);
+
+                entry.total += amount;
+
+
+                if (subcategory) {
+
+                    entry.subs.set(
+                        subcategory,
+                        (entry.subs.get(subcategory) || 0) + amount
+                    );
+                }
+            }
+        );
+
+
+        return [...map.values()]
+            .map(entry => ({
+                name: entry.name,
+                total: entry.total,
+                subs: [...entry.subs.entries()]
+                    .map(([name, total]) => ({ name, total }))
+                    .sort((a, b) => b.total - a.total)
+            }))
+            .sort((a, b) => b.total - a.total);
+    },
+
+
+    renderBudgetCategoryBreakdown(snapshot) {
+
+        const container =
+            document.getElementById(
+                "budget-category-breakdown"
+            );
+
+        if (!container) {
+            return;
+        }
+
+
+        const tree =
+            this.buildBudgetCategoryTree(
+                snapshot.expenses || []
+            );
+
+
+        if (tree.length === 0) {
+
+            container.innerHTML = `
+                <p class="empty-message">
+                    No categorized spending yet.
+                </p>
+            `;
+
+            return;
+        }
+
+
+        const grandTotal =
+            tree.reduce(
+                (sum, entry) => sum + entry.total,
+                0
+            );
+
+
+        container.innerHTML =
+            tree.map(entry => {
+
+                const percent =
+                    grandTotal > 0
+                        ? (entry.total / grandTotal) * 100
+                        : 0;
+
+
+                const subRows =
+                    entry.subs.length === 0
+                        ? ""
+                        : `
+                            <div class="zg-bcat-subs">
+                                ${entry.subs.map(sub => `
+                                    <div class="zg-bcat-sub">
+                                        <span>${this.escapeHTML(sub.name)}</span>
+                                        <span>${this.escapeHTML(
+                                            this.formatCurrency(sub.total)
+                                        )}</span>
+                                    </div>
+                                `).join("")}
+                            </div>
+                        `;
+
+
+                return `
+                    <article class="zg-bcat-row">
+
+                        <div class="zg-bcat-head">
+                            <div class="zg-bcat-name">
+                                <strong>${this.escapeHTML(entry.name)}</strong>
+                                <span>${percent.toFixed(0)}%</span>
+                            </div>
+                            <strong class="zg-bcat-amount">${this.escapeHTML(
+                                this.formatCurrency(entry.total)
+                            )}</strong>
+                        </div>
+
+                        <div class="z-progress zg-bcat-track">
+                            <div
+                                class="z-progress-bar z-progress-bar--teal"
+                                style="width: ${Math.min(percent, 100)}%"
+                            ></div>
+                        </div>
+
+                        ${subRows}
+
+                    </article>
+                `;
+            }).join("");
+    },
+
+
+    /* =====================================================
+       10d. ZG3 — BILLS DUE (compact, next unpaid)
+       ===================================================== */
+
+    renderBudgetBillsDue(snapshot) {
+
+        const container =
+            document.getElementById(
+                "budget-bills-due"
+            );
+
+        const countEl =
+            document.getElementById(
+                "budget-bills-due-count"
+            );
+
+        if (!container) {
+            return;
+        }
+
+
+        const storage =
+            this.getStorage();
+
+        const monthKey =
+            snapshot.monthKey;
+
+        const currentMonthKey =
+            storage &&
+            typeof storage.getCurrentMonthKey === "function"
+                ? storage.getCurrentMonthKey()
+                : monthKey;
+
+        const today =
+            this.getTodayKey();
+
+
+        const unpaid =
+            (Array.isArray(snapshot.bills)
+                ? snapshot.bills
+                : []
+            )
+                .filter(bill => !bill.paid)
+                .sort((a, b) =>
+                    this.compareDates(a.dueDate, b.dueDate)
+                );
+
+
+        if (countEl) {
+            countEl.textContent =
+                unpaid.length === 0
+                    ? ""
+                    : String(unpaid.length);
+        }
+
+
+        if (unpaid.length === 0) {
+
+            container.innerHTML = `
+                <p class="empty-message">
+                    Every bill for this month is paid.
+                </p>
+            `;
+
+            return;
+        }
+
+
+        const total =
+            unpaid.reduce(
+                (sum, bill) =>
+                    sum +
+                    Math.abs(Number(bill.amount) || 0),
+                0
+            );
+
+
+        const rows =
+            unpaid.slice(0, 4).map(bill => {
+
+                const overdue =
+                    monthKey === currentMonthKey &&
+                    bill.dueDate &&
+                    bill.dueDate < today;
+
+
+                return `
+                    <article class="zg-bdue-row">
+                        <div class="zg-bdue-info">
+                            <strong>${this.escapeHTML(bill.name || "Bill")}</strong>
+                            <span class="${overdue ? "zg-bdue-overdue" : ""}">
+                                ${overdue ? "Overdue &middot; " : ""}${this.escapeHTML(
+                                    this.formatDate(bill.dueDate)
+                                )}
+                            </span>
+                        </div>
+                        <span class="zg-bdue-amount">${this.escapeHTML(
+                            this.formatCurrency(
+                                Math.abs(Number(bill.amount) || 0)
+                            )
+                        )}</span>
+                    </article>
+                `;
+            }).join("");
+
+
+        const more =
+            unpaid.length > 4
+                ? `<p class="zg-bdue-more">+ ${unpaid.length - 4} more</p>`
+                : "";
+
+
+        container.innerHTML = `
+            <p class="zg-bdue-summary">
+                ${unpaid.length === 1 ? "1 bill" : `${unpaid.length} bills`}
+                &middot;
+                <strong>${this.escapeHTML(
+                    this.formatCurrency(total)
+                )}</strong> outstanding
+            </p>
+            ${rows}
+            ${more}
+        `;
+    },
+
+
+    /* =====================================================
+       10e. ZG3 — BILL SCHEDULE + STATUS HELPERS
+       ===================================================== */
+
+    formatBillSchedule(bill) {
+
+        if (!bill.recurring) {
+            return {
+                text: "One-time",
+                recurring: false
+            };
+        }
+
+        if (bill.endDate) {
+            return {
+                text: `Monthly · Ends ${this.formatDate(bill.endDate)}`,
+                recurring: true
+            };
+        }
+
+        return {
+            text: "Monthly · No end date",
+            recurring: true
+        };
+    },
+
+
+    getBillStatus(bill, monthKey) {
+
+        if (bill.paid) {
+            return { label: "Paid", cls: "paid" };
+        }
+
+        const storage =
+            this.getStorage();
+
+        const currentMonthKey =
+            storage &&
+            typeof storage.getCurrentMonthKey === "function"
+                ? storage.getCurrentMonthKey()
+                : monthKey;
+
+        const overdue =
+            monthKey === currentMonthKey &&
+            bill.dueDate &&
+            bill.dueDate < this.getTodayKey();
+
+        return overdue
+            ? { label: "Overdue", cls: "overdue" }
+            : { label: "Due", cls: "unpaid" };
     },
 
 
@@ -1484,105 +2089,66 @@ const BudgetApp = {
 
 
         container.innerHTML = `
-            <table>
+            <div class="zg-ledger">
+                ${sorted.map(item => {
 
-                <thead>
-                    <tr>
-                        <th>Income</th>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>Frequency</th>
-                        <th>Amount</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    ${sorted.map(item => {
-
-                        const incomeId =
+                    const incomeId =
+                        this.escapeHTML(
                             item.sourceId ||
                             item.id ||
-                            "";
+                            ""
+                        );
 
 
-                        return `
-                            <tr>
+                    return `
+                        <article class="zg-ledger-row">
 
-                                <td data-label="Income">
-                                    <strong>
-                                        ${this.escapeHTML(
-                                            item.source ||
-                                            item.name ||
-                                            "Income"
-                                        )}
-                                    </strong>
-                                </td>
-
-                                <td data-label="Date">
-                                    ${this.formatDate(
-                                        item.date
-                                    )}
-                                </td>
-
-                                <td data-label="Type">
+                            <div class="zg-ledger-info">
+                                <strong>${this.escapeHTML(
+                                    item.source ||
+                                    item.name ||
+                                    "Income"
+                                )}</strong>
+                                <span class="zg-ledger-meta">
                                     ${this.escapeHTML(
-                                        item.category ||
-                                        "Other Income"
+                                        item.category || "Other Income"
                                     )}
-                                </td>
-
-                                <td data-label="Frequency">
-                                    ${this.escapeHTML(
-                                        this.formatIncomeFrequency(
-                                            item
-                                        )
+                                    &middot; ${this.escapeHTML(
+                                        this.formatIncomeFrequency(item)
                                     )}
-                                </td>
-
-                                <td data-label="Amount" class="money-positive">
-                                    ${this.formatCurrency(
-                                        item.amount
+                                    &middot; ${this.escapeHTML(
+                                        this.formatDate(item.date)
                                     )}
-                                </td>
+                                </span>
+                            </div>
 
-                                <td data-label="Actions">
+                            <div class="zg-ledger-right">
+                                <span class="zg-ledger-amount money-positive">${this.escapeHTML(
+                                    this.formatCurrency(item.amount)
+                                )}</span>
+                                <div class="zg-ledger-actions">
+                                    <button
+                                        type="button"
+                                        class="zg-bill-btn"
+                                        data-income-edit="${incomeId}"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="zg-bill-btn zg-bill-btn--danger"
+                                        data-income-delete="${incomeId}"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
 
-                                    <div class="income-actions">
+                        </article>
+                    `;
 
-                                        <button
-                                            type="button"
-                                            class="text-button"
-                                            data-income-edit="${this.escapeHTML(
-                                                incomeId
-                                            )}"
-                                        >
-                                            Edit
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            class="text-button money-negative"
-                                            data-income-delete="${this.escapeHTML(
-                                                incomeId
-                                            )}"
-                                        >
-                                            Delete
-                                        </button>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-                        `;
-
-                    }).join("")}
-
-                </tbody>
-
-            </table>
+                }).join("")}
+            </div>
         `;
     },
 
@@ -1666,134 +2232,81 @@ const BudgetApp = {
 
 
         container.innerHTML = `
-            <table>
+            <div class="zg-ledger">
+                ${sorted.map(expense => {
 
-                <thead>
-                    <tr>
-                        <th>Expense</th>
-                        <th>Date</th>
-                        <th>Merchant</th>
-                        <th>Category</th>
-                        <th>Subcategory</th>
-                        <th>Frequency</th>
-                        <th>Amount</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    ${sorted.map(expense => {
-
-                        const expenseId =
+                    const expenseId =
+                        this.escapeHTML(
                             expense.sourceId ||
                             expense.id ||
-                            "";
+                            ""
+                        );
+
+                    const metaParts =
+                        [
+                            expense.category || "Other",
+                            expense.subcategory || "",
+                            this.formatExpenseFrequency(expense)
+                        ].filter(part => part && part !== "One-time");
+
+                    if (!expense.recurring) {
+                        metaParts.push("One-time");
+                    }
 
 
-                        return `
-                            <tr>
+                    return `
+                        <article class="zg-ledger-row">
 
-                                <td data-label="Expense">
-
-                                    <strong>
-                                        ${this.escapeHTML(
-                                            expense.name ||
-                                            "Expense"
-                                        )}
-                                    </strong>
-
+                            <div class="zg-ledger-info">
+                                <strong>${this.escapeHTML(
+                                    expense.name || "Expense"
+                                )}</strong>
+                                <span class="zg-ledger-meta">
                                     ${
-                                        expense.notes
-                                            ? `
-                                                <div class="table-note">
-                                                    ${this.escapeHTML(
-                                                        expense.notes
-                                                    )}
-                                                </div>
-                                            `
+                                        expense.merchant
+                                            ? `${this.escapeHTML(expense.merchant)} &middot; `
                                             : ""
-                                    }
-
-                                </td>
-
-                                <td data-label="Date">
-                                    ${this.formatDate(
-                                        expense.date
+                                    }${this.escapeHTML(metaParts.join(" · "))}
+                                    &middot; ${this.escapeHTML(
+                                        this.formatDate(expense.date)
                                     )}
-                                </td>
+                                </span>
+                                ${
+                                    expense.notes
+                                        ? `<span class="zg-ledger-note">${this.escapeHTML(
+                                            expense.notes
+                                        )}</span>`
+                                        : ""
+                                }
+                            </div>
 
-                                <td data-label="Merchant">
-                                    ${this.escapeHTML(
-                                        expense.merchant ||
-                                        "—"
-                                    )}
-                                </td>
+                            <div class="zg-ledger-right">
+                                <span class="zg-ledger-amount money-negative">${this.escapeHTML(
+                                    this.formatCurrency(expense.amount)
+                                )}</span>
+                                <div class="zg-ledger-actions">
+                                    <button
+                                        type="button"
+                                        class="zg-bill-btn"
+                                        data-expense-edit="${expenseId}"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="zg-bill-btn zg-bill-btn--danger"
+                                        data-expense-delete="${expenseId}"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
 
-                                <td data-label="Category">
-                                    ${this.escapeHTML(
-                                        expense.category ||
-                                        "Other"
-                                    )}
-                                </td>
+                        </article>
+                    `;
 
-                                <td data-label="Subcategory">
-                                    ${this.escapeHTML(
-                                        expense.subcategory ||
-                                        "—"
-                                    )}
-                                </td>
-
-                                <td data-label="Frequency">
-                                    ${this.escapeHTML(
-                                        this.formatExpenseFrequency(
-                                            expense
-                                        )
-                                    )}
-                                </td>
-
-                                <td data-label="Amount" class="money-negative">
-                                    ${this.formatCurrency(
-                                        expense.amount
-                                    )}
-                                </td>
-
-                                <td data-label="Actions">
-
-                                    <div class="expense-actions">
-
-                                        <button
-                                            type="button"
-                                            class="text-button"
-                                            data-expense-edit="${this.escapeHTML(
-                                                expenseId
-                                            )}"
-                                        >
-                                            Edit
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            class="text-button money-negative"
-                                            data-expense-delete="${this.escapeHTML(
-                                                expenseId
-                                            )}"
-                                        >
-                                            Delete
-                                        </button>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-                        `;
-
-                    }).join("")}
-
-                </tbody>
-
-            </table>
+                }).join("")}
+            </div>
         `;
     },
 
@@ -1921,194 +2434,142 @@ const BudgetApp = {
 
         const sorted =
             [...bills].sort(
-                (a, b) =>
-                    this.compareDates(
+                (a, b) => {
+
+                    const paidOrder =
+                        Number(Boolean(a.paid)) -
+                        Number(Boolean(b.paid));
+
+                    if (paidOrder !== 0) {
+                        return paidOrder;
+                    }
+
+                    return this.compareDates(
                         a.dueDate,
                         b.dueDate
-                    )
+                    );
+                }
             );
 
 
         container.innerHTML = `
-
-        <table>
-
-            <thead>
-
-                <tr>
-
-                    <th>Bill</th>
-                    <th>Due</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Repeats</th>
-                    <th>Actions</th>
-
-                </tr>
-
-            </thead>
-
-
-            <tbody>
-
+            <div class="zg-bill-list">
                 ${sorted.map(bill => {
 
                     const billId =
-                        this.escapeHTML(
-                            bill.id || ""
-                        );
-
+                        this.escapeHTML(bill.id || "");
 
                     const safeMonthKey =
-                        this.escapeHTML(
-                            monthKey || ""
-                        );
-
+                        this.escapeHTML(monthKey || "");
 
                     const isPaid =
-                        Boolean(
-                            bill.paid
-                        );
+                        Boolean(bill.paid);
 
+                    const status =
+                        this.getBillStatus(bill, monthKey);
 
-                    const scheduleLabel =
-                        bill.recurring
-                            ? (
-                                bill.endDate
-                                    ? `Monthly · Ends ${this.formatDate(
-                                        bill.endDate
-                                    )}`
-                                    : "Monthly"
-                            )
-                            : "One-time";
+                    const schedule =
+                        this.formatBillSchedule(bill);
+
+                    const categoryLine =
+                        [
+                            bill.category || "Other",
+                            bill.subcategory || ""
+                        ]
+                            .filter(Boolean)
+                            .join(" · ");
 
 
                     return `
+                        <article class="zg-bill ${isPaid ? "zg-bill--paid" : ""}">
 
-                        <tr>
+                            <div class="zg-bill-main">
 
-                            <td data-label="Bill">
-
-                                <strong>
-                                    ${this.escapeHTML(
-                                        bill.name ||
-                                        "Bill"
-                                    )}
-                                </strong>
-
-                            </td>
-
-
-                            <td data-label="Due">
-
-                                ${this.formatDate(
-                                    bill.dueDate
-                                )}
-
-                            </td>
-
-
-                            <td data-label="Category">
-
-                                ${this.escapeHTML(
-                                    bill.category ||
-                                    "Other"
-                                )}
-
-                            </td>
-
-
-                            <td data-label="Amount" class="money-negative">
-
-                                ${this.formatCurrency(
-                                    bill.amount
-                                )}
-
-                            </td>
-
-
-                            <td data-label="Status">
-
-                                <span class="
-                                    bill-status
-                                    ${isPaid
-                                        ? "paid"
-                                        : "unpaid"}
-                                ">
-
-                                    ${isPaid
-                                        ? "Paid"
-                                        : "Unpaid"}
-
-                                </span>
-
-                            </td>
-
-
-                            <td data-label="Schedule">
-
-                                <span class="bill-schedule">
-                                    ${this.escapeHTML(
-                                        scheduleLabel
-                                    )}
-                                </span>
-
-                            </td>
-
-
-                            <td data-label="Actions">
-
-                                <div class="income-actions bill-actions">
-
-                                    <button
-                                        type="button"
-                                        class="text-button"
-                                        data-bill-paid="${billId}"
-                                        data-bill-month="${safeMonthKey}"
-                                    >
-
-                                        ${isPaid
-                                            ? "Mark Unpaid"
-                                            : "Mark Paid"}
-
-                                    </button>
-
-
-                                    <button
-                                        type="button"
-                                        class="text-button"
-                                        data-bill-edit="${billId}"
-                                        data-bill-month="${safeMonthKey}"
-                                    >
-                                        Edit
-                                    </button>
-
-
-                                    <button
-                                        type="button"
-                                        class="text-button money-negative"
-                                        data-bill-delete="${billId}"
-                                        data-bill-month="${safeMonthKey}"
-                                    >
-                                        Delete
-                                    </button>
-
+                                <div class="zg-bill-head">
+                                    <strong class="zg-bill-name">${this.escapeHTML(
+                                        bill.name || "Bill"
+                                    )}</strong>
+                                    <span class="zg-bill-amount">${this.escapeHTML(
+                                        this.formatCurrency(bill.amount)
+                                    )}</span>
                                 </div>
 
-                            </td>
+                                <div class="zg-bill-meta">
+                                    <span>Due ${this.escapeHTML(
+                                        this.formatDate(bill.dueDate)
+                                    )}</span>
+                                    ${
+                                        categoryLine
+                                            ? `<span>${this.escapeHTML(categoryLine)}</span>`
+                                            : ""
+                                    }
+                                    ${
+                                        bill.merchant
+                                            ? `<span>${this.escapeHTML(bill.merchant)}</span>`
+                                            : ""
+                                    }
+                                </div>
 
-                        </tr>
+                                <div class="zg-bill-badges">
+                                    <span class="z-badge z-badge-${
+                                        status.cls === "paid"
+                                            ? "success"
+                                            : (status.cls === "overdue" ? "danger" : "warning")
+                                    }">${this.escapeHTML(status.label)}</span>
+                                    ${
+                                        schedule.recurring
+                                            ? `<span class="z-badge z-badge-violet">&#8635; ${this.escapeHTML(
+                                                schedule.text
+                                            )}</span>`
+                                            : `<span class="z-badge">${this.escapeHTML(schedule.text)}</span>`
+                                    }
+                                </div>
 
+                                ${
+                                    bill.notes
+                                        ? `<p class="zg-bill-notes">${this.escapeHTML(bill.notes)}</p>`
+                                        : ""
+                                }
+
+                            </div>
+
+                            <div class="zg-bill-actions">
+
+                                <button
+                                    type="button"
+                                    class="zg-bill-btn zg-bill-btn--pay"
+                                    data-bill-paid="${billId}"
+                                    data-bill-month="${safeMonthKey}"
+                                >
+                                    ${isPaid ? "Mark Unpaid" : "Mark Paid"}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="zg-bill-btn"
+                                    data-bill-edit="${billId}"
+                                    data-bill-month="${safeMonthKey}"
+                                >
+                                    Edit
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="zg-bill-btn zg-bill-btn--danger"
+                                    data-bill-delete="${billId}"
+                                    data-bill-month="${safeMonthKey}"
+                                >
+                                    Delete
+                                </button>
+
+                            </div>
+
+                        </article>
                     `;
 
                 }).join("")}
-
-            </tbody>
-
-        </table>
-
-    `;
+            </div>
+        `;
 
     },
 
@@ -2124,140 +2585,538 @@ const BudgetApp = {
                 "transaction-list"
             );
 
+        if (!container) {
+            return;
+        }
+
+
+        if (!this.txFilters) {
+            this.txFilters = {
+                search: "",
+                type: "all",
+                category: ""
+            };
+        }
+
+
+        /* Full, sorted activity feed for the selected month — cached so
+           search / filter changes re-render without another storage read. */
+        this._txAll =
+            (Array.isArray(snapshot.transactions)
+                ? [...snapshot.transactions]
+                : []
+            ).sort(
+                (first, second) => {
+
+                    const dateOrder =
+                        this.compareDates(
+                            second.date,
+                            first.date
+                        );
+
+                    if (dateOrder !== 0) {
+                        return dateOrder;
+                    }
+
+                    return String(
+                        second.createdAt || ""
+                    ).localeCompare(
+                        String(first.createdAt || "")
+                    );
+                }
+            );
+
+
+        this.renderTransactionPeriodLabel();
+        this.populateTxCategoryFilter(this._txAll);
+        this.bindTransactionControls();
+        this.applyTxFilters();
+    },
+
+
+    /* =====================================================
+       17a. ZG4 — TRANSACTIONS PERIOD LABEL
+       ===================================================== */
+
+    renderTransactionPeriodLabel() {
+
+        const label =
+            document.getElementById(
+                "tx-period-label"
+            );
+
+        const title =
+            document.getElementById(
+                "current-month"
+            );
+
+        if (!label || !title) {
+            return;
+        }
+
+        label.textContent =
+            String(title.textContent || "").trim() ||
+            "this month";
+    },
+
+
+    /* =====================================================
+       17b. ZG4 — CATEGORY FILTER OPTIONS
+       Central category library ∪ categories present in the feed
+       (so legacy / custom category strings still filter).
+       ===================================================== */
+
+    populateTxCategoryFilter(all) {
+
+        const select =
+            document.getElementById(
+                "tx-category-filter"
+            );
+
+        if (!select) {
+            return;
+        }
+
+
+        const storage =
+            this.getStorage();
+
+        const names =
+            new Set();
+
+        if (
+            storage &&
+            typeof storage.getCategories === "function"
+        ) {
+            try {
+                storage.getCategories({ enabledOnly: true })
+                    .forEach(category => {
+                        if (category && category.name) {
+                            names.add(String(category.name));
+                        }
+                    });
+            }
+            catch (error) {
+                /* fall through to feed-derived names */
+            }
+        }
+
+        (all || []).forEach(item => {
+            if (item && item.category) {
+                names.add(String(item.category));
+            }
+        });
+
+
+        const sorted =
+            [...names].sort((a, b) => a.localeCompare(b));
+
+        const previous =
+            this.txFilters.category;
+
+        select.innerHTML =
+            `<option value="">All categories</option>` +
+            sorted.map(name =>
+                `<option value="${this.escapeHTML(name)}">${this.escapeHTML(name)}</option>`
+            ).join("");
+
+        if (previous && sorted.includes(previous)) {
+            select.value = previous;
+        }
+        else if (previous && !sorted.includes(previous)) {
+            this.txFilters.category = "";
+        }
+    },
+
+
+    /* =====================================================
+       17c. ZG4 — CONTROL EVENT BINDING (once)
+       ===================================================== */
+
+    bindTransactionControls() {
+
+        if (this._txControlsBound) {
+            return;
+        }
+
+
+        const search =
+            document.getElementById("tx-search");
+
+        const categoryFilter =
+            document.getElementById("tx-category-filter");
+
+        const filterGroup =
+            document.querySelector(".zg-tx-filters");
+
+        if (!search || !categoryFilter || !filterGroup) {
+            return;
+        }
+
+
+        search.addEventListener(
+            "input",
+            () => {
+                this.txFilters.search =
+                    search.value.trim().toLowerCase();
+                this.applyTxFilters();
+            }
+        );
+
+        categoryFilter.addEventListener(
+            "change",
+            () => {
+                this.txFilters.category =
+                    categoryFilter.value;
+                this.applyTxFilters();
+            }
+        );
+
+        filterGroup.addEventListener(
+            "click",
+            event => {
+
+                const chip =
+                    event.target.closest("[data-tx-filter]");
+
+                if (!chip) {
+                    return;
+                }
+
+                this.txFilters.type =
+                    chip.dataset.txFilter || "all";
+
+                filterGroup
+                    .querySelectorAll("[data-tx-filter]")
+                    .forEach(button => {
+
+                        const active =
+                            button === chip;
+
+                        button.classList.toggle("is-active", active);
+                        button.setAttribute(
+                            "aria-pressed",
+                            active ? "true" : "false"
+                        );
+                    });
+
+                this.applyTxFilters();
+            }
+        );
+
+
+        this._txControlsBound = true;
+    },
+
+
+    /* =====================================================
+       17d. ZG4 — APPLY FILTERS + RENDER
+       ===================================================== */
+
+    getFilteredTransactions() {
+
+        const all =
+            Array.isArray(this._txAll)
+                ? this._txAll
+                : [];
+
+        const {
+            search,
+            type,
+            category
+        } = this.txFilters;
+
+
+        return all.filter(item => {
+
+            const amount =
+                Number(item.amount) || 0;
+
+
+            if (type === "income" && amount < 0) {
+                return false;
+            }
+
+            if (type === "expense" && amount >= 0) {
+                return false;
+            }
+
+
+            if (
+                category &&
+                String(item.category || "") !== category
+            ) {
+                return false;
+            }
+
+
+            if (search) {
+
+                const haystack =
+                    [
+                        item.description,
+                        item.name,
+                        item.merchant,
+                        item.category,
+                        item.subcategory,
+                        item.notes
+                    ]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase();
+
+                if (!haystack.includes(search)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    },
+
+
+    applyTxFilters() {
+
+        const all =
+            Array.isArray(this._txAll)
+                ? this._txAll
+                : [];
+
+        const filtered =
+            this.getFilteredTransactions();
+
+        const filtersActive =
+            Boolean(
+                this.txFilters.search ||
+                this.txFilters.category ||
+                this.txFilters.type !== "all"
+            );
+
+
+        this.renderTransactionOverview(filtered);
+        this.renderTransactionCount(
+            filtered.length,
+            all.length,
+            filtersActive
+        );
+        this.renderTransactionLedger(
+            filtered,
+            all.length,
+            filtersActive
+        );
+    },
+
+
+    renderTransactionCount(shown, total, filtersActive) {
+
+        const element =
+            document.getElementById("tx-results-count");
+
+        if (!element) {
+            return;
+        }
+
+        if (total === 0) {
+            element.textContent = "";
+            return;
+        }
+
+        element.textContent =
+            filtersActive
+                ? `${shown} of ${total} ${total === 1 ? "transaction" : "transactions"}`
+                : `${total} ${total === 1 ? "transaction" : "transactions"}`;
+    },
+
+
+    renderTransactionOverview(list) {
+
+        let income = 0;
+        let spending = 0;
+
+        (list || []).forEach(item => {
+
+            const amount =
+                Number(item.amount) || 0;
+
+            if (amount >= 0) {
+                income += amount;
+            }
+            else {
+                spending += Math.abs(amount);
+            }
+        });
+
+
+        this.setMoneyText("tx-total-income", income);
+        this.setMoneyText("tx-total-spending", spending);
+        this.setMoneyText("tx-total-net", income - spending);
+
+
+        const netEl =
+            document.getElementById("tx-total-net");
+
+        if (netEl) {
+            netEl.classList.toggle(
+                "is-negative",
+                income - spending < 0
+            );
+        }
+    },
+
+
+    /* =====================================================
+       17e. ZG4 — LEDGER (date-grouped Zevaryn rows)
+       ===================================================== */
+
+    renderTransactionLedger(list, totalCount, filtersActive) {
+
+        const container =
+            document.getElementById("transaction-list");
 
         if (!container) {
             return;
         }
 
 
-        const transactions =
-            Array.isArray(
-                snapshot.transactions
-            )
-                ? [...snapshot.transactions]
-                    .sort(
-                        (first, second) => {
-
-                            const dateOrder =
-                                this.compareDates(
-                                    second.date,
-                                    first.date
-                                );
-
-
-                            if (
-                                dateOrder !== 0
-                            ) {
-                                return dateOrder;
-                            }
-
-
-                            return String(
-                                second.createdAt ||
-                                ""
-                            ).localeCompare(
-                                String(
-                                    first.createdAt ||
-                                    ""
-                                )
-                            );
-                        }
-                    )
-                : [];
-
-
-        if (
-            transactions.length === 0
-        ) {
+        if (totalCount === 0) {
 
             container.innerHTML = `
-                <p class="empty-message">
-                    No transactions yet.
-                </p>
+                <div class="zg-tx-empty">
+                    <p class="empty-message">No transactions yet.</p>
+                    <p class="zg-tx-empty-sub">
+                        Add your first transaction to begin tracking activity.
+                    </p>
+                </div>
             `;
 
             return;
         }
 
 
+        if (!list || list.length === 0) {
+
+            container.innerHTML = `
+                <div class="zg-tx-empty">
+                    <p class="empty-message">No transactions match these filters.</p>
+                    <p class="zg-tx-empty-sub">
+                        Try a different search or clear the filters.
+                    </p>
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* group by calendar date, preserving the incoming newest-first order */
+        const groups = [];
+        const index = new Map();
+
+        list.forEach(item => {
+
+            const key =
+                item.date || "undated";
+
+            if (!index.has(key)) {
+                index.set(key, groups.length);
+                groups.push({ key, items: [] });
+            }
+
+            groups[index.get(key)].items.push(item);
+        });
+
+
         container.innerHTML =
-            transactions.map(
-                transaction => {
+            groups.map(group => `
+                <div class="zg-tx-group">
 
-                    const amount =
-                        Number(
-                            transaction.amount
-                        ) || 0;
+                    <div class="zg-tx-group-head">
+                        <span>${this.escapeHTML(
+                            group.key === "undated"
+                                ? "No date"
+                                : this.formatDate(group.key)
+                        )}</span>
+                        ${
+                            group.items.length > 1
+                                ? `<span>${this.escapeHTML(
+                                    this.formatCurrency(
+                                        group.items.reduce(
+                                            (sum, item) =>
+                                                sum + (Number(item.amount) || 0),
+                                            0
+                                        )
+                                    )
+                                )} · ${group.items.length}</span>`
+                                : ""
+                        }
+                    </div>
+
+                    ${group.items.map(item =>
+                        this.createTransactionRow(item)
+                    ).join("")}
+
+                </div>
+            `).join("");
+    },
 
 
-                    const isIncome =
-                        amount >= 0;
+    createTransactionRow(transaction) {
+
+        const amount =
+            Number(transaction.amount) || 0;
+
+        const isIncome =
+            amount >= 0;
+
+        const isSavings =
+            transaction.sourceType === "savings-deposit";
+
+        const toneClass =
+            isSavings
+                ? "is-savings"
+                : (isIncome ? "is-income" : "is-expense");
 
 
-                    const icon =
-                        this.getTransactionIcon(
-                            transaction
-                        );
+        const title =
+            transaction.description ||
+            transaction.name ||
+            "Transaction";
+
+        const subtitle =
+            this.getTransactionSubtitle(transaction);
+
+        const typeLabel =
+            isSavings
+                ? "Transfer"
+                : (isIncome ? "Income" : "Expense");
 
 
-                    const subtitle =
-                        this.getTransactionSubtitle(
-                            transaction
-                        );
+        return `
+            <article class="zg-tx-row ${toneClass}">
 
+                <div class="zg-tx-row-icon" aria-hidden="true">
+                    ${this.getTransactionIcon(transaction)}
+                </div>
 
-                    return `
-                        <article class="transaction-item">
+                <div class="zg-tx-row-info">
+                    <strong>${this.escapeHTML(title)}</strong>
+                    <span class="zg-tx-row-meta">${this.escapeHTML(subtitle)}</span>
+                    ${
+                        transaction.notes
+                            ? `<span class="zg-tx-row-note">${this.escapeHTML(transaction.notes)}</span>`
+                            : ""
+                    }
+                </div>
 
-                            <div class="transaction-icon">
-                                ${icon}
-                            </div>
+                <div class="zg-tx-row-amount">
+                    <span class="zg-tx-amount-value">${this.escapeHTML(
+                        this.formatSignedCurrency(amount)
+                    )}</span>
+                    <span class="zg-tx-amount-type">${this.escapeHTML(typeLabel)}</span>
+                </div>
 
-                            <div class="transaction-info">
-
-                                <strong>
-                                    ${this.escapeHTML(
-                                        transaction.description ||
-                                        transaction.name ||
-                                        "Transaction"
-                                    )}
-                                </strong>
-
-                                <span>
-
-                                    ${this.escapeHTML(
-                                        subtitle
-                                    )}
-
-                                    ${
-                                        transaction.date
-                                            ? ` · ${this.formatDate(
-                                                transaction.date
-                                            )}`
-                                            : ""
-                                    }
-
-                                </span>
-
-                            </div>
-
-                            <div class="
-                                transaction-amount
-                                ${
-                                    isIncome
-                                        ? "income"
-                                        : "expense"
-                                }
-                            ">
-                                ${this.formatSignedCurrency(
-                                    amount
-                                )}
-                            </div>
-
-                        </article>
-                    `;
-                }
-            ).join("");
+            </article>
+        `;
     },
 
 
@@ -2573,24 +3432,173 @@ const BudgetApp = {
                 <div class="savings-empty-state">
 
                     <p class="empty-message">
-                        No savings goals created yet.
+                        No savings goals yet.
+                    </p>
+
+                    <p class="zg-sav-empty-sub">
+                        Create a goal when you want to organize part of your savings.
                     </p>
 
                 </div>
             `;
+        }
+        else {
 
+            container.innerHTML =
+                goals.map(
+                    goal =>
+                        this.createSavingsGoalHTML(
+                            goal,
+                            true
+                        )
+                ).join("");
+        }
+
+
+        this.renderSavingsActivity(snapshot);
+    },
+
+
+    /* =====================================================
+       20a. ZG5 — SAVINGS ACTIVITY (this month)
+       Combines Checking↔Savings transfers + goal allocate /
+       release events already recorded for the month.
+       ===================================================== */
+
+    renderSavingsActivity(snapshot) {
+
+        const section =
+            document.getElementById(
+                "savings-activity-section"
+            );
+
+        const container =
+            document.getElementById(
+                "savings-activity"
+            );
+
+        if (!section || !container) {
             return;
         }
 
 
+        const periodEl =
+            document.getElementById(
+                "savings-activity-period"
+            );
+
+        const title =
+            document.getElementById("current-month");
+
+        if (periodEl && title) {
+            const text =
+                String(title.textContent || "").trim();
+            periodEl.textContent =
+                text ? ` · ${text}` : "";
+        }
+
+
+        const events = [];
+
+
+        (Array.isArray(snapshot.savingsDeposits)
+            ? snapshot.savingsDeposits
+            : []
+        ).forEach(deposit => {
+
+            const amount =
+                Number(deposit.amount) || 0;
+
+            if (amount === 0) {
+                return;
+            }
+
+            events.push({
+                date: deposit.date,
+                label:
+                    amount > 0
+                        ? "Added to Savings"
+                        : "Transferred to Checking",
+                sub:
+                    amount > 0
+                        ? "Checking → General Savings"
+                        : "General Savings → Checking",
+                amount,
+                tone: amount > 0 ? "in" : "out"
+            });
+        });
+
+
+        (Array.isArray(snapshot.savingsTransfers)
+            ? snapshot.savingsTransfers
+            : []
+        ).forEach(transfer => {
+
+            const amount =
+                Math.abs(Number(transfer.amount) || 0);
+
+            if (amount === 0) {
+                return;
+            }
+
+            const released =
+                transfer.type === "goal-to-savings" ||
+                transfer.direction === "goal-to-savings" ||
+                transfer.type === "release";
+
+            const goalName =
+                transfer.goalName || "a fund";
+
+            events.push({
+                date: transfer.date,
+                label:
+                    released
+                        ? `Released from ${goalName}`
+                        : `Allocated to ${goalName}`,
+                sub:
+                    released
+                        ? "Fund → Available savings"
+                        : "Available savings → Fund",
+                amount: released ? amount : -amount,
+                tone: "move"
+            });
+        });
+
+
+        if (events.length === 0) {
+            section.hidden = true;
+            container.innerHTML = "";
+            return;
+        }
+
+
+        section.hidden = false;
+
+
+        events.sort(
+            (a, b) =>
+                String(b.date || "").localeCompare(String(a.date || ""))
+        );
+
+
         container.innerHTML =
-            goals.map(
-                goal =>
-                    this.createSavingsGoalHTML(
-                        goal,
-                        true
-                    )
-            ).join("");
+            events.map(event => `
+                <article class="zg-sav-act-row zg-sav-act-row--${this.escapeHTML(event.tone)}">
+                    <div class="zg-sav-act-info">
+                        <strong>${this.escapeHTML(event.label)}</strong>
+                        <span>${this.escapeHTML(event.sub)}${
+                            event.date
+                                ? ` · ${this.escapeHTML(this.formatDate(event.date))}`
+                                : ""
+                        }</span>
+                    </div>
+                    <span class="zg-sav-act-amount">${this.escapeHTML(
+                        event.tone === "move"
+                            ? this.formatCurrency(Math.abs(event.amount))
+                            : this.formatSignedCurrency(event.amount)
+                    )}</span>
+                </article>
+            `).join("");
     },
 
 
@@ -2604,222 +3612,126 @@ const BudgetApp = {
     ) {
 
         const target =
-            Number(
-                goal.targetAmount
-            ) || 0;
-
+            Number(goal.targetAmount) || 0;
 
         const current =
-            Number(
-                goal.currentAmount
-            ) || 0;
-
+            Math.max(0, Number(goal.currentAmount) || 0);
 
         const remaining =
-            Math.max(
-                target - current,
-                0
-            );
+            Math.max(target - current, 0);
 
-
-        let percent = 0;
-
-
-        if (
+        const rawPercent =
             target > 0
-        ) {
+                ? (current / target) * 100
+                : (current > 0 ? 100 : 0);
 
-            percent =
-                (
-                    current /
-                    target
-                ) * 100;
-        }
-
-
-        percent =
-            Math.min(
-                Math.max(
-                    percent,
-                    0
-                ),
-                100
-            );
-
+        const fillPercent =
+            Math.min(100, Math.max(0, rawPercent));
 
         const goalId =
-            this.escapeHTML(
-                goal.id ||
-                ""
-            );
+            this.escapeHTML(goal.id || "");
 
+        const funded =
+            target > 0 && current >= target;
 
-        const completed =
-            target > 0 &&
-            current >= target;
+        const overfunded =
+            target > 0 && current > target;
 
+        const nearlyThere =
+            !funded && rawPercent >= 85;
+
+        const barClass =
+            "z-progress-bar z-progress-bar--teal";
+
+        const statusBadge =
+            funded
+                ? '<span class="z-badge z-badge-teal">Funded</span>'
+                : '<span class="z-badge">Active</span>';
+
+        const remainingLine =
+            funded
+                ? (
+                    overfunded
+                        ? `${this.escapeHTML(this.formatCurrency(current - target))} over target`
+                        : "Fully funded"
+                )
+                : `${this.escapeHTML(this.formatCurrency(remaining))} to go`;
 
         return `
-            <article class="
-                savings-goal-card
-                ${
-                    completed
-                        ? "completed"
-                        : ""
-                }
-            ">
+            <article class="zg-goal ${funded ? "is-funded" : ""} ${nearlyThere ? "is-close" : ""}">
 
-                <div class="savings-goal-header">
-
-                    <div class="savings-goal-title">
-
-                        <strong>
-                            ${this.escapeHTML(
-                                goal.name ||
-                                "Savings Goal"
-                            )}
-                        </strong>
-
-                        ${
-                            completed
-                                ? `
-                                    <span class="savings-goal-complete">
-                                        ✓ Goal Complete
-                                    </span>
-                                `
-                                : `
-                                    <span>
-                                        ${this.formatCurrency(
-                                            remaining
-                                        )}
-                                        still needed
-                                    </span>
-                                `
-                        }
-
+                <div class="zg-goal-head">
+                    <div class="zg-goal-title">
+                        <strong>${this.escapeHTML(goal.name || "Savings Goal")}</strong>
+                        ${statusBadge}
                     </div>
-
-                    <div class="savings-goal-amount">
-
-                        <strong>
-                            ${this.formatCurrency(
-                                current
-                            )}
-                        </strong>
-
-                        <span>
-                            of
-                            ${this.formatCurrency(
-                                target
-                            )}
-                        </span>
-
+                    <div class="zg-goal-amount">
+                        <strong>${this.escapeHTML(this.formatCurrency(current))}</strong>
+                        <span>of ${this.escapeHTML(this.formatCurrency(target))}</span>
                     </div>
-
                 </div>
 
-
                 <div
-                    class="savings-progress"
+                    class="z-progress zg-goal-track"
                     role="progressbar"
                     aria-valuemin="0"
                     aria-valuemax="100"
-                    aria-valuenow="${percent.toFixed(0)}"
+                    aria-valuenow="${Math.round(fillPercent)}"
+                    aria-label="${this.escapeHTML(goal.name || "Savings Goal")} funding progress"
                 >
-
-                    <div
-                        class="savings-progress-bar"
-                        style="width: ${percent}%"
-                    ></div>
-
+                    <div class="${barClass}" style="width: ${fillPercent}%"></div>
                 </div>
 
-
-                <div class="savings-goal-progress-details">
-
-                    <span>
-                        ${percent.toFixed(0)}% funded
-                    </span>
-
-                    <span>
-                        ${this.formatCurrency(
-                            remaining
-                        )}
-                        remaining
-                    </span>
-
+                <div class="zg-goal-meta">
+                    <span>${Math.round(rawPercent)}% funded</span>
+                    <span>${remainingLine}</span>
                 </div>
-
 
                 ${
                     goal.targetDate
-                        ? `
-                            <div class="savings-goal-target-date">
-                                Target:
-                                ${this.formatDate(
-                                    goal.targetDate
-                                )}
-                            </div>
-                        `
+                        ? `<p class="zg-goal-detail">Target date &middot; ${this.escapeHTML(this.formatDate(goal.targetDate))}</p>`
                         : ""
                 }
-
 
                 ${
                     goal.notes
-                        ? `
-                            <p class="savings-goal-notes">
-                                ${this.escapeHTML(
-                                    goal.notes
-                                )}
-                            </p>
-                        `
+                        ? `<p class="zg-goal-notes">${this.escapeHTML(goal.notes)}</p>`
                         : ""
                 }
-
 
                 ${
                     showActions
                         ? `
-                            <div class="savings-goal-actions">
-
+                            <div class="zg-goal-actions">
                                 <button
                                     type="button"
-                                    class="savings-action-button allocate"
+                                    class="zg-goal-btn zg-goal-btn--allocate"
                                     data-savings-allocate="${goalId}"
                                 >
-                                    + Add Funds
+                                    Allocate
                                 </button>
-
                                 <button
                                     type="button"
-                                    class="savings-action-button release"
+                                    class="zg-goal-btn"
                                     data-savings-release="${goalId}"
-                                    ${
-                                        current <= 0
-                                            ? "disabled"
-                                            : ""
-                                    }
+                                    ${current <= 0 ? "disabled" : ""}
                                 >
-                                    ↩ Return Funds
+                                    Release
                                 </button>
-
                                 <button
                                     type="button"
-                                    class="savings-action-button edit"
+                                    class="zg-goal-btn"
                                     data-savings-goal-edit="${goalId}"
                                 >
                                     Edit
                                 </button>
-
                                 <button
                                     type="button"
-                                    class="savings-action-button delete"
+                                    class="zg-goal-btn zg-goal-btn--danger"
                                     data-savings-goal-delete="${goalId}"
                                 >
                                     Delete
                                 </button>
-
                             </div>
                         `
                         : ""
@@ -3054,7 +3966,134 @@ const BudgetApp = {
         });
 
 
+        this.bindReportModeSwitcher();
+
+
         this.updateReportControlVisibility();
+    },
+
+
+    /* =====================================================
+       23b. ZG7 — REPORT MODE SWITCHER (segmented control)
+
+       The in-page [ Monthly ] [ Yearly ] [ Date-to-Date ]
+       tabs are a skin over the existing #report-type-select.
+       Clicking a tab sets that select and fires its native
+       "change" event, so nav.js + the existing
+       mwallet:report-type-changed flow stay the single source
+       of truth. No report-mode behaviour is changed here.
+       ===================================================== */
+
+    bindReportModeSwitcher() {
+
+        const reportsPage =
+            document.getElementById(
+                "reports-page"
+            );
+
+        const typeSelect =
+            document.getElementById(
+                "report-type-select"
+            );
+
+
+        if (
+            !reportsPage ||
+            !typeSelect
+        ) {
+            return;
+        }
+
+
+        reportsPage
+            .querySelectorAll("[data-report-mode]")
+            .forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const mode =
+                            button.getAttribute(
+                                "data-report-mode"
+                            );
+
+
+                        if (
+                            !mode ||
+                            typeSelect.value === mode
+                        ) {
+                            return;
+                        }
+
+
+                        typeSelect.value =
+                            mode;
+
+
+                        typeSelect.dispatchEvent(
+                            new Event(
+                                "change",
+                                { bubbles: true }
+                            )
+                        );
+                    }
+                );
+            });
+
+
+        this.syncReportModeSwitcher();
+    },
+
+
+    syncReportModeSwitcher() {
+
+        const reportsPage =
+            document.getElementById(
+                "reports-page"
+            );
+
+        const typeSelect =
+            document.getElementById(
+                "report-type-select"
+            );
+
+
+        if (
+            !reportsPage ||
+            !typeSelect
+        ) {
+            return;
+        }
+
+
+        const active =
+            typeSelect.value ||
+            "monthly";
+
+
+        reportsPage
+            .querySelectorAll("[data-report-mode]")
+            .forEach(button => {
+
+                const isActive =
+                    button.getAttribute(
+                        "data-report-mode"
+                    ) === active;
+
+
+                button.classList.toggle(
+                    "is-active",
+                    isActive
+                );
+
+                button.setAttribute(
+                    "aria-selected",
+                    isActive
+                        ? "true"
+                        : "false"
+                );
+            });
     },
 
 
@@ -3699,6 +4738,8 @@ const BudgetApp = {
 
         this.updateReportControlVisibility();
 
+        this.syncReportModeSwitcher();
+
 
         const selection =
             this.getReportSelection();
@@ -3751,6 +4792,45 @@ const BudgetApp = {
             reportData.net
         );
 
+        /*
+            Total Spending is a display-only roll-up of the two
+            spending totals the report already computed.
+        */
+        this.setMoneyText(
+            "report-total-spending",
+            reportData.bills + reportData.expenses
+        );
+
+
+        const netCard =
+            document.querySelector(
+                "#reports-page .zg-rep-stat--net"
+            );
+
+        if (netCard) {
+
+            netCard.classList.toggle(
+                "is-negative",
+                reportData.net < 0
+            );
+
+            netCard.classList.toggle(
+                "is-positive",
+                reportData.net > 0
+            );
+        }
+
+
+        this.renderReportEmptyNotice(
+            reportData
+        );
+
+
+        this.renderReportTrend(
+            reportData,
+            selection
+        );
+
 
         this.renderReportOverview(
             reportData
@@ -3760,14 +4840,19 @@ const BudgetApp = {
         this.renderReportBreakdown(
             "report-category-breakdown",
             reportData.categories,
-            "No categorized expenses in this report."
+            "No categorized spending for this period."
         );
 
 
         this.renderReportBreakdown(
             "report-merchant-breakdown",
             reportData.merchants,
-            "No merchant spending in this report."
+            "No merchant activity for this period."
+        );
+
+
+        this.renderReportDetail(
+            reportData
         );
     },
 
@@ -3819,6 +4904,26 @@ const BudgetApp = {
                 {},
 
             merchants:
+                {},
+
+            /*
+                ZG7 display-only reshaping targets.
+
+                subcategories: { category: { subcategory: amount } }
+                timeline:      per-month rows for the trend / yearly chart
+                spendingByDate:{ "YYYY-MM-DD": bills + expenses that day }
+
+                None of these change income / bills / expenses / savings
+                / net — they only let ReportAnalytics draw charts.
+            */
+
+            subcategories:
+                {},
+
+            timeline:
+                [],
+
+            spendingByDate:
                 {}
         };
 
@@ -3831,6 +4936,27 @@ const BudgetApp = {
         ) {
             return reportData;
         }
+
+
+        const addToBucket =
+            (bucket, key, amount) => {
+
+                const safeKey =
+                    String(key || "").trim();
+
+                const value =
+                    Number(amount) || 0;
+
+                if (
+                    !safeKey ||
+                    value <= 0
+                ) {
+                    return;
+                }
+
+                bucket[safeKey] =
+                    (bucket[safeKey] || 0) + value;
+            };
 
 
         monthKeys.forEach(
@@ -3888,6 +5014,59 @@ const BudgetApp = {
 
                     reportData.savings +=
                         savingsFlow;
+
+
+                    /*
+                        ZG7 trend row — same numbers as the summary
+                        cards, just kept per-month so the chart can
+                        plot them. "spending" == |bills| + |expenses|
+                        == the Total Spending card for this month.
+                    */
+
+                    const monthBills =
+                        Math.abs(
+                            Number(summary.bills) || 0
+                        );
+
+                    const monthExpenses =
+                        Math.abs(
+                            Number(summary.expenses) || 0
+                        );
+
+
+                    reportData.timeline.push({
+                        monthKey,
+                        income:
+                            Number(summary.income) || 0,
+                        bills:
+                            monthBills,
+                        expenses:
+                            monthExpenses,
+                        spending:
+                            monthBills + monthExpenses,
+                        savings:
+                            savingsFlow
+                    });
+
+
+                    /*
+                        Distribute this month's bills across their
+                        due dates for the daily (monthly-view) trend.
+                    */
+
+                    (Array.isArray(snapshot.bills)
+                        ? snapshot.bills
+                        : []
+                    ).forEach(bill => {
+
+                        addToBucket(
+                            reportData.spendingByDate,
+                            bill.dueDate,
+                            Math.abs(
+                                Number(bill.amount) || 0
+                            )
+                        );
+                    });
 
 
                     const savingsDeposits =
@@ -3997,6 +5176,40 @@ const BudgetApp = {
                                 )
                                 +
                                 amount;
+
+
+                            const subcategory =
+                                String(
+                                    expense.subcategory || ""
+                                ).trim();
+
+
+                            if (subcategory) {
+
+                                if (
+                                    !reportData.subcategories[category]
+                                ) {
+                                    reportData.subcategories[category] = {};
+                                }
+
+                                reportData.subcategories[category][
+                                    subcategory
+                                ] =
+                                    (
+                                        reportData.subcategories[category][
+                                            subcategory
+                                        ] || 0
+                                    )
+                                    +
+                                    amount;
+                            }
+
+
+                            addToBucket(
+                                reportData.spendingByDate,
+                                expense.date,
+                                amount
+                            );
                         }
                     );
 
@@ -4052,6 +5265,40 @@ const BudgetApp = {
                                     )
                                     +
                                     amount;
+
+
+                                const subcategory =
+                                    String(
+                                        transaction.subcategory || ""
+                                    ).trim();
+
+
+                                if (subcategory) {
+
+                                    if (
+                                        !reportData.subcategories[category]
+                                    ) {
+                                        reportData.subcategories[category] = {};
+                                    }
+
+                                    reportData.subcategories[category][
+                                        subcategory
+                                    ] =
+                                        (
+                                            reportData.subcategories[category][
+                                                subcategory
+                                            ] || 0
+                                        )
+                                        +
+                                        amount;
+                                }
+
+
+                                addToBucket(
+                                    reportData.spendingByDate,
+                                    transaction.date,
+                                    amount
+                                );
                             }
                         );
 
@@ -4496,6 +5743,287 @@ const BudgetApp = {
                     }
                 ).join("")}
 
+            </div>
+        `;
+    },
+
+
+    /* =====================================================
+       35b. ZG7 — TOP-LEVEL EMPTY NOTICE
+       ===================================================== */
+
+    renderReportEmptyNotice(reportData) {
+
+        const notice =
+            document.getElementById(
+                "report-empty-notice"
+            );
+
+
+        if (!notice) {
+            return;
+        }
+
+
+        const data =
+            reportData || {};
+
+
+        const hasActivity =
+            (Math.abs(Number(data.income) || 0) > 0) ||
+            (Math.abs(Number(data.bills) || 0) > 0) ||
+            (Math.abs(Number(data.expenses) || 0) > 0) ||
+            (Math.abs(Number(data.savings) || 0) > 0);
+
+
+        notice.hidden = hasActivity;
+    },
+
+
+    /* =====================================================
+       35c. ZG7 — SPENDING TREND CHART
+
+       Monthly view  -> one bar per day  (spendingByDate)
+       Yearly / range -> one bar per month (timeline.spending)
+
+       Pure CSS bars. The authoritative totals still live in
+       the summary cards; this only shows their distribution.
+       ===================================================== */
+
+    renderReportTrend(reportData, selection) {
+
+        const container =
+            document.getElementById(
+                "report-trend-chart"
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        const analytics =
+            (
+                typeof window !== "undefined" &&
+                window.ReportAnalytics
+            )
+                ? window.ReportAnalytics
+                : null;
+
+
+        if (!analytics) {
+            container.innerHTML = "";
+            return;
+        }
+
+
+        const series =
+            analytics.buildTrendSeries(
+                reportData,
+                selection
+            );
+
+
+        if (!series.hasData) {
+
+            container.innerHTML = `
+                <p class="empty-message">
+                    No spending to chart for this period.
+                </p>
+            `;
+
+            return;
+        }
+
+
+        const peakLabel =
+            this.formatCurrency(
+                series.max
+            );
+
+        const totalLabel =
+            this.formatCurrency(
+                series.total
+            );
+
+
+        const denseClass =
+            series.points.length > 16
+                ? " zg-rep-trend-plot--dense"
+                : "";
+
+
+        const columns =
+            series.points.map(point => {
+
+                const value =
+                    Number(point.value) || 0;
+
+
+                const heightPercent =
+                    series.max > 0
+                        ? Math.max(
+                            (value / series.max) * 100,
+                            value > 0 ? 4 : 0
+                        )
+                        : 0;
+
+
+                const columnTitle =
+                    `${point.fullLabel}: ${this.formatCurrency(value)}`;
+
+
+                return `
+                    <div
+                        class="zg-rep-trend-col${value > 0 ? " has-value" : ""}"
+                        title="${this.escapeHTML(columnTitle)}"
+                    >
+                        <span class="zg-rep-trend-bar-wrap">
+                            <span
+                                class="zg-rep-trend-bar"
+                                style="height: ${heightPercent}%"
+                            ></span>
+                        </span>
+                        <span class="zg-rep-trend-x">${
+                            point.showLabel
+                                ? this.escapeHTML(point.label)
+                                : ""
+                        }</span>
+                    </div>
+                `;
+            }).join("");
+
+
+        const summaryText =
+            `${series.unitLabel}. Peak ${peakLabel}. ` +
+            `Total ${totalLabel} across ${series.points.length} ` +
+            `${series.mode === "daily" ? "days" : "months"}.`;
+
+
+        container.innerHTML = `
+            <div class="zg-rep-trend">
+
+                <div class="zg-rep-trend-meta">
+                    <span>${this.escapeHTML(series.unitLabel)}</span>
+                    <span>Peak ${this.escapeHTML(peakLabel)} &middot; Total ${this.escapeHTML(totalLabel)}</span>
+                </div>
+
+                <div
+                    class="zg-rep-trend-plot${denseClass}"
+                    role="img"
+                    aria-label="${this.escapeHTML(summaryText)}"
+                >
+                    ${columns}
+                </div>
+
+            </div>
+        `;
+    },
+
+
+    /* =====================================================
+       35d. ZG7 — DETAILED BREAKDOWN (category + subcategory)
+       ===================================================== */
+
+    renderReportDetail(reportData) {
+
+        const container =
+            document.getElementById(
+                "report-detail-breakdown"
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        const analytics =
+            (
+                typeof window !== "undefined" &&
+                window.ReportAnalytics
+            )
+                ? window.ReportAnalytics
+                : null;
+
+
+        if (!analytics) {
+            container.innerHTML = "";
+            return;
+        }
+
+
+        const tree =
+            analytics.buildCategoryTree(
+                (reportData || {}).categories,
+                (reportData || {}).subcategories
+            );
+
+
+        if (tree.length === 0) {
+
+            container.innerHTML = `
+                <p class="empty-message">
+                    No categorized spending for this period.
+                </p>
+            `;
+
+            return;
+        }
+
+
+        container.innerHTML = `
+            <div class="zg-rep-detail">
+                ${tree.map(category => {
+
+                    const categoryPercent =
+                        Number(category.percent) || 0;
+
+
+                    const subRows =
+                        category.subs.map(sub => `
+                            <div class="zg-rep-detail-sub">
+                                <span>${this.escapeHTML(sub.name)}</span>
+                                <span>
+                                    ${this.escapeHTML(
+                                        this.formatCurrency(sub.total)
+                                    )}
+                                    <em>${(Number(sub.percent) || 0).toFixed(0)}%</em>
+                                </span>
+                            </div>
+                        `).join("");
+
+
+                    return `
+                        <article class="zg-rep-detail-row">
+
+                            <div class="zg-rep-detail-head">
+                                <div class="zg-rep-detail-name">
+                                    <strong>${this.escapeHTML(category.name)}</strong>
+                                    <span>${categoryPercent.toFixed(1)}% of categorized spending</span>
+                                </div>
+                                <strong class="zg-rep-detail-amount">${this.escapeHTML(
+                                    this.formatCurrency(category.total)
+                                )}</strong>
+                            </div>
+
+                            <div class="z-progress zg-rep-detail-track">
+                                <div
+                                    class="z-progress-bar"
+                                    style="width: ${Math.min(categoryPercent, 100)}%"
+                                ></div>
+                            </div>
+
+                            ${
+                                subRows
+                                    ? `<div class="zg-rep-detail-subs">${subRows}</div>`
+                                    : ""
+                            }
+
+                        </article>
+                    `;
+                }).join("")}
             </div>
         `;
     },

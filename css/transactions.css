@@ -1,0 +1,547 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   ZG4 — Transactions / financial activity ledger
+
+   Loaded after zevaryn-grid.css + dashboard.css + budget.css.
+   Uses ZG1 --z-* tokens and .z-* primitives. Everything here
+   is scoped to #transactions-page. Display only — no storage.
+   ========================================================= */
+
+
+/* =========================================================
+   1. SHELL
+   ========================================================= */
+
+#transactions-page .zg-tx {
+    display: grid;
+    gap: 14px;
+    margin-top: 4px;
+}
+
+#transactions-page .zg-tx-heading {
+    margin-bottom: 4px;
+}
+
+#transactions-page .zg-tx-heading .z-eyebrow {
+    margin-bottom: 8px;
+}
+
+#transactions-page .zgt-card {
+    padding: clamp(15px, 2.6vw, 20px);
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-lg);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(19, 24, 33, 0.96),
+            rgba(12, 15, 22, 0.96)
+        );
+
+    box-shadow: var(--z-shadow-sm);
+}
+
+#transactions-page .zgt-card > .z-eyebrow {
+    display: block;
+    margin-bottom: 12px;
+}
+
+
+/* =========================================================
+   2. OVERVIEW
+   ========================================================= */
+
+#transactions-page .zg-tx-ov-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#transactions-page .zg-tx-ov-stat {
+    min-width: 0;
+
+    padding: 12px 13px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background: var(--z-panel-hover);
+}
+
+#transactions-page .zg-tx-ov-stat span {
+    display: block;
+    margin-bottom: 5px;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.66rem;
+    font-weight: 750;
+
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+#transactions-page .zg-tx-ov-stat strong {
+    display: block;
+    overflow: hidden;
+
+    color: var(--z-text);
+
+    font-size: clamp(0.98rem, 2.7vw, 1.18rem);
+    font-weight: 770;
+
+    line-height: 1.15;
+
+    font-variant-numeric: tabular-nums;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#transactions-page .zg-tx-ov-stat--income {
+    border-top: 2px solid var(--z-success);
+}
+
+#transactions-page .zg-tx-ov-stat--income strong {
+    color: var(--z-success);
+}
+
+#transactions-page .zg-tx-ov-stat--spending {
+    border-top: 2px solid var(--z-danger);
+}
+
+#transactions-page .zg-tx-ov-stat--spending strong {
+    color: var(--z-danger);
+}
+
+#transactions-page .zg-tx-ov-stat--net {
+    border-top: 2px solid var(--z-violet-bright);
+}
+
+#transactions-page .zg-tx-ov-stat--net strong {
+    color: var(--z-violet-bright);
+}
+
+#transactions-page .zg-tx-ov-stat--net strong.is-negative {
+    color: var(--z-danger);
+}
+
+
+/* =========================================================
+   3. SEARCH + FILTERS
+   ========================================================= */
+
+#transactions-page .zg-tx-search {
+    margin-bottom: 12px;
+}
+
+#transactions-page .zg-tx-search-label {
+    display: block;
+    margin-bottom: 7px;
+
+    color: var(--z-text);
+
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+#transactions-page .zg-tx-search-input {
+    width: 100%;
+    padding: 11px 14px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-sm);
+
+    background: var(--z-panel);
+    color: var(--z-text);
+
+    font: inherit;
+    font-size: 0.9rem;
+
+    outline: none;
+
+    transition:
+        border-color var(--transition),
+        box-shadow var(--transition);
+}
+
+#transactions-page .zg-tx-search-input::placeholder {
+    color: var(--z-text-muted);
+}
+
+#transactions-page .zg-tx-search-input:focus {
+    border-color: var(--z-violet);
+    box-shadow: 0 0 0 3px rgba(155, 92, 255, 0.14);
+}
+
+#transactions-page .zg-tx-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+#transactions-page .zg-tx-chip {
+    min-height: 38px;
+
+    padding: 8px 16px;
+
+    border: 1px solid var(--z-border);
+    border-radius: 999px;
+
+    background: var(--z-panel-hover);
+    color: var(--z-text-secondary);
+
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background var(--transition),
+        border-color var(--transition),
+        color var(--transition);
+}
+
+#transactions-page .zg-tx-chip:hover {
+    border-color: var(--z-border-strong);
+    color: var(--z-text);
+}
+
+#transactions-page .zg-tx-chip.is-active {
+    background: var(--z-violet-soft);
+    border-color: rgba(155, 92, 255, 0.45);
+    color: var(--z-violet-bright);
+}
+
+#transactions-page .zg-tx-chip--income.is-active {
+    background: var(--z-teal-soft);
+    border-color: rgba(53, 223, 193, 0.4);
+    color: var(--z-teal);
+}
+
+#transactions-page .zg-tx-chip--expense.is-active {
+    background: rgba(255, 101, 119, 0.14);
+    border-color: rgba(255, 101, 119, 0.34);
+    color: var(--z-danger);
+}
+
+#transactions-page .zg-tx-chip:focus-visible,
+#transactions-page .zg-tx-select:focus-visible,
+#transactions-page .zg-tx-search-input:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+#transactions-page .zg-tx-select {
+    min-height: 38px;
+
+    padding: 8px 12px;
+
+    border: 1px solid var(--z-border);
+    border-radius: 999px;
+
+    background: var(--z-panel-hover);
+    color: var(--z-text);
+
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+#transactions-page .zg-tx-count {
+    margin-top: 12px;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.74rem;
+    font-weight: 650;
+}
+
+#transactions-page .zg-tx-count:empty {
+    display: none;
+}
+
+
+/* =========================================================
+   4. LEDGER
+   ========================================================= */
+
+/* override the legacy light card treatment — the list now lives
+   inside .zg-tx-ledger-card */
+#transactions-page .transaction-list,
+#transactions-page #transaction-list {
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+}
+
+#transactions-page .zg-tx-group + .zg-tx-group {
+    margin-top: 6px;
+}
+
+#transactions-page .zg-tx-group-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+
+    gap: 12px;
+
+    padding: 10px 0 6px;
+
+    border-bottom: 1px solid var(--z-border-soft);
+
+    color: var(--z-text-muted);
+
+    font-size: 0.68rem;
+    font-weight: 800;
+
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+#transactions-page .zg-tx-group-head span:last-child {
+    color: var(--z-text-secondary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+}
+
+#transactions-page .zg-tx-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 11px 0;
+
+    border-bottom: 1px solid var(--z-border);
+}
+
+#transactions-page .zg-tx-group .zg-tx-row:last-child {
+    border-bottom: none;
+}
+
+#transactions-page .zg-tx-row-icon {
+    display: grid;
+    place-items: center;
+
+    width: 34px;
+    height: 34px;
+
+    flex: 0 0 34px;
+
+    border-radius: 10px;
+
+    background: var(--z-panel-hover);
+    color: var(--z-text-secondary);
+
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+#transactions-page .zg-tx-row.is-income .zg-tx-row-icon {
+    background: var(--z-teal-soft);
+    color: var(--z-teal);
+}
+
+#transactions-page .zg-tx-row.is-expense .zg-tx-row-icon {
+    background: rgba(255, 101, 119, 0.14);
+    color: var(--z-danger);
+}
+
+#transactions-page .zg-tx-row.is-savings .zg-tx-row-icon {
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+}
+
+#transactions-page .zg-tx-row-info {
+    min-width: 0;
+}
+
+#transactions-page .zg-tx-row-info strong {
+    display: block;
+
+    color: var(--z-text);
+    font-size: 0.88rem;
+    font-weight: 650;
+
+    overflow-wrap: anywhere;
+}
+
+#transactions-page .zg-tx-row-meta {
+    display: block;
+    margin-top: 2px;
+
+    color: var(--z-text-muted);
+    font-size: 0.73rem;
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+}
+
+#transactions-page .zg-tx-row-note {
+    display: block;
+    margin-top: 2px;
+
+    color: var(--z-text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+#transactions-page .zg-tx-row-amount {
+    flex-shrink: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+
+    gap: 1px;
+
+    text-align: right;
+}
+
+#transactions-page .zg-tx-amount-value {
+    font-size: 0.9rem;
+    font-weight: 750;
+
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+#transactions-page .zg-tx-row.is-income .zg-tx-amount-value {
+    color: var(--z-success);
+}
+
+#transactions-page .zg-tx-row.is-expense .zg-tx-amount-value {
+    color: var(--z-danger);
+}
+
+#transactions-page .zg-tx-row.is-savings .zg-tx-amount-value {
+    color: var(--z-violet-bright);
+}
+
+#transactions-page .zg-tx-amount-type {
+    color: var(--z-text-muted);
+
+    font-size: 0.62rem;
+    font-weight: 750;
+
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+
+/* =========================================================
+   5. EMPTY / NO-MATCH
+   ========================================================= */
+
+#transactions-page .zg-tx-empty {
+    padding: 26px 12px;
+    text-align: center;
+}
+
+#transactions-page .zg-tx-empty .empty-message {
+    padding: 0 0 4px;
+    font-size: 0.9rem;
+}
+
+#transactions-page .zg-tx-empty-sub {
+    color: var(--z-text-muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   6. RESPONSIVE
+   ========================================================= */
+
+/* phones — the 3-up summary stacks so the values never truncate */
+@media (max-width: 520px) {
+
+    #transactions-page .zg-tx-ov-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #transactions-page .zg-tx-ov-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+    }
+
+    #transactions-page .zg-tx-ov-stat span {
+        margin-bottom: 0;
+    }
+
+    #transactions-page .zg-tx-row {
+        align-items: start;
+    }
+
+    #transactions-page .zg-tx-row-icon {
+        margin-top: 1px;
+    }
+}
+
+@media (min-width: 620px) {
+
+    #transactions-page .zg-tx-ov-grid {
+        gap: 12px;
+    }
+}
+
+/* tablet + — search and filters can share one row */
+@media (min-width: 760px) {
+
+    #transactions-page .zg-tx-controls {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    #transactions-page .zg-tx-search {
+        margin-bottom: 0;
+    }
+
+    #transactions-page .zg-tx-search-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    #transactions-page .zg-tx-search-input {
+        max-width: 460px;
+    }
+}
+
+@media (min-width: 1000px) {
+
+    #transactions-page .zg-tx {
+        gap: 16px;
+    }
+}
+
+
+/* motion */
+@media (prefers-reduced-motion: reduce) {
+
+    #transactions-page .zg-tx-chip,
+    #transactions-page .zg-tx-search-input {
+        transition: none;
+    }
+}
+
+
+/* =========================================================
+   END TRANSACTIONS.CSS  ·  ZG4
+   ========================================================= */

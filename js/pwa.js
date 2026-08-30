@@ -1,5 +1,5 @@
 /* =========================================================
-   BUDGET TRACKER
+   M-WALLET
    PWA / APP INSTALL SYSTEM
    ========================================================= */
 
@@ -189,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /*
-               Show Install Budget Tracker.
+               Show Install M-Wallet.
             */
 
             if (
@@ -203,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             console.log(
-                "[PWA] Budget Tracker can be installed."
+                "[PWA] M-Wallet can be installed."
             );
 
         }
@@ -232,12 +232,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 ) {
 
                     alert(
-                        "To install Budget Tracker on your iPhone or iPad:\n\n" +
-                        "1. Open Budget Tracker in Safari.\n" +
+                        "To install M-Wallet on your iPhone or iPad:\n\n" +
+                        "1. Open M-Wallet in Safari.\n" +
                         "2. Tap the Share button.\n" +
                         "3. Tap “Add to Home Screen.”\n" +
                         "4. Tap “Add.”\n\n" +
-                        "Budget Tracker will then appear on your Home Screen like an app."
+                        "M-Wallet will then appear on your Home Screen like an app."
                     );
 
                     return;
@@ -322,7 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
         () => {
 
             console.log(
-                "[PWA] Budget Tracker installed successfully."
+                "[PWA] M-Wallet installed successfully."
             );
 
 
@@ -375,7 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .then(() => {
 
                 console.log(
-                    "[PWA] Budget Tracker is ready for offline use."
+                    "[PWA] M-Wallet is ready for offline use."
                 );
 
             })

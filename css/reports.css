@@ -1,0 +1,978 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   ZG7 — Reports financial analytics center
+
+   Loaded LAST, after zevaryn-grid.css + the other page files.
+   Scoped to #reports-page (plus one #report-navigation reset in
+   the app header). Uses ZG1 --z-* tokens + .z-* primitives.
+   Display only — no storage / accounting changes. Reports leans
+   violet (primary) with teal for income / positive signals.
+   ========================================================= */
+
+
+/* =========================================================
+   0. HEADER — retire the old <select> mode switch
+   The in-page segmented control (.zg-rep-modes) replaces it.
+   The <select id="report-type-select"> stays in the DOM as the
+   state holder + nav.js binding target, just visually removed.
+   ========================================================= */
+
+#report-navigation {
+    display: none !important;
+}
+
+
+/* =========================================================
+   1. PAGE SHELL
+   ========================================================= */
+
+#reports-page .zg-rep-heading {
+    margin-bottom: 14px;
+}
+
+#reports-page .zg-rep-heading .z-eyebrow {
+    margin-bottom: 8px;
+    color: var(--z-violet-bright);
+}
+
+#reports-page .zg-rep-heading h2 {
+    margin-bottom: 4px;
+
+    color: var(--z-text);
+
+    font-size: clamp(1.5rem, 4vw, 1.95rem);
+    font-weight: 760;
+    letter-spacing: -0.01em;
+}
+
+#reports-page .zg-rep-heading p {
+    color: var(--z-text-secondary);
+    font-size: 0.86rem;
+    line-height: 1.5;
+}
+
+#reports-page .zg-rep {
+    display: grid;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+
+/* =========================================================
+   2. MODE SWITCHER (segmented control)
+   ========================================================= */
+
+#reports-page .zg-rep-modes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+
+    margin: 0 0 16px;
+    padding: 5px;
+
+    border: 1px solid var(--z-border);
+    border-radius: 999px;
+
+    background: var(--z-panel);
+}
+
+#reports-page .zg-rep-mode {
+    min-height: 40px;
+    padding: 8px 6px;
+
+    border: 1px solid transparent;
+    border-radius: 999px;
+
+    background: transparent;
+    color: var(--z-text-secondary);
+
+    font: inherit;
+    font-size: clamp(0.72rem, 2.6vw, 0.82rem);
+    font-weight: 750;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition:
+        background var(--transition),
+        color var(--transition),
+        border-color var(--transition);
+}
+
+#reports-page .zg-rep-mode:hover:not(.is-active) {
+    color: var(--z-text);
+    background: var(--z-panel-hover);
+}
+
+#reports-page .zg-rep-mode.is-active {
+    border-color: rgba(155, 92, 255, 0.5);
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--z-violet),
+            #7d3ff0
+        );
+
+    color: #ffffff;
+
+    box-shadow:
+        0 6px 18px rgba(123, 63, 232, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+#reports-page .zg-rep-mode:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   3. CARD PRIMITIVE
+   ========================================================= */
+
+#reports-page .zgr-card {
+    padding: clamp(15px, 3vw, 21px);
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-lg);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(19, 24, 33, 0.96),
+            rgba(12, 15, 22, 0.96)
+        );
+
+    box-shadow: var(--z-shadow-sm);
+}
+
+
+/* =========================================================
+   4. PERIOD CONTROL CARD
+   ========================================================= */
+
+#reports-page .report-control-card {
+    position: relative;
+    overflow: hidden;
+
+    margin: 0;
+
+    /* neutralise the legacy green/gold/purple treatment */
+    background:
+        linear-gradient(
+            180deg,
+            rgba(19, 24, 33, 0.96),
+            rgba(12, 15, 22, 0.96)
+        );
+}
+
+#reports-page .report-control-card::before {
+    height: 2px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--z-violet),
+            var(--z-teal)
+        );
+
+    opacity: 0.6;
+}
+
+#reports-page .report-control-heading {
+    margin-bottom: 16px;
+}
+
+#reports-page .report-control-heading h3 {
+    color: var(--z-text);
+    font-size: 0.95rem;
+    font-weight: 750;
+}
+
+#reports-page .report-control-heading p {
+    color: var(--z-text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+#reports-page .report-period-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+#reports-page .report-period-panel[hidden] {
+    display: none !important;
+}
+
+#reports-page #report-yearly-controls {
+    grid-template-columns: minmax(160px, 300px);
+}
+
+#reports-page .report-field {
+    min-width: 0;
+}
+
+#reports-page .report-field label {
+    display: block;
+    margin-bottom: 6px;
+
+    color: var(--z-text-secondary);
+
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+#reports-page .report-field select {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 12px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-sm);
+
+    background: var(--z-panel);
+    color: var(--z-text);
+
+    font: inherit;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+#reports-page .report-field select:focus {
+    outline: none;
+    border-color: var(--z-violet);
+    box-shadow: 0 0 0 3px var(--z-violet-soft);
+}
+
+
+/* Range sub-panel */
+
+#reports-page .report-range-panel {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
+}
+
+#reports-page .report-range-group {
+    min-width: 0;
+    padding: 13px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#reports-page .report-range-label {
+    margin-bottom: 9px;
+
+    color: var(--z-teal);
+
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+#reports-page .report-range-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 9px;
+}
+
+#reports-page .report-range-arrow {
+    display: grid;
+    place-items: center;
+
+    width: 38px;
+    height: 38px;
+    margin-bottom: 6px;
+
+    border: 1px solid rgba(155, 92, 255, 0.4);
+    border-radius: 50%;
+
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   5. VIEWING BAR + EMPTY NOTICE
+   ========================================================= */
+
+#reports-page .zg-rep-viewing {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4px 14px;
+
+    margin: 0;
+    padding: 13px 16px;
+
+    border: 1px solid rgba(155, 92, 255, 0.22);
+    border-radius: var(--z-radius-md);
+
+    background: var(--z-violet-soft);
+}
+
+#reports-page .zg-rep-viewing span {
+    color: var(--z-text-secondary);
+
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+#reports-page .zg-rep-viewing strong {
+    color: var(--z-text);
+    font-size: 0.98rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+#reports-page .zg-rep-empty-notice {
+    margin: 0;
+    padding: 13px 16px;
+
+    border: 1px dashed var(--z-border-strong);
+    border-radius: var(--z-radius-md);
+
+    background: var(--z-panel);
+    color: var(--z-text-secondary);
+
+    font-size: 0.83rem;
+    text-align: center;
+}
+
+
+/* =========================================================
+   6. SUMMARY HERO STATS
+   ========================================================= */
+
+#reports-page .zg-rep-summary {
+    margin: 0;
+}
+
+#reports-page .zg-rep-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#reports-page .zg-rep-stat {
+    min-width: 0;
+
+    padding: 14px 14px 15px;
+
+    border: 1px solid var(--z-border);
+    border-top: 2px solid var(--z-border-strong);
+    border-radius: var(--z-radius-md);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(21, 26, 36, 0.95),
+            rgba(13, 16, 23, 0.95)
+        );
+}
+
+#reports-page .zg-rep-stat span {
+    display: block;
+    margin-bottom: 7px;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.66rem;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+#reports-page .zg-rep-stat strong {
+    display: block;
+    overflow-wrap: anywhere;
+
+    color: var(--z-text);
+
+    font-size: clamp(1rem, 3.4vw, 1.25rem);
+    font-weight: 780;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+}
+
+#reports-page .zg-rep-stat--income {
+    border-top-color: var(--z-teal);
+}
+
+#reports-page .zg-rep-stat--income strong {
+    color: var(--z-teal-bright);
+}
+
+#reports-page .zg-rep-stat--spending {
+    border-top-color: var(--z-danger);
+}
+
+#reports-page .zg-rep-stat--spending strong {
+    color: var(--z-danger-bright);
+}
+
+#reports-page .zg-rep-stat--bills {
+    border-top-color: var(--z-warning);
+}
+
+#reports-page .zg-rep-stat--expenses {
+    border-top-color: #ff9f6b;
+}
+
+#reports-page .zg-rep-stat--savings {
+    border-top-color: var(--z-violet);
+}
+
+#reports-page .zg-rep-stat--savings strong {
+    color: var(--z-violet-bright);
+}
+
+#reports-page .zg-rep-stat--net {
+    border-top-color: var(--z-text-secondary);
+
+    background:
+        linear-gradient(
+            160deg,
+            rgba(155, 92, 255, 0.12),
+            rgba(13, 16, 23, 0.95)
+        );
+}
+
+#reports-page .zg-rep-stat--net.is-positive {
+    border-top-color: var(--z-teal);
+}
+
+#reports-page .zg-rep-stat--net.is-positive strong {
+    color: var(--z-teal-bright);
+}
+
+#reports-page .zg-rep-stat--net.is-negative {
+    border-top-color: var(--z-danger);
+}
+
+#reports-page .zg-rep-stat--net.is-negative strong {
+    color: var(--z-danger-bright);
+}
+
+
+/* =========================================================
+   7. ANALYTICS GRID + PANELS
+   ========================================================= */
+
+#reports-page .zg-rep-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 16px;
+}
+
+#reports-page .report-section {
+    margin: 0;
+}
+
+#reports-page .zg-rep-panel-head {
+    margin-bottom: 14px;
+}
+
+#reports-page .zg-rep-panel-head .z-eyebrow {
+    color: var(--z-violet-bright);
+    margin-bottom: 5px;
+}
+
+#reports-page .zg-rep-panel-head p {
+    color: var(--z-text-muted);
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+#reports-page .report-chart-area,
+#reports-page .report-breakdown-list {
+    width: 100%;
+}
+
+#reports-page .empty-message {
+    padding: 18px 8px;
+
+    color: var(--z-text-muted);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+
+/* =========================================================
+   8. SPENDING TREND CHART  (pure CSS bars)
+   ========================================================= */
+
+#reports-page .zg-rep-trend {
+    display: grid;
+    gap: 12px;
+}
+
+#reports-page .zg-rep-trend-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.72rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+#reports-page .zg-rep-trend-meta span:first-child {
+    color: var(--z-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 750;
+}
+
+#reports-page .zg-rep-trend-plot {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+}
+
+#reports-page .zg-rep-trend-plot--dense {
+    gap: 2px;
+}
+
+#reports-page .zg-rep-trend-col {
+    flex: 1 1 0;
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+#reports-page .zg-rep-trend-bar-wrap {
+    display: flex;
+    align-items: flex-end;
+
+    width: 100%;
+    height: 150px;
+
+    border-radius: 4px;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.035),
+            rgba(255, 255, 255, 0.015)
+        );
+}
+
+#reports-page .zg-rep-trend-bar {
+    width: 100%;
+    height: 0;
+
+    border-radius: 4px 4px 2px 2px;
+
+    background:
+        linear-gradient(
+            180deg,
+            var(--z-violet-bright),
+            var(--z-violet)
+        );
+
+    transition: height 0.35s ease;
+}
+
+#reports-page .zg-rep-trend-col.has-value .zg-rep-trend-bar {
+    min-height: 3px;
+}
+
+/* accent only the most recent period so the timeline reads left-to-right */
+#reports-page .zg-rep-trend-col:last-child.has-value .zg-rep-trend-bar {
+    background:
+        linear-gradient(
+            180deg,
+            var(--z-teal-bright),
+            var(--z-teal)
+        );
+}
+
+#reports-page .zg-rep-trend-x {
+    height: 0.85rem;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.58rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   9. INCOME VS SPENDING  (legacy .report-overview-* markup)
+   ========================================================= */
+
+#reports-page .report-overview-bars {
+    display: grid;
+    gap: 15px;
+}
+
+#reports-page .report-overview-row {
+    min-width: 0;
+}
+
+#reports-page .report-overview-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+
+    margin-bottom: 7px;
+}
+
+#reports-page .report-overview-row-header span {
+    color: var(--z-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+#reports-page .report-overview-row-header strong {
+    color: var(--z-text);
+    font-size: 0.8rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+#reports-page .report-overview-track {
+    width: 100%;
+    height: 10px;
+
+    overflow: hidden;
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.06);
+}
+
+#reports-page .report-overview-fill {
+    min-width: 2px;
+    height: 100%;
+    border-radius: inherit;
+
+    background:
+        linear-gradient(90deg, var(--z-violet), var(--z-violet-bright));
+
+    transition: width 0.35s ease;
+}
+
+#reports-page .report-overview-fill.income {
+    background:
+        linear-gradient(90deg, var(--z-teal), var(--z-teal-bright));
+}
+
+#reports-page .report-overview-fill.bills {
+    background:
+        linear-gradient(90deg, var(--z-warning), #ffd68a);
+}
+
+#reports-page .report-overview-fill.expenses {
+    background:
+        linear-gradient(90deg, var(--z-danger), var(--z-danger-bright));
+}
+
+#reports-page .report-overview-fill.savings {
+    background:
+        linear-gradient(90deg, var(--z-violet), var(--z-violet-bright));
+}
+
+
+/* =========================================================
+   10. CATEGORY / MERCHANT BREAKDOWN  (legacy .report-breakdown-*)
+   ========================================================= */
+
+#reports-page .report-breakdown-items {
+    display: grid;
+    gap: 10px;
+}
+
+#reports-page .report-breakdown-item {
+    padding: 12px 13px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-sm);
+
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#reports-page .report-breakdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+
+    margin-bottom: 8px;
+}
+
+#reports-page .report-breakdown-header > div {
+    min-width: 0;
+}
+
+#reports-page .report-breakdown-header > div strong {
+    display: block;
+    overflow-wrap: anywhere;
+
+    color: var(--z-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+#reports-page .report-breakdown-header > div span {
+    display: block;
+    margin-top: 2px;
+
+    color: var(--z-text-muted);
+    font-size: 0.68rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+#reports-page .report-breakdown-header > strong {
+    flex-shrink: 0;
+
+    color: var(--z-text);
+    font-size: 0.84rem;
+    font-weight: 780;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+#reports-page .report-breakdown-track {
+    width: 100%;
+    height: 6px;
+
+    overflow: hidden;
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.06);
+}
+
+#reports-page .report-breakdown-fill {
+    min-width: 2px;
+    height: 100%;
+    border-radius: inherit;
+
+    background:
+        linear-gradient(90deg, var(--z-violet), var(--z-teal));
+
+    transition: width 0.35s ease;
+}
+
+
+/* =========================================================
+   11. DETAILED BREAKDOWN
+   ========================================================= */
+
+#reports-page .zg-rep-detail {
+    display: grid;
+    gap: 12px;
+}
+
+#reports-page .zg-rep-detail-row {
+    padding: 13px 14px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#reports-page .zg-rep-detail-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+
+    margin-bottom: 9px;
+}
+
+#reports-page .zg-rep-detail-name {
+    min-width: 0;
+}
+
+#reports-page .zg-rep-detail-name strong {
+    display: block;
+    overflow-wrap: anywhere;
+
+    color: var(--z-text);
+    font-size: 0.86rem;
+    font-weight: 750;
+}
+
+#reports-page .zg-rep-detail-name span {
+    display: block;
+    margin-top: 2px;
+
+    color: var(--z-text-muted);
+    font-size: 0.68rem;
+    font-weight: 650;
+}
+
+#reports-page .zg-rep-detail-amount {
+    flex-shrink: 0;
+
+    color: var(--z-text);
+    font-size: 0.92rem;
+    font-weight: 780;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+#reports-page .zg-rep-detail-track {
+    height: 7px;
+}
+
+#reports-page .zg-rep-detail-subs {
+    display: grid;
+    gap: 1px;
+
+    margin-top: 11px;
+    padding-top: 10px;
+
+    border-top: 1px solid var(--z-border);
+}
+
+#reports-page .zg-rep-detail-sub {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+
+    padding: 6px 0;
+
+    color: var(--z-text-secondary);
+    font-size: 0.76rem;
+}
+
+#reports-page .zg-rep-detail-sub > span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#reports-page .zg-rep-detail-sub > span:last-child {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+#reports-page .zg-rep-detail-sub em {
+    margin-left: 6px;
+
+    color: var(--z-text-muted);
+    font-style: normal;
+    font-weight: 650;
+}
+
+
+/* =========================================================
+   12. RESPONSIVE
+   ========================================================= */
+
+/* small phones — one stat column, tighter range panel */
+@media (max-width: 460px) {
+
+    #reports-page .zg-rep-stat-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #reports-page .zg-rep-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+
+        padding: 12px 13px;
+    }
+
+    #reports-page .zg-rep-stat span {
+        margin-bottom: 0;
+    }
+
+    #reports-page .report-period-panel {
+        grid-template-columns: 1fr;
+    }
+
+    #reports-page .report-range-panel {
+        grid-template-columns: 1fr;
+    }
+
+    #reports-page .report-range-arrow {
+        transform: rotate(90deg);
+        margin: 2px auto;
+    }
+
+    #reports-page .zg-rep-trend-bar-wrap {
+        height: 120px;
+    }
+}
+
+/* mid phones / small tablets — 3 stat columns */
+@media (min-width: 560px) {
+
+    #reports-page .zg-rep-stat-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* tablet — 2-column analytics */
+@media (min-width: 768px) {
+
+    #reports-page .zg-rep-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* desktop — 6 stats across, roomier gaps */
+@media (min-width: 1024px) {
+
+    #reports-page .zg-rep {
+        gap: 18px;
+    }
+
+    #reports-page .zg-rep-stat-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    #reports-page .zg-rep-trend-bar-wrap {
+        height: 170px;
+    }
+}
+
+
+/* motion */
+@media (prefers-reduced-motion: reduce) {
+
+    #reports-page .zg-rep-mode,
+    #reports-page .zg-rep-trend-bar,
+    #reports-page .report-overview-fill,
+    #reports-page .report-breakdown-fill,
+    #reports-page .z-progress-bar {
+        transition: none;
+    }
+}
+
+
+/* =========================================================
+   END REPORTS.CSS  ·  ZG7
+   ========================================================= */

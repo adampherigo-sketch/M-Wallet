@@ -1,0 +1,126 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   ZG9 — Responsive + Accessibility pass
+
+   Loads LAST, after every page stylesheet, so these fixes win
+   the cascade without !important. ZG9 is a quality pass only:
+   layout repair, touch-target sizing, focus visibility, iOS
+   zoom prevention, contrast. No new components, no new colours
+   beyond the existing --z-* tokens.
+   ========================================================= */
+
+
+/* =========================================================
+   1. iOS ZOOM PREVENTION
+
+   Mobile Safari zooms the viewport when a focused form control's
+   text is < 16px. Every M-Wallet control was 0.9–0.95rem
+   (~14–15px). Force 16px at touch widths only; the compact
+   desktop density is left untouched.
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea,
+    .z-input,
+    .z-select,
+    .z-textarea,
+    .money-modal input,
+    .money-modal select,
+    .money-modal textarea,
+    #transactions-page .zg-tx-search-input,
+    #transactions-page .zg-tx-select,
+    #reports-page .report-field select,
+    #m-cash-page .zg-mc-qty,
+    #m-cash-page .zg-mc-field input {
+        font-size: 16px;
+    }
+}
+
+
+/* =========================================================
+   2. TOUCH TARGETS
+
+   Controls that measured under ~40px in the audit. Pills /
+   chips / small buttons get min-height: 40px; text-link style
+   buttons get a real padded hit area. Dense ledger rows are
+   deliberately left alone.
+   ========================================================= */
+
+.zg-card-link,
+.zgb-link,
+#budget-page .zg-bill-actions .zg-bill-btn,
+#budget-page .add-button,
+#transactions-page .zg-tx-chip,
+#transactions-page .zg-tx-select,
+#m-cash-page .zg-mc-nav-btn,
+#settings-page .zg-set-link,
+#settings-page .zg-set-add-trigger,
+#settings-page .zg-set-add-trigger--sub {
+    min-height: 40px;
+}
+
+/* dense ledger rows: keep compact, just a touch bigger than 32 */
+#budget-page .zg-ledger-actions .zg-bill-btn {
+    min-height: 36px;
+}
+
+.zg-card-link,
+.zgb-link,
+#settings-page .zg-set-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#transactions-page .zg-tx-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* match the desktop search-input cap so the two filter controls
+   don't read as different widths */
+@media (min-width: 760px) {
+
+    #transactions-page .zg-tx-select {
+        max-width: 460px;
+    }
+}
+
+/* The ZG8 toggle switch: enlarge the clickable <label> to 40px
+   tall without changing the visual track. */
+#settings-page .zg-switch {
+    min-height: 40px;
+    padding-block: 4px;
+}
+
+
+/* =========================================================
+   3. FOCUS VISIBILITY
+
+   The Reports mode <select> killed its outline on :focus and
+   only left a 15%-alpha glow. Restore a real keyboard ring.
+   (All other controls already resolve to the global violet
+   :focus-visible outline — verified in the audit.)
+   ========================================================= */
+
+#reports-page .report-field select:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   4. LARGE-DESKTOP MAX WIDTH
+
+   .app-content already caps at min(1100px, 100%). Nothing to
+   change — recorded here so ZG10 knows it was reviewed.
+   ========================================================= */
+
+
+/* =========================================================
+   END ZG9.CSS
+   ========================================================= */

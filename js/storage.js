@@ -2755,7 +2755,22 @@ const BudgetStorage = {
             !cashStorage
         ) {
 
-            return defaults;
+            /*
+                storage.js self-initializes (BudgetStorage.load() at
+                end of file) BEFORE the m-cash/*.js scripts run, so
+                window.MCashStorage is not defined on that first pass.
+                Returning `defaults` here would let that early
+                load()->save() overwrite a persisted wallet with an
+                empty one. Preserve any existing cash object untouched;
+                a later load() (once MCashStorage exists) normalizes it.
+            */
+
+            return (
+                cash &&
+                typeof cash === "object"
+            )
+                ? cash
+                : defaults;
 
         }
 

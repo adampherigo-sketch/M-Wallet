@@ -560,6 +560,14 @@ const MONEY_FORMS = {
                     field: "recurring",
                     equals: true
                 }
+            },
+
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about this bill"
             }
 
         ]
@@ -2072,6 +2080,66 @@ function updateConditionalMoneyFields() {
 
         }
     );
+
+
+    syncBillEndDateBounds();
+
+}
+
+
+/*
+    ZG3 — keep the recurring end-date picker from offering dates
+    earlier than the bill's own due date.
+*/
+function syncBillEndDateBounds() {
+
+    if (
+        !moneyModalBody ||
+        currentMoneyAction !== "bill"
+    ) {
+
+        return;
+
+    }
+
+
+    const dueDate =
+        moneyModalBody.querySelector(
+            "[name=\"dueDate\"]"
+        );
+
+
+    const endDate =
+        moneyModalBody.querySelector(
+            "[name=\"endDate\"]"
+        );
+
+
+    if (
+        !endDate
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        dueDate &&
+        dueDate.value
+    ) {
+
+        endDate.min =
+            dueDate.value;
+
+    }
+    else {
+
+        endDate.removeAttribute(
+            "min"
+        );
+
+    }
 
 }
 
@@ -4546,6 +4614,27 @@ function saveMoneyForm(
 
     const record =
         createMoneyRecord();
+
+
+    /* ZG3 — a recurring bill's optional end date is a boundary on the
+       cycle; it can never fall before the bill's own start / due date. */
+    if (
+        actionBeforeSave === "bill" &&
+        record.recurring &&
+        record.endDate &&
+        record.dueDate &&
+        String(record.endDate) < String(record.dueDate)
+    ) {
+
+        showMoneyStatus(
+            "The recurring end date can't be before the bill's due date.",
+            "error"
+        );
+
+
+        return;
+
+    }
 
 
     try {

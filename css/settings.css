@@ -1,0 +1,768 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   ZG8 — Settings: System Configuration Center
+
+   Loaded last, after zevaryn-grid.css + the other page files.
+   Scoped to #settings-page. Uses ZG1 --z-* tokens + .z-*
+   primitives. Display + config only — every category / import
+   write goes through an existing storage.* method unchanged.
+   ========================================================= */
+
+
+/* =========================================================
+   1. PAGE SHELL
+   ========================================================= */
+
+#settings-page .zg-set-heading {
+    margin-bottom: 14px;
+}
+
+#settings-page .zg-set-heading .z-eyebrow {
+    margin-bottom: 8px;
+    color: var(--z-violet-bright);
+}
+
+#settings-page .zg-set-heading h2 {
+    margin-bottom: 4px;
+    color: var(--z-text);
+    font-size: clamp(1.5rem, 4vw, 1.95rem);
+    font-weight: 760;
+    letter-spacing: -0.01em;
+}
+
+#settings-page .zg-set-heading p {
+    color: var(--z-text-secondary);
+    font-size: 0.86rem;
+    line-height: 1.5;
+}
+
+#settings-page .zg-set {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+
+/* =========================================================
+   2. STATUS LINE
+   ========================================================= */
+
+#settings-page .zg-set-status {
+    margin: 0 0 14px;
+    padding: 11px 14px;
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+    background: var(--z-panel);
+    color: var(--z-text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+#settings-page .zg-set-status.is-success {
+    border-color: rgba(53, 223, 193, 0.4);
+    background: var(--z-teal-soft);
+    color: var(--z-teal-bright);
+}
+
+#settings-page .zg-set-status.is-error {
+    border-color: rgba(255, 101, 119, 0.4);
+    background: rgba(255, 101, 119, 0.12);
+    color: var(--z-danger-bright);
+}
+
+
+/* =========================================================
+   3. SECTION CARD
+   ========================================================= */
+
+#settings-page .zg-set-section {
+    padding: clamp(15px, 3vw, 20px);
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-lg);
+    background:
+        linear-gradient(
+            180deg,
+            rgba(19, 24, 33, 0.96),
+            rgba(12, 15, 22, 0.96)
+        );
+    box-shadow: var(--z-shadow-sm);
+}
+
+#settings-page .zg-set-section--danger {
+    border-color: rgba(255, 101, 119, 0.32);
+    background:
+        linear-gradient(
+            180deg,
+            rgba(40, 18, 22, 0.5),
+            rgba(12, 15, 22, 0.96)
+        );
+}
+
+#settings-page .zg-set-section-head {
+    margin-bottom: 14px;
+}
+
+#settings-page .zg-set-section-head .z-eyebrow {
+    margin-bottom: 5px;
+    color: var(--z-violet-bright);
+}
+
+#settings-page .zg-set-section--danger .zg-set-section-head .z-eyebrow {
+    color: var(--z-danger-bright);
+}
+
+#settings-page .zg-set-section-head p {
+    color: var(--z-text-muted);
+    font-size: 0.76rem;
+    line-height: 1.45;
+}
+
+#settings-page .zg-set-subhead {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--z-border);
+}
+
+#settings-page .zg-set-subhead strong {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--z-text);
+    font-size: 0.86rem;
+    font-weight: 750;
+}
+
+#settings-page .zg-set-subhead small {
+    color: var(--z-text-muted);
+    font-size: 0.73rem;
+    line-height: 1.45;
+}
+
+
+/* =========================================================
+   4. SETTINGS ROW  (+ legacy .settings-item / .install / .danger resets)
+   ========================================================= */
+
+#settings-page .settings-item,
+#settings-page .danger-settings-item,
+#settings-page .install-app-button,
+#settings-page .app-installed-message {
+    /* neutralise the light-theme legacy rules; .zg-set-* drives now */
+    transform: none !important;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+}
+
+#settings-page .zg-set-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+    margin: 0 0 8px;
+    padding: 13px 14px;
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--z-text);
+    text-align: left;
+}
+
+#settings-page .zg-set-row:last-child {
+    margin-bottom: 0;
+}
+
+#settings-page .zg-set-row-text {
+    display: block;
+    min-width: 0;
+}
+
+#settings-page .zg-set-row-text strong {
+    display: block;
+    color: var(--z-text);
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+#settings-page .zg-set-row-text small {
+    display: block;
+    margin-top: 3px;
+    color: var(--z-text-muted);
+    font-size: 0.72rem;
+    line-height: 1.45;
+}
+
+#settings-page .zg-set-row-value {
+    flex-shrink: 0;
+    color: var(--z-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+#settings-page .zg-set-row-go {
+    flex-shrink: 0;
+    color: var(--z-violet-bright);
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+#settings-page button.zg-set-row {
+    cursor: pointer;
+    transition:
+        border-color var(--transition),
+        background var(--transition),
+        transform var(--transition);
+}
+
+#settings-page button.zg-set-row:hover {
+    border-color: var(--z-border-strong);
+    background: var(--z-violet-soft);
+    transform: translateX(2px);
+}
+
+#settings-page button.zg-set-row:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+#settings-page .zg-set-row--install {
+    border-color: rgba(155, 92, 255, 0.4);
+    background: var(--z-violet-soft);
+}
+
+#settings-page .zg-set-row--danger {
+    border-color: rgba(255, 101, 119, 0.3);
+    background: rgba(255, 101, 119, 0.1);
+}
+
+#settings-page .zg-set-row--danger .zg-set-row-text strong {
+    color: var(--z-danger-bright);
+}
+
+#settings-page .zg-set-row--danger .zg-set-row-go {
+    color: var(--z-danger);
+}
+
+#settings-page button.zg-set-row--danger:hover {
+    border-color: rgba(255, 101, 119, 0.55);
+    background: rgba(255, 101, 119, 0.18);
+}
+
+
+/* installed message */
+
+#settings-page .zg-set-installed {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 8px;
+    padding: 13px 14px;
+    border: 1px solid rgba(53, 223, 193, 0.32) !important;
+    border-radius: var(--z-radius-md);
+    background: var(--z-teal-soft) !important;
+}
+
+#settings-page .zg-set-installed .app-installed-icon {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--z-teal);
+    color: #04120f;
+    font-weight: 800;
+}
+
+#settings-page .zg-set-installed strong {
+    display: block;
+    color: var(--z-teal-bright);
+    font-size: 0.86rem;
+}
+
+#settings-page .zg-set-installed small {
+    display: block;
+    margin-top: 2px;
+    color: var(--z-text-muted);
+    font-size: 0.72rem;
+}
+
+
+/* identity strip */
+
+#settings-page .zg-set-identity {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 4px;
+}
+
+#settings-page .zg-set-identity > div {
+    padding: 10px 12px;
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-sm);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+#settings-page .zg-set-identity span {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--z-text-muted);
+    font-size: 0.62rem;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+#settings-page .zg-set-identity strong {
+    color: var(--z-text);
+    font-size: 0.84rem;
+    font-weight: 720;
+}
+
+
+/* =========================================================
+   5. TOGGLE SWITCH
+   ========================================================= */
+
+#settings-page .zg-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+#settings-page .zg-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#settings-page .zg-switch-track {
+    position: relative;
+    width: 38px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: var(--z-border-strong);
+    transition: background var(--transition);
+}
+
+#settings-page .zg-switch-track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform var(--transition);
+}
+
+#settings-page .zg-switch input:checked + .zg-switch-track {
+    background: linear-gradient(135deg, var(--z-violet), #7d3ff0);
+}
+
+#settings-page .zg-switch input:checked + .zg-switch-track::after {
+    transform: translateX(16px);
+}
+
+#settings-page .zg-switch input:focus-visible + .zg-switch-track {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+#settings-page .zg-switch-label {
+    min-width: 54px;
+    color: var(--z-text-muted);
+    font-size: 0.7rem;
+    font-weight: 750;
+}
+
+#settings-page .zg-switch input:checked ~ .zg-switch-label {
+    color: var(--z-violet-bright);
+}
+
+#settings-page .zg-switch--sm .zg-switch-track {
+    width: 32px;
+    height: 18px;
+}
+
+#settings-page .zg-switch--sm .zg-switch-track::after {
+    width: 14px;
+    height: 14px;
+}
+
+#settings-page .zg-switch--sm input:checked + .zg-switch-track::after {
+    transform: translateX(14px);
+}
+
+#settings-page .zg-switch--sm .zg-switch-label {
+    min-width: 26px;
+}
+
+
+/* =========================================================
+   6. CATEGORY MANAGER
+   ========================================================= */
+
+#settings-page .zg-set-empty {
+    padding: 14px 4px;
+    color: var(--z-text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+#settings-page .zg-set-cat-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+#settings-page .zg-set-cat-count {
+    display: block;
+    color: var(--z-text);
+    font-size: 0.84rem;
+    font-weight: 750;
+}
+
+#settings-page .zg-set-cat-sub {
+    display: block;
+    margin-top: 2px;
+    color: var(--z-text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+#settings-page .zg-set-add-trigger {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px dashed var(--z-border-strong);
+    border-radius: var(--z-radius-md);
+    background: transparent;
+    color: var(--z-violet-bright);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 750;
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition);
+}
+
+#settings-page .zg-set-add-trigger:hover {
+    border-color: var(--z-violet);
+    background: var(--z-violet-soft);
+}
+
+#settings-page .zg-set-add-trigger--sub {
+    margin: 8px 0 0;
+    padding: 8px 10px;
+    font-size: 0.74rem;
+}
+
+#settings-page .zg-set-add {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid var(--z-violet);
+    border-radius: var(--z-radius-md);
+    background: var(--z-violet-soft);
+}
+
+#settings-page .zg-set-add--sub {
+    margin: 8px 0 0;
+}
+
+#settings-page .zg-set-add-actions {
+    display: flex;
+    gap: 8px;
+}
+
+#settings-page .zg-set-add .z-btn,
+#settings-page .zg-set-rename .z-btn {
+    min-height: 38px;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+}
+
+#settings-page .zg-set-cat-list,
+#settings-page .zg-set-sub-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+#settings-page .zg-set-cat-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 11px 13px;
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#settings-page .zg-set-cat-row.is-disabled {
+    opacity: 0.55;
+}
+
+#settings-page .zg-set-cat-info {
+    min-width: 0;
+    flex: 1 1 190px;
+    order: 1;
+}
+
+#settings-page .zg-set-cat-name {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#settings-page .zg-set-cat-name strong {
+    color: var(--z-text);
+    font-size: 0.88rem;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+#settings-page .zg-set-cat-meta {
+    margin-top: 3px;
+    color: var(--z-text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+#settings-page .zg-set-cat-row > .zg-switch {
+    order: 2;
+}
+
+#settings-page .zg-set-cat-row > .zg-set-sub-panel {
+    order: 4;
+    width: 100%;
+}
+
+#settings-page .zg-set-cat-actions {
+    order: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    width: 100%;
+    margin-top: 8px;
+    padding-top: 9px;
+    border-top: 1px solid var(--z-border);
+}
+
+/* rename / add forms take the whole row when active */
+#settings-page .zg-set-cat-info .zg-set-rename {
+    width: 100%;
+}
+
+@media (min-width: 620px) {
+
+    #settings-page .zg-set-cat-actions {
+        width: auto;
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+        order: 3;
+    }
+}
+
+#settings-page .zg-set-link {
+    padding: 5px 9px;
+    border: 1px solid var(--z-border);
+    border-radius: 999px;
+    background: var(--z-panel-hover);
+    color: var(--z-text-secondary);
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition), color var(--transition);
+}
+
+#settings-page .zg-set-link:hover {
+    border-color: var(--z-border-strong);
+    background: var(--z-violet-soft);
+    color: var(--z-text);
+}
+
+#settings-page .zg-set-link--danger {
+    border-color: rgba(255, 101, 119, 0.3);
+    background: rgba(255, 101, 119, 0.12);
+    color: var(--z-danger-bright);
+}
+
+#settings-page .zg-set-link--danger:hover {
+    border-color: rgba(255, 101, 119, 0.55);
+    background: rgba(255, 101, 119, 0.2);
+    color: var(--z-danger-bright);
+}
+
+#settings-page .zg-set-link:focus-visible,
+#settings-page .zg-set-add-trigger:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+#settings-page .zg-set-rename {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#settings-page .zg-set-rename .z-input,
+#settings-page .zg-set-add .z-input {
+    flex: 1 1 160px;
+    min-width: 0;
+}
+
+
+/* subcategory panel */
+
+#settings-page .zg-set-sub-panel {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+#settings-page .zg-set-sub-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 9px 10px;
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-sm);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#settings-page .zg-set-sub-row.is-disabled {
+    opacity: 0.55;
+}
+
+#settings-page .zg-set-sub-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1 1 140px;
+    min-width: 0;
+}
+
+#settings-page .zg-set-sub-name {
+    color: var(--z-text);
+    font-size: 0.8rem;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+#settings-page .zg-set-sub-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+
+/* =========================================================
+   7. RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 460px) {
+
+    #settings-page .zg-set-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    #settings-page .zg-set-row-value {
+        text-align: left;
+    }
+
+    #settings-page .zg-set-row--link,
+    #settings-page .zg-set-row--danger,
+    #settings-page .zg-set-row--install {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    #settings-page .zg-set-cat-main {
+        flex-direction: column;
+    }
+
+    #settings-page .zg-set-identity {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* tablet — pair the two short cards (General + M-Cash, adjacent in the
+   DOM) side by side; the category manager and data cards run full width */
+@media (min-width: 768px) {
+
+    #settings-page .zg-set {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    #settings-page .zg-set-section {
+        grid-column: 1 / -1;
+    }
+
+    #settings-page .zg-set-section--pair {
+        grid-column: span 1;
+    }
+}
+
+/* desktop — a calm centred control column */
+@media (min-width: 1100px) {
+
+    #settings-page .zg-set,
+    #settings-page .zg-set-heading,
+    #settings-page .zg-set-status {
+        max-width: 900px;
+    }
+
+    #settings-page .zg-set {
+        gap: 18px;
+    }
+
+    #settings-page .zg-set-identity {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+
+/* motion */
+@media (prefers-reduced-motion: reduce) {
+
+    #settings-page button.zg-set-row,
+    #settings-page .zg-switch-track,
+    #settings-page .zg-switch-track::after,
+    #settings-page .zg-set-link,
+    #settings-page .zg-set-add-trigger {
+        transition: none;
+    }
+}
+
+
+/* =========================================================
+   END SETTINGS.CSS  ·  ZG8
+   ========================================================= */

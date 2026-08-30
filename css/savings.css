@@ -1,0 +1,673 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   ZG5 — Savings command center
+
+   Loaded after zevaryn-grid.css + dashboard/budget/transactions.
+   Uses ZG1 --z-* tokens + .z-* primitives. Scoped to
+   #savings-page. Savings leans teal; violet stays the system
+   accent. Display only — no storage / accounting changes.
+   ========================================================= */
+
+
+/* =========================================================
+   1. SHELL
+   ========================================================= */
+
+#savings-page .zg-sav {
+    display: grid;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+#savings-page .zg-sav-heading {
+    margin-bottom: 6px;
+}
+
+#savings-page .zg-sav-heading .z-eyebrow {
+    margin-bottom: 8px;
+}
+
+#savings-page .zgs-card {
+    padding: clamp(16px, 3vw, 22px);
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-lg);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(19, 24, 33, 0.96),
+            rgba(12, 15, 22, 0.96)
+        );
+
+    box-shadow: var(--z-shadow-sm);
+}
+
+#savings-page .zgs-card > .z-eyebrow {
+    display: block;
+    margin-bottom: 12px;
+}
+
+#savings-page .zgs-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+
+    gap: 4px 14px;
+
+    margin-bottom: 12px;
+}
+
+#savings-page .zgs-head .z-eyebrow {
+    margin-bottom: 0;
+}
+
+
+/* =========================================================
+   2. BALANCE HERO
+   ========================================================= */
+
+#savings-page .zg-sav-hero {
+    overflow: hidden;
+
+    border: 1px solid rgba(53, 223, 193, 0.24);
+
+    background:
+        radial-gradient(
+            circle at 88% 6%,
+            rgba(53, 223, 193, 0.18),
+            transparent 42%
+        ),
+        linear-gradient(
+            135deg,
+            #06231f,
+            #0a3630 55%,
+            #0c1c1a
+        );
+
+    box-shadow:
+        var(--z-shadow-md),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+#savings-page .zg-sav-hero .z-eyebrow {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+#savings-page .zg-sav-hero-value {
+    margin: 8px 0 6px;
+
+    color: #ffffff;
+
+    font-size: clamp(2.2rem, 8vw, 3.4rem);
+    font-weight: 780;
+
+    line-height: 1;
+    letter-spacing: -0.035em;
+
+    font-variant-numeric: tabular-nums;
+
+    overflow-wrap: anywhere;
+}
+
+#savings-page .zg-sav-hero-sub {
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 0.82rem;
+}
+
+#savings-page .zg-sav-breakdown {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+    margin-top: 18px;
+}
+
+#savings-page .zg-sav-bd {
+    min-width: 0;
+
+    padding: 12px 13px;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--z-radius-sm);
+
+    background: rgba(255, 255, 255, 0.06);
+}
+
+#savings-page .zg-sav-bd span {
+    display: block;
+    margin-bottom: 4px;
+
+    color: rgba(255, 255, 255, 0.62);
+
+    font-size: 0.68rem;
+    font-weight: 750;
+
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+#savings-page .zg-sav-bd strong {
+    display: block;
+    overflow: hidden;
+
+    color: #ffffff;
+
+    font-size: clamp(0.98rem, 3vw, 1.2rem);
+    font-weight: 770;
+
+    font-variant-numeric: tabular-nums;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#savings-page .zg-sav-bd--available {
+    border-color: rgba(53, 223, 193, 0.4);
+    background: rgba(53, 223, 193, 0.13);
+}
+
+#savings-page .zg-sav-bd--available strong {
+    color: var(--z-teal-bright);
+}
+
+#savings-page .zg-sav-bd--allocated strong {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+
+/* =========================================================
+   3. SAVINGS ACTIONS  (re-skin the existing .savings-quick-actions)
+   ========================================================= */
+
+#savings-page .zg-sav-actions-hint {
+    margin-bottom: 14px;
+
+    color: var(--z-text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+#savings-page .savings-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#savings-page .savings-quick-action {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+
+    min-height: 0;
+
+    padding: 13px 14px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background: var(--z-panel-hover);
+
+    color: var(--z-text);
+    text-align: left;
+
+    box-shadow: none;
+
+    transition:
+        transform var(--transition),
+        border-color var(--transition),
+        background var(--transition);
+}
+
+@media (hover: hover) {
+
+    #savings-page .savings-quick-action:hover {
+        transform: translateY(-1px);
+        border-color: var(--z-border-strong);
+        background: var(--z-violet-soft);
+    }
+
+    #savings-page .savings-quick-action.deposit:hover,
+    #savings-page .savings-quick-action.goal:hover {
+        border-color: rgba(53, 223, 193, 0.4);
+        background: var(--z-teal-soft);
+    }
+}
+
+#savings-page .savings-quick-action:active {
+    transform: translateY(0);
+}
+
+#savings-page .savings-quick-action-icon {
+    display: grid;
+    place-items: center;
+
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+
+    border-radius: 10px;
+
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+#savings-page .savings-quick-action.deposit .savings-quick-action-icon,
+#savings-page .savings-quick-action.goal .savings-quick-action-icon {
+    background: var(--z-teal-soft);
+    color: var(--z-teal);
+}
+
+#savings-page .savings-quick-action.withdraw .savings-quick-action-icon {
+    background: rgba(245, 190, 98, 0.16);
+    color: var(--z-warning);
+}
+
+#savings-page .savings-quick-action > span:last-child {
+    min-width: 0;
+    display: block;
+}
+
+#savings-page .savings-quick-action strong {
+    display: block;
+
+    color: var(--z-text);
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+#savings-page .savings-quick-action small {
+    display: block;
+    margin-top: 2px;
+
+    color: var(--z-text-muted);
+    font-size: 0.7rem;
+    line-height: 1.35;
+}
+
+#savings-page .savings-quick-action:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   4. GOAL CARDS
+   ========================================================= */
+
+#savings-page .zg-sav-goals-hint {
+    flex: 1 1 240px;
+
+    color: var(--z-text-muted);
+    font-size: 0.73rem;
+    font-weight: 600;
+    line-height: 1.4;
+
+    text-align: right;
+}
+
+@media (max-width: 720px) {
+
+    #savings-page .zg-sav-goals-hint {
+        text-align: left;
+    }
+}
+
+#savings-page .savings-goals {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 13px;
+}
+
+#savings-page .savings-empty-state {
+    display: grid;
+    gap: 4px;
+    padding: 22px 8px;
+    text-align: center;
+}
+
+#savings-page .savings-empty-state .empty-message {
+    padding: 0;
+    font-size: 0.9rem;
+}
+
+#savings-page .zg-sav-empty-sub {
+    color: var(--z-text-muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+#savings-page .zg-goal {
+    padding: 15px 16px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(21, 26, 36, 0.96),
+            rgba(13, 16, 23, 0.96)
+        );
+}
+
+#savings-page .zg-goal.is-funded {
+    border-color: rgba(53, 223, 193, 0.34);
+    background:
+        linear-gradient(
+            160deg,
+            rgba(53, 223, 193, 0.12),
+            rgba(13, 16, 23, 0.96)
+        );
+}
+
+#savings-page .zg-goal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 12px;
+
+    margin-bottom: 12px;
+}
+
+#savings-page .zg-goal-title {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+#savings-page .zg-goal-title strong {
+    color: var(--z-text);
+    font-size: 0.98rem;
+    font-weight: 750;
+
+    overflow-wrap: anywhere;
+}
+
+#savings-page .zg-goal-amount {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+#savings-page .zg-goal-amount strong {
+    display: block;
+
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 780;
+
+    font-variant-numeric: tabular-nums;
+}
+
+#savings-page .zg-goal-amount span {
+    display: block;
+    margin-top: 2px;
+
+    color: var(--z-text-muted);
+    font-size: 0.72rem;
+}
+
+#savings-page .zg-goal-track {
+    height: 10px;
+}
+
+#savings-page .zg-goal-meta {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+
+    margin-top: 9px;
+
+    color: var(--z-text-muted);
+    font-size: 0.73rem;
+    font-weight: 650;
+}
+
+#savings-page .zg-goal.is-funded .zg-goal-meta {
+    color: var(--z-teal);
+}
+
+#savings-page .zg-goal-detail,
+#savings-page .zg-goal-notes {
+    margin-top: 10px;
+
+    color: var(--z-text-secondary);
+    font-size: 0.74rem;
+    line-height: 1.45;
+}
+
+#savings-page .zg-goal-notes {
+    padding: 8px 10px;
+    border-radius: var(--z-radius-sm);
+    background: var(--z-panel-hover);
+}
+
+#savings-page .zg-goal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+
+    margin-top: 13px;
+    padding-top: 12px;
+
+    border-top: 1px solid var(--z-border);
+}
+
+#savings-page .zg-goal-btn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    min-height: 38px;
+
+    padding: 8px 12px;
+
+    border: 1px solid var(--z-border);
+    border-radius: 999px;
+
+    background: var(--z-panel-hover);
+    color: var(--z-text);
+
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 750;
+
+    cursor: pointer;
+
+    transition:
+        background var(--transition),
+        border-color var(--transition),
+        color var(--transition);
+}
+
+#savings-page .zg-goal-btn:hover:not(:disabled) {
+    border-color: var(--z-border-strong);
+    background: var(--z-violet-soft);
+}
+
+#savings-page .zg-goal-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+#savings-page .zg-goal-btn--allocate {
+    border-color: rgba(53, 223, 193, 0.32);
+    background: var(--z-teal-soft);
+    color: var(--z-teal);
+}
+
+#savings-page .zg-goal-btn--allocate:hover:not(:disabled) {
+    background: rgba(53, 223, 193, 0.22);
+    color: var(--z-teal-bright);
+}
+
+#savings-page .zg-goal-btn--danger {
+    border-color: rgba(255, 101, 119, 0.28);
+    background: rgba(255, 101, 119, 0.14);
+    color: var(--z-danger);
+}
+
+#savings-page .zg-goal-btn--danger:hover:not(:disabled) {
+    background: rgba(255, 101, 119, 0.24);
+    color: var(--z-danger-bright);
+}
+
+#savings-page .zg-goal-btn:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   5. SAVINGS ACTIVITY
+   ========================================================= */
+
+#savings-page .zg-sav-activity .z-eyebrow #savings-activity-period {
+    color: var(--z-text-muted);
+    font-weight: 700;
+}
+
+#savings-page #savings-activity {
+    display: grid;
+    gap: 2px;
+}
+
+#savings-page .zg-sav-act-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 11px 0;
+
+    border-bottom: 1px solid var(--z-border);
+}
+
+#savings-page .zg-sav-act-row:last-child {
+    border-bottom: none;
+}
+
+#savings-page .zg-sav-act-info {
+    min-width: 0;
+}
+
+#savings-page .zg-sav-act-info strong {
+    display: block;
+
+    color: var(--z-text);
+    font-size: 0.85rem;
+    font-weight: 650;
+
+    overflow-wrap: anywhere;
+}
+
+#savings-page .zg-sav-act-info span {
+    display: block;
+    margin-top: 2px;
+
+    color: var(--z-text-muted);
+    font-size: 0.72rem;
+}
+
+#savings-page .zg-sav-act-amount {
+    flex-shrink: 0;
+
+    font-size: 0.86rem;
+    font-weight: 750;
+
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+
+    color: var(--z-text-secondary);
+}
+
+#savings-page .zg-sav-act-row--in .zg-sav-act-amount {
+    color: var(--z-success);
+}
+
+#savings-page .zg-sav-act-row--out .zg-sav-act-amount {
+    color: var(--z-danger);
+}
+
+#savings-page .zg-sav-act-row--move .zg-sav-act-amount {
+    color: var(--z-violet-bright);
+}
+
+
+/* =========================================================
+   6. RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 560px) {
+
+    #savings-page .savings-quick-actions {
+        grid-template-columns: 1fr;
+    }
+
+    #savings-page .zg-sav-breakdown {
+        grid-template-columns: 1fr;
+    }
+
+    #savings-page .zg-sav-bd {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+    }
+
+    #savings-page .zg-sav-bd span {
+        margin-bottom: 0;
+    }
+
+    #savings-page .zg-goal-head {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #savings-page .zg-goal-amount {
+        text-align: left;
+    }
+}
+
+@media (min-width: 760px) {
+
+    #savings-page .savings-goals {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1160px) {
+
+    #savings-page .savings-goals {
+        grid-template-columns: repeat(3, minmax(280px, 1fr));
+    }
+}
+
+@media (min-width: 1000px) {
+
+    #savings-page .zg-sav {
+        gap: 18px;
+    }
+}
+
+
+/* motion */
+@media (prefers-reduced-motion: reduce) {
+
+    #savings-page .savings-quick-action,
+    #savings-page .zg-goal-btn {
+        transition: none;
+    }
+}
+
+
+/* =========================================================
+   END SAVINGS.CSS  ·  ZG5
+   ========================================================= */
