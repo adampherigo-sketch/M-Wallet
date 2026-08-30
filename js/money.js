@@ -546,6 +546,20 @@ const MONEY_FORMS = {
                 type: "checkbox",
                 name: "recurring",
                 label: "Repeats every month"
+            },
+
+            {
+                type: "date",
+                name: "endDate",
+                label: "Recurring End Date",
+
+                help:
+                    "Optional. Leave blank if this bill continues indefinitely.",
+
+                showWhen: {
+                    field: "recurring",
+                    equals: true
+                }
             }
 
         ]
@@ -840,178 +854,180 @@ const MONEY_FORMS = {
         ]
 
     },
+
+
     /* =====================================================
-   GENERAL SAVINGS → CHECKING
-   ===================================================== */
+       GENERAL SAVINGS → CHECKING
+       ===================================================== */
 
-"savings-withdrawal": {
+    "savings-withdrawal": {
 
-    title:
-        "Move Savings to Checking",
+        title:
+            "Move Savings to Checking",
 
-    fields: [
+        fields: [
 
-        {
-            type: "number",
-            name: "amount",
-            label: "Amount to Return to Checking",
-            placeholder: "0.00",
-            min: "0.01",
-            step: "0.01",
-            money: true,
-            required: true
-        },
+            {
+                type: "number",
+                name: "amount",
+                label: "Amount to Return to Checking",
+                placeholder: "0.00",
+                min: "0.01",
+                step: "0.01",
+                money: true,
+                required: true
+            },
 
-        {
-            type: "date",
-            name: "date",
-            label: "Transfer Date",
-            required: true,
-            useSelectedMonth: true
-        },
+            {
+                type: "date",
+                name: "date",
+                label: "Transfer Date",
+                required: true,
+                useSelectedMonth: true
+            },
 
-        {
-            type: "textarea",
-            name: "notes",
-            label: "Notes",
-            placeholder:
-                "Optional notes about this transfer"
-        }
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about this transfer"
+            }
 
-    ]
+        ]
 
-},
-
-
-/* =====================================================
-   GENERAL SAVINGS → FUND
-   ===================================================== */
-
-"savings-allocation": {
-
-    title:
-        "Allocate Savings to Fund",
-
-    fields: [
-
-        {
-            type: "select",
-            name: "goalId",
-            label: "Savings Fund",
-            placeholder: "Select a fund",
-            required: true,
-            dynamicOptions:
-                getSavingsGoalOptions
-        },
-
-        {
-            type: "number",
-            name: "amount",
-            label: "Amount to Allocate",
-            placeholder: "0.00",
-            min: "0.01",
-            step: "0.01",
-            money: true,
-            required: true
-        },
-
-        {
-            type: "date",
-            name: "date",
-            label: "Allocation Date",
-            required: true,
-            useSelectedMonth: true
-        },
-
-        {
-            type: "textarea",
-            name: "notes",
-            label: "Notes",
-            placeholder:
-                "Optional notes about this allocation"
-        }
-
-    ]
-
-},
+    },
 
 
-/* =====================================================
-   FUND → GENERAL SAVINGS
-   ===================================================== */
+    /* =====================================================
+       GENERAL SAVINGS → FUND
+       ===================================================== */
 
-"savings-release": {
+    "savings-allocation": {
 
-    title:
-        "Return Fund Money to Savings",
+        title:
+            "Allocate Savings to Fund",
 
-    fields: [
+        fields: [
 
-        {
-            type: "select",
-            name: "goalId",
-            label: "Savings Fund",
-            placeholder: "Select a fund",
-            required: true,
-            dynamicOptions:
-                getSavingsGoalOptions
-        },
+            {
+                type: "select",
+                name: "goalId",
+                label: "Savings Fund",
+                placeholder: "Select a fund",
+                required: true,
+                dynamicOptions:
+                    getSavingsGoalOptions
+            },
 
-        {
-            type: "number",
-            name: "amount",
-            label: "Amount to Return",
-            placeholder: "0.00",
-            min: "0.01",
-            step: "0.01",
-            money: true,
-            required: true
-        },
+            {
+                type: "number",
+                name: "amount",
+                label: "Amount to Allocate",
+                placeholder: "0.00",
+                min: "0.01",
+                step: "0.01",
+                money: true,
+                required: true
+            },
 
-        {
-            type: "date",
-            name: "date",
-            label: "Transfer Date",
-            required: true,
-            useSelectedMonth: true
-        },
+            {
+                type: "date",
+                name: "date",
+                label: "Allocation Date",
+                required: true,
+                useSelectedMonth: true
+            },
 
-        {
-            type: "textarea",
-            name: "notes",
-            label: "Notes",
-            placeholder:
-                "Optional notes about returning this money"
-        }
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about this allocation"
+            }
 
-    ]
+        ]
 
-},
+    },
 
 
-"starting-balance": {
+    /* =====================================================
+       FUND → GENERAL SAVINGS
+       ===================================================== */
 
-    title:
-        "Change Starting Balance",
+    "savings-release": {
 
-    fields: [
+        title:
+            "Return Fund Money to Savings",
 
-        {
-            type: "number",
-            name: "balance",
-            label: "Starting Balance",
-            placeholder: "0.00",
-            step: "0.01",
-            money: true,
-            required: true,
+        fields: [
 
-            help:
-                "This is the checking balance you are starting the selected month with."
-        }
+            {
+                type: "select",
+                name: "goalId",
+                label: "Savings Fund",
+                placeholder: "Select a fund",
+                required: true,
+                dynamicOptions:
+                    getSavingsGoalOptions
+            },
 
-    ]
+            {
+                type: "number",
+                name: "amount",
+                label: "Amount to Return",
+                placeholder: "0.00",
+                min: "0.01",
+                step: "0.01",
+                money: true,
+                required: true
+            },
 
-}
+            {
+                type: "date",
+                name: "date",
+                label: "Transfer Date",
+                required: true,
+                useSelectedMonth: true
+            },
+
+            {
+                type: "textarea",
+                name: "notes",
+                label: "Notes",
+                placeholder:
+                    "Optional notes about returning this money"
+            }
+
+        ]
+
+    },
+
+
+    "starting-balance": {
+
+        title:
+            "Change Starting Balance",
+
+        fields: [
+
+            {
+                type: "number",
+                name: "balance",
+                label: "Starting Balance",
+                placeholder: "0.00",
+                step: "0.01",
+                money: true,
+                required: true,
+
+                help:
+                    "This is the checking balance you are starting the selected month with."
+            }
+
+        ]
+
+    }
 
 };
 
@@ -2906,7 +2922,9 @@ function populateMoneyForm(
                     return;
 
                 }
-                                const value =
+
+
+                const value =
                     values[
                         field.name
                     ];
@@ -3698,7 +3716,8 @@ function undoMoneyForm() {
 
                 field.value =
                     savedField.value;
-                                }
+
+            }
 
         }
     );
@@ -4115,6 +4134,34 @@ function createMoneyRecord() {
             Boolean(
                 record.recurring
             );
+
+
+        if (
+            record.recurring
+        ) {
+
+            record.frequency =
+                "monthly";
+
+
+            record.endDate =
+                String(
+                    record.endDate ||
+                    ""
+                ).trim();
+
+        }
+
+        else {
+
+            record.frequency =
+                "";
+
+
+            record.endDate =
+                "";
+
+        }
 
 
         applyMoneyCategoryClassification(
@@ -4580,7 +4627,8 @@ function saveMoneyForm(
                 )
 
             );
-                    }
+
+        }
 
 
         if (
@@ -4820,7 +4868,20 @@ function saveMoneyRecord(
                 record.amount,
 
             recurring:
+                record.recurring,
+
+            frequency:
                 record.recurring
+                    ? "monthly"
+                    : "",
+
+            endDate:
+                record.recurring
+                    ? (
+                        record.endDate ||
+                        ""
+                    )
+                    : ""
 
         };
 
@@ -5353,6 +5414,8 @@ function deleteBillRecord(
     return true;
 
 }
+
+
 /* =========================================================
    39. DELETE EXPENSE
    ========================================================= */
@@ -5971,6 +6034,8 @@ document.addEventListener(
 
     }
 );
+
+
 /* =========================================================
    48. EXPENSE EDIT / DELETE BUTTONS
    ========================================================= */
@@ -6375,6 +6440,7 @@ function getMoneyModalFocusableElements() {
     );
 
 }
+
 
 document.addEventListener(
     "keydown",

@@ -988,6 +988,14 @@ const BudgetStorage = {
 
             bills: [],
 
+            /*
+                Recurring bill occurrences are generated automatically
+                when a month is read. If a generated occurrence is
+                intentionally deleted for one month, its series id is
+                stored here so it does not reappear on refresh.
+            */
+            suppressedRecurringBillSeries: [],
+
             expenses: [],
 
             transactions: [],
@@ -1083,6 +1091,28 @@ const BudgetStorage = {
         );
 
 
+        month.bills =
+            month.bills.map(
+                bill =>
+                    this.normalizeBill(
+                        bill,
+                        monthKey
+                    )
+            );
+
+
+        if (
+            !Array.isArray(
+                month.suppressedRecurringBillSeries
+            )
+        ) {
+
+            month.suppressedRecurringBillSeries =
+                [];
+
+        }
+
+
         if (
             !Array.isArray(
                 month.savingsDeposits
@@ -1146,6 +1176,191 @@ const BudgetStorage = {
 
 
         return month;
+
+    },
+
+
+    normalizeBill(
+        bill,
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        const id =
+            this.getRecordId(
+                bill,
+                "bill"
+            );
+
+
+        const dueDate =
+            this.isDateString(
+                bill?.dueDate
+            )
+
+                ? bill.dueDate
+
+                : this
+                    .getDefaultDateForMonth(
+                        monthKey
+                    );
+
+
+        const recurring =
+            Boolean(
+                bill?.recurring
+            );
+
+
+        /*
+            recurringSeriesId ties every monthly occurrence back
+            to the same recurring bill series.
+
+            Legacy recurring bills did not have this field, so the
+            bill's existing id safely becomes the series id.
+        */
+        const recurringSeriesId =
+            this.normalizeString(
+
+                bill?.recurringSeriesId ||
+                bill?.sourceBillId ||
+                (
+                    recurring
+                        ? id
+                        : ""
+                )
+
+            );
+
+
+        const recurringDay =
+            recurringSeriesId
+
+                ? Math.min(
+                    31,
+                    Math.max(
+                        1,
+                        Number(
+                            bill?.recurringDay
+                        ) ||
+                        Number(
+                            dueDate.slice(
+                                -2
+                            )
+                        ) ||
+                        1
+                    )
+                )
+
+                : null;
+
+
+        return {
+
+            ...bill,
+
+            id,
+
+            name:
+                this.normalizeString(
+                    bill?.name,
+                    "Bill"
+                ),
+
+            dueDate,
+
+            amount:
+                this.toPositiveNumber(
+                    bill?.amount
+                ),
+
+            category:
+                this.normalizeString(
+                    bill?.category,
+                    "Other"
+                ),
+
+            subcategory:
+                this.normalizeString(
+                    bill?.subcategory
+                ),
+
+            categoryId:
+                bill?.categoryId ||
+                null,
+
+            subcategoryId:
+                bill?.subcategoryId ||
+                null,
+
+            merchant:
+                this.normalizeString(
+
+                    bill?.merchant ||
+                    bill?.vendor ||
+                    bill?.payee
+
+                ),
+
+            paid:
+                Boolean(
+                    bill?.paid
+                ),
+
+            paidDate:
+                this.isDateString(
+                    bill?.paidDate
+                )
+
+                    ? bill.paidDate
+
+                    : "",
+
+            recurring,
+
+            frequency:
+                recurring
+                    ? "monthly"
+                    : "",
+
+            endDate:
+                (
+                    recurring &&
+                    this.isDateString(
+                        bill?.endDate
+                    )
+                )
+
+                    ? bill.endDate
+
+                    : "",
+
+            /*
+                Preserve a series id even if a generated occurrence
+                is later changed to non-recurring. That lets the most
+                recent occurrence intentionally stop future months.
+            */
+            recurringSeriesId:
+                recurringSeriesId ||
+                null,
+
+            recurringDay,
+
+            notes:
+                this.normalizeString(
+                    bill?.notes
+                ),
+
+            createdAt:
+                bill?.createdAt ||
+                this.now(),
+
+            updatedAt:
+                bill?.updatedAt ||
+                bill?.createdAt ||
+                this.now()
+
+        };
 
     },
 
@@ -3809,6 +4024,313 @@ const BudgetStorage = {
     },
 
 
+    getRecurringBillSeriesId(
+        bill
+    ) {
+
+        return this.normalizeString(
+
+            bill?.recurringSeriesId ||
+            bill?.sourceBillId ||
+            (
+                bill?.recurring
+                    ? bill?.id
+                    : ""
+            )
+
+        );
+
+    },
+
+
+    getRecurringBillDueDateForMonth(
+        bill,
+        monthKey
+    ) {
+
+        const [
+            year,
+            month
+        ] =
+            monthKey
+                .split("-")
+                .map(Number);
+
+
+        const requestedDay =
+            Math.max(
+                1,
+                Number(
+                    bill?.recurringDay
+                ) ||
+                Number(
+                    bill?.dueDate
+                        ?.slice(-2)
+                ) ||
+                1
+            );
+
+
+        const safeDay =
+            Math.min(
+
+                requestedDay,
+
+                this.daysInMonth(
+                    year,
+                    month
+                )
+
+            );
+
+
+        return (
+            `${monthKey}-` +
+            `${String(
+                safeDay
+            ).padStart(
+                2,
+                "0"
+            )}`
+        );
+
+    },
+
+
+    /*
+        Ensures a target month contains exactly one occurrence of
+        each active recurring bill series.
+
+        This is intentionally idempotent:
+          - reading/refreshing the same month does not duplicate bills
+          - jumping directly several months ahead still works
+          - an optional endDate stops future occurrences
+          - paid state starts false for each generated month
+          - deleting a generated occurrence can suppress only that
+            month's occurrence without it reappearing on refresh
+    */
+    ensureRecurringBillsInData(
+        data,
+        monthKey
+    ) {
+
+        const targetMonth =
+            this.ensureMonthInData(
+                data,
+                monthKey
+            );
+
+
+        const latestBySeries =
+            new Map();
+
+
+        Object.entries(
+            data.months
+        )
+            .sort(
+                (
+                    [firstKey],
+                    [secondKey]
+                ) =>
+                    firstKey.localeCompare(
+                        secondKey
+                    )
+            )
+            .forEach(
+                ([
+                    sourceMonthKey,
+                    sourceMonth
+                ]) => {
+
+                    if (
+                        sourceMonthKey >=
+                        monthKey
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    const normalizedSource =
+                        this.normalizeMonth(
+                            sourceMonth,
+                            sourceMonthKey
+                        );
+
+
+                    normalizedSource.bills.forEach(
+                        bill => {
+
+                            const seriesId =
+                                this.getRecurringBillSeriesId(
+                                    bill
+                                );
+
+
+                            if (
+                                !seriesId
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            const existing =
+                                latestBySeries.get(
+                                    seriesId
+                                );
+
+
+                            if (
+                                !existing ||
+                                String(
+                                    bill.dueDate
+                                ) >
+                                String(
+                                    existing.bill.dueDate
+                                )
+                            ) {
+
+                                latestBySeries.set(
+                                    seriesId,
+                                    {
+                                        bill,
+                                        sourceMonthKey
+                                    }
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+
+        latestBySeries.forEach(
+            (
+                entry,
+                seriesId
+            ) => {
+
+                const sourceBill =
+                    entry.bill;
+
+
+                if (
+                    !sourceBill.recurring
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    targetMonth
+                        .suppressedRecurringBillSeries
+                        .includes(
+                            seriesId
+                        )
+                ) {
+
+                    return;
+
+                }
+
+
+                const alreadyExists =
+                    targetMonth.bills.some(
+                        existingBill =>
+                            this.getRecurringBillSeriesId(
+                                existingBill
+                            ) ===
+                            seriesId
+                    );
+
+
+                if (
+                    alreadyExists
+                ) {
+
+                    return;
+
+                }
+
+
+                const dueDate =
+                    this.getRecurringBillDueDateForMonth(
+                        sourceBill,
+                        monthKey
+                    );
+
+
+                if (
+                    sourceBill.endDate &&
+                    dueDate >
+                        sourceBill.endDate
+                ) {
+
+                    return;
+
+                }
+
+
+                const generatedBill =
+                    this.normalizeBill(
+                        {
+
+                            ...sourceBill,
+
+                            id:
+                                `${seriesId}@${monthKey}`,
+
+                            dueDate,
+
+                            recurringSeriesId:
+                                seriesId,
+
+                            recurringDay:
+                                sourceBill.recurringDay,
+
+                            paid:
+                                false,
+
+                            paidDate:
+                                "",
+
+                            createdAt:
+                                this.now(),
+
+                            updatedAt:
+                                this.now()
+
+                        },
+                        monthKey
+                    );
+
+
+                targetMonth.bills.push(
+                    generatedBill
+                );
+
+            }
+        );
+
+
+        targetMonth.updatedAt =
+            this.now();
+
+
+        return targetMonth;
+
+    },
+
+
     getMonth(
         monthKey =
             this.getSelectedMonthKey()
@@ -3819,7 +4341,7 @@ const BudgetStorage = {
 
 
         const month =
-            this.ensureMonthInData(
+            this.ensureRecurringBillsInData(
                 data,
                 monthKey
             );
@@ -5111,98 +5633,44 @@ const BudgetStorage = {
             );
 
 
-        const newBill = {
+        const id =
+            this.getRecordId(
+                bill,
+                "bill"
+            );
 
-            id:
-                this.getRecordId(
-                    bill,
-                    "bill"
-                ),
 
-            name:
-                this.normalizeString(
-                    bill.name,
-                    "Bill"
-                ),
+        const newBill =
+            this.normalizeBill(
+                {
 
-            dueDate:
-                bill.dueDate ||
-                this.getDefaultDateForMonth(
-                    monthKey
-                ),
+                    ...bill,
 
-            amount:
-                this.toPositiveNumber(
-                    bill.amount
-                ),
+                    id,
 
-            category:
-                this.normalizeString(
-                    bill.category,
-                    "Other"
-                ),
+                    recurringSeriesId:
+                        bill?.recurring
 
-            subcategory:
-                this.normalizeString(
-                    bill.subcategory
-                ),
+                            ? (
+                                bill?.recurringSeriesId ||
+                                id
+                            )
 
-            /*
-                P2.6.3: mirrors the categoryId/subcategoryId
-                passthrough normalizeExpense already applies (P2.6.2)
-                so new bills can persist centralized classification.
-            */
-            categoryId:
-                bill.categoryId ||
-                null,
+                            : (
+                                bill?.recurringSeriesId ||
+                                null
+                            ),
 
-            subcategoryId:
-                bill.subcategoryId ||
-                null,
+                    createdAt:
+                        bill?.createdAt ||
+                        this.now(),
 
-            merchant:
-                this.normalizeString(
-                    bill.merchant
-                ),
+                    updatedAt:
+                        this.now()
 
-            paid:
-                Boolean(
-                    bill.paid
-                ),
-
-            paidDate:
-                bill.paidDate ||
-                "",
-
-            recurring:
-                Boolean(
-                    bill.recurring
-                ),
-
-            frequency:
-                this.normalizeString(
-
-                    bill.frequency,
-
-                    bill.recurring
-                        ? "monthly"
-                        : ""
-
-                ),
-
-            notes:
-                this.normalizeString(
-                    bill.notes
-                ),
-
-            createdAt:
-                bill.createdAt ||
-                this.now(),
-
-            updatedAt:
-                this.now()
-
-        };
+                },
+                monthKey
+            );
 
 
         month.bills.push(
@@ -5254,8 +5722,8 @@ const BudgetStorage = {
             );
 
 
-        const bill =
-            month.bills.find(
+        const index =
+            month.bills.findIndex(
                 item =>
                     item.id ===
                     billId
@@ -5263,7 +5731,7 @@ const BudgetStorage = {
 
 
         if (
-            !bill
+            index === -1
         ) {
 
             return null;
@@ -5271,26 +5739,50 @@ const BudgetStorage = {
         }
 
 
-        Object.assign(
-            bill,
-            updates
-        );
+        const existing =
+            month.bills[
+                index
+            ];
 
 
-        bill.amount =
-            this.toPositiveNumber(
-                bill.amount
+        const updatedBill =
+            this.normalizeBill(
+                {
+
+                    ...existing,
+
+                    ...updates,
+
+                    id:
+                        existing.id,
+
+                    /*
+                        Preserve the recurrence lineage even if this
+                        occurrence is changed to non-recurring.
+                    */
+                    recurringSeriesId:
+                        existing.recurringSeriesId ||
+                        (
+                            updates?.recurring
+                                ? existing.id
+                                : null
+                        ),
+
+                    createdAt:
+                        existing.createdAt,
+
+                    updatedAt:
+                        this.now()
+
+                },
+                monthKey
             );
 
 
-        bill.recurring =
-            Boolean(
-                bill.recurring
-            );
-
-
-        bill.updatedAt =
-            this.now();
+        month.bills[
+            index
+        ] =
+            updatedBill;
 
 
         if (
@@ -5305,7 +5797,7 @@ const BudgetStorage = {
         }
 
 
-        return bill;
+        return updatedBill;
 
     },
 
@@ -5385,6 +5877,55 @@ const BudgetStorage = {
             this.getMonth(
                 monthKey
             );
+
+
+        const bill =
+            month.bills.find(
+                item =>
+                    item.id ===
+                    billId
+            );
+
+
+        if (
+            !bill
+        ) {
+
+            return false;
+
+        }
+
+
+        const seriesId =
+            this.getRecurringBillSeriesId(
+                bill
+            );
+
+
+        /*
+            If this is a generated recurring occurrence, remember
+            that the user intentionally removed it from this month.
+            That prevents the automatic recurrence check from
+            recreating it the next time the month is rendered.
+        */
+        if (
+            seriesId &&
+            bill.id !==
+                seriesId &&
+            !month
+                .suppressedRecurringBillSeries
+                .includes(
+                    seriesId
+                )
+        ) {
+
+            month
+                .suppressedRecurringBillSeries
+                .push(
+                    seriesId
+                );
+
+        }
 
 
         const before =
@@ -8860,12 +9401,6 @@ const BudgetStorage = {
         newMonthKey
     ) {
 
-        const previousMonth =
-            this.getMonth(
-                previousMonthKey
-            );
-
-
         const previousEndingBalance =
             this.calculateEndingBalance(
                 previousMonthKey
@@ -8885,113 +9420,38 @@ const BudgetStorage = {
             this.load();
 
 
-        if (
-            data.months[
-                newMonthKey
-            ]
-        ) {
-
-            return data.months[
-                newMonthKey
-            ];
-
-        }
+        const targetAlreadyExisted =
+            Boolean(
+                data.months[
+                    newMonthKey
+                ]
+            );
 
 
         const newMonth =
-            this.createDefaultMonth(
+            this.ensureRecurringBillsInData(
+                data,
                 newMonthKey
             );
 
 
-        newMonth.startingBalance =
-            previousEndingBalance;
-
-
         /*
-            Income and expenses recur dynamically.
-
-            Savings balances persist globally.
-
-            Bills still use the existing monthly rollover.
+            Only initialize the carried checking balance when the
+            month is genuinely new. Existing months may already have
+            a user-entered starting balance and must not be overwritten.
         */
+        if (
+            !targetAlreadyExisted
+        ) {
 
-        newMonth.bills =
+            newMonth.startingBalance =
+                previousEndingBalance;
 
-            previousMonth.bills
-
-                .filter(
-                    bill =>
-                        bill.recurring
-                )
-
-                .map(
-                    bill => {
-
-                        const originalDay =
-                            bill.dueDate
-                                ?.slice(-2) ||
-                            "01";
+        }
 
 
-                        const [
-                            year,
-                            month
-                        ] =
-                            newMonthKey
-                                .split("-")
-                                .map(Number);
-
-
-                        const safeDay =
-                            Math.min(
-
-                                Number(
-                                    originalDay
-                                ),
-
-                                this.daysInMonth(
-                                    year,
-                                    month
-                                )
-
-                            );
-
-
-                        return {
-
-                            ...bill,
-
-                            id:
-                                this.generateId(
-                                    "bill"
-                                ),
-
-                            dueDate:
-                                `${newMonthKey}-` +
-                                `${String(
-                                    safeDay
-                                ).padStart(
-                                    2,
-                                    "0"
-                                )}`,
-
-                            paid:
-                                false,
-
-                            paidDate:
-                                "",
-
-                            createdAt:
-                                this.now(),
-
-                            updatedAt:
-                                this.now()
-
-                        };
-
-                    }
-                );
+        newMonth.updatedAt =
+            this.now();
 
 
         data.months[
