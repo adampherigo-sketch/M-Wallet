@@ -4121,7 +4121,15 @@ const BudgetStorage = {
             );
 
 
-        const latestBySeries =
+        /*
+            Track both:
+              1. the latest generated occurrence, so normal edits can
+                 continue flowing forward;
+              2. the original/root bill, so recurrence settings such as
+                 recurring + endDate do not get lost behind an older
+                 generated occurrence.
+        */
+        const seriesState =
             new Map();
 
 
@@ -4178,29 +4186,62 @@ const BudgetStorage = {
                             }
 
 
-                            const existing =
-                                latestBySeries.get(
+                            let entry =
+                                seriesState.get(
                                     seriesId
                                 );
 
 
                             if (
-                                !existing ||
+                                !entry
+                            ) {
+
+                                entry = {
+
+                                    rootBill:
+                                        null,
+
+                                    latestBill:
+                                        null
+
+                                };
+
+
+                                seriesState.set(
+                                    seriesId,
+                                    entry
+                                );
+
+                            }
+
+
+                            /*
+                                The root record is the occurrence whose id
+                                is the recurring series id itself.
+                            */
+                            if (
+                                bill.id ===
+                                seriesId
+                            ) {
+
+                                entry.rootBill =
+                                    bill;
+
+                            }
+
+
+                            if (
+                                !entry.latestBill ||
                                 String(
                                     bill.dueDate
                                 ) >
                                 String(
-                                    existing.bill.dueDate
+                                    entry.latestBill.dueDate
                                 )
                             ) {
 
-                                latestBySeries.set(
-                                    seriesId,
-                                    {
-                                        bill,
-                                        sourceMonthKey
-                                    }
-                                );
+                                entry.latestBill =
+                                    bill;
 
                             }
 
@@ -4211,19 +4252,128 @@ const BudgetStorage = {
             );
 
 
-        latestBySeries.forEach(
+        seriesState.forEach(
             (
                 entry,
                 seriesId
             ) => {
 
-                const sourceBill =
-                    entry.bill;
+                const latestBill =
+                    entry.latestBill;
 
 
                 if (
-                    !sourceBill.recurring
+                    !latestBill
                 ) {
+
+                    return;
+
+                }
+
+
+                /*
+                    Recurrence settings come from the root bill whenever
+                    it still exists. This prevents an already-generated
+                    September/October copy from carrying an old blank
+                    endDate forward after the original recurring bill has
+                    been given a cutoff date.
+                */
+                const recurrenceSource =
+                    entry.rootBill ||
+                    latestBill;
+
+
+                const sourceBill = {
+
+                    ...latestBill,
+
+                    recurring:
+                        Boolean(
+                            recurrenceSource.recurring
+                        ),
+
+                    frequency:
+                        recurrenceSource.recurring
+                            ? "monthly"
+                            : "",
+
+                    endDate:
+                        recurrenceSource.endDate ||
+                        "",
+
+                    recurringDay:
+                        recurrenceSource.recurringDay ||
+                        latestBill.recurringDay
+
+                };
+
+
+                const existingIndex =
+                    targetMonth.bills.findIndex(
+                        existingBill =>
+                            this.getRecurringBillSeriesId(
+                                existingBill
+                            ) ===
+                            seriesId
+                    );
+
+
+                const existingBill =
+                    existingIndex >= 0
+
+                        ? targetMonth.bills[
+                            existingIndex
+                        ]
+
+                        : null;
+
+
+                const dueDate =
+                    this.getRecurringBillDueDateForMonth(
+                        sourceBill,
+                        monthKey
+                    );
+
+
+                const recurrenceHasEnded =
+                    Boolean(
+                        sourceBill.endDate &&
+                        dueDate >
+                            sourceBill.endDate
+                    );
+
+
+                /*
+                    IMPORTANT:
+                    Previously, the function returned as soon as an
+                    occurrence already existed in the target month.
+
+                    That meant a November occurrence that had already
+                    been materialized could survive forever even after
+                    the recurring bill was given an October end date.
+
+                    Re-evaluate the recurrence BEFORE accepting an
+                    existing generated occurrence. If it is now outside
+                    the active range, remove that generated copy.
+                */
+                if (
+                    !sourceBill.recurring ||
+                    recurrenceHasEnded
+                ) {
+
+                    if (
+                        existingBill &&
+                        existingBill.id !==
+                            seriesId
+                    ) {
+
+                        targetMonth.bills.splice(
+                            existingIndex,
+                            1
+                        );
+
+                    }
+
 
                     return;
 
@@ -4243,37 +4393,30 @@ const BudgetStorage = {
                 }
 
 
-                const alreadyExists =
-                    targetMonth.bills.some(
-                        existingBill =>
-                            this.getRecurringBillSeriesId(
-                                existingBill
-                            ) ===
-                            seriesId
-                    );
-
-
                 if (
-                    alreadyExists
+                    existingBill
                 ) {
 
-                    return;
-
-                }
-
-
-                const dueDate =
-                    this.getRecurringBillDueDateForMonth(
-                        sourceBill,
-                        monthKey
-                    );
+                    /*
+                        Keep already-generated in-range occurrences, but
+                        synchronize their recurrence metadata so future
+                        reads do not keep stale end-date settings.
+                    */
+                    existingBill.recurring =
+                        true;
 
 
-                if (
-                    sourceBill.endDate &&
-                    dueDate >
-                        sourceBill.endDate
-                ) {
+                    existingBill.frequency =
+                        "monthly";
+
+
+                    existingBill.endDate =
+                        sourceBill.endDate;
+
+
+                    existingBill.recurringDay =
+                        sourceBill.recurringDay;
+
 
                     return;
 
@@ -4329,7 +4472,6 @@ const BudgetStorage = {
         return targetMonth;
 
     },
-
 
     getMonth(
         monthKey =
