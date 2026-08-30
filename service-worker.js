@@ -3,7 +3,7 @@
    Service Worker
    GitHub / PWA Ready
 
-   UI Cleanup 1
+   Final UI Cleanup
    Offline Asset / Version Cache Refresh
    ========================================================= */
 
@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v4";
+const CACHE_NAME = "m-wallet-v5";
 
 
 /* =========================================================
@@ -27,12 +27,17 @@ const APP_SHELL = [
     "./manifest.json",
 
     "./css/style.css",
+    "./css/m-cash.css",
 
     "./js/storage.js",
     "./js/nav.js",
     "./js/app.js",
     "./js/money.js",
     "./js/pwa.js",
+
+    "./js/m-cash/cash-ui.js",
+    "./js/m-cash/cash-storage.js",
+    "./js/m-cash/cash.js",
 
     "./icons/icon-192.png",
     "./icons/icon-512.png",
@@ -49,21 +54,14 @@ const APP_SHELL = [
 /*
     M-Wallet uses version query strings such as:
 
-    ./js/nav.js?v=7
-    ./css/style.css?v=7
+    ./js/app.js?v=8
+    ./css/style.css?v=8
 
-    The app shell itself precaches the clean URLs:
-
-    ./js/nav.js
-    ./css/style.css
-
-    ignoreSearch allows the service worker to treat those
-    as the same underlying asset when offline.
+    The app shell precaches the clean URLs. ignoreSearch lets
+    versioned requests use those same cached files offline.
 */
 
-async function matchCachedRequest(
-    request
-) {
+async function matchCachedRequest(request) {
 
     return caches.match(
         request,
@@ -71,7 +69,6 @@ async function matchCachedRequest(
             ignoreSearch: true
         }
     );
-
 }
 
 
@@ -88,38 +85,20 @@ self.addEventListener(
             CACHE_NAME
         );
 
-
         event.waitUntil(
-
             caches
-                .open(
-                    CACHE_NAME
-                )
+                .open(CACHE_NAME)
+                .then(cache => {
 
-                .then(
-                    cache => {
+                    console.log(
+                        "[Service Worker] Caching app shell"
+                    );
 
-                        console.log(
-                            "[Service Worker] Caching app shell"
-                        );
-
-
-                        return cache.addAll(
-                            APP_SHELL
-                        );
-
-                    }
-                )
-
+                    return cache.addAll(APP_SHELL);
+                })
         );
 
-
-        /*
-            Activate the new service worker immediately.
-        */
-
         self.skipWaiting();
-
     }
 );
 
@@ -137,55 +116,30 @@ self.addEventListener(
             CACHE_NAME
         );
 
-
         event.waitUntil(
-
             caches
                 .keys()
+                .then(cacheNames => {
 
-                .then(
-                    cacheNames => {
+                    return Promise.all(
+                        cacheNames.map(cacheName => {
 
-                        return Promise.all(
+                            if (cacheName !== CACHE_NAME) {
 
-                            cacheNames.map(
-                                cacheName => {
+                                console.log(
+                                    "[Service Worker] Removing old cache:",
+                                    cacheName
+                                );
 
-                                    if (
-                                        cacheName !==
-                                        CACHE_NAME
-                                    ) {
+                                return caches.delete(cacheName);
+                            }
 
-                                        console.log(
-                                            "[Service Worker] Removing old cache:",
-                                            cacheName
-                                        );
-
-
-                                        return caches.delete(
-                                            cacheName
-                                        );
-
-                                    }
-
-
-                                    return null;
-
-                                }
-                            )
-
-                        );
-
-                    }
-                )
-
-                .then(
-                    () =>
-                        self.clients.claim()
-                )
-
+                            return null;
+                        })
+                    );
+                })
+                .then(() => self.clients.claim())
         );
-
     }
 );
 
@@ -198,40 +152,19 @@ self.addEventListener(
     "fetch",
     event => {
 
-
-        /* -------------------------------------------------
-           IGNORE NON-GET REQUESTS
-           ------------------------------------------------- */
-
-        if (
-            event.request.method !==
-            "GET"
-        ) {
-
+        if (event.request.method !== "GET") {
             return;
-
         }
 
-
         const requestURL =
-            new URL(
-                event.request.url
-            );
-
-
-        /* -------------------------------------------------
-           ONLY MANAGE M-WALLET'S OWN RESOURCES
-           ------------------------------------------------- */
+            new URL(event.request.url);
 
         if (
             requestURL.origin !==
             self.location.origin
         ) {
-
             return;
-
         }
-
 
 
         /* =================================================
@@ -245,84 +178,46 @@ self.addEventListener(
         ) {
 
             event.respondWith(
+                fetch(event.request)
+                    .then(async response => {
 
-                fetch(
-                    event.request
-                )
+                        if (
+                            response &&
+                            response.ok
+                        ) {
 
-                    .then(
-                        async response => {
-
-                            /*
-                                Cache successful page responses.
-                            */
-
-                            if (
-                                response &&
-                                response.ok
-                            ) {
-
-                                const cache =
-                                    await caches.open(
-                                        CACHE_NAME
-                                    );
-
-
-                                await cache.put(
-                                    event.request,
-                                    response.clone()
+                            const cache =
+                                await caches.open(
+                                    CACHE_NAME
                                 );
 
-                            }
-
-
-                            return response;
-
+                            await cache.put(
+                                event.request,
+                                response.clone()
+                            );
                         }
-                    )
 
+                        return response;
+                    })
+                    .catch(async () => {
 
-                    /* -------------------------------------
-                       OFFLINE FALLBACK
-                       ------------------------------------- */
-
-                    .catch(
-                        async () => {
-
-                            const cachedPage =
-                                await matchCachedRequest(
-                                    event.request
-                                );
-
-
-                            if (
-                                cachedPage
-                            ) {
-
-                                return cachedPage;
-
-                            }
-
-
-                            /*
-                                If the exact page isn't
-                                available, load the app shell.
-                            */
-
-                            return caches.match(
-                                "./index.html"
+                        const cachedPage =
+                            await matchCachedRequest(
+                                event.request
                             );
 
+                        if (cachedPage) {
+                            return cachedPage;
                         }
-                    )
 
+                        return caches.match(
+                            "./index.html"
+                        );
+                    })
             );
 
-
             return;
-
         }
-
 
 
         /* =================================================
@@ -333,91 +228,45 @@ self.addEventListener(
         const destination =
             event.request.destination;
 
-
         if (
-            destination ===
-                "script" ||
-
-            destination ===
-                "style" ||
-
-            destination ===
-                "manifest"
+            destination === "script" ||
+            destination === "style" ||
+            destination === "manifest"
         ) {
 
             event.respondWith(
+                fetch(event.request)
+                    .then(async response => {
 
-                fetch(
-                    event.request
-                )
-
-                    .then(
-                        async response => {
-
-                            /*
-                                Only cache valid successful
-                                responses.
-                            */
-
-                            if (
-                                !response ||
-                                !response.ok
-                            ) {
-
-                                return response;
-
-                            }
-
-
-                            const cache =
-                                await caches.open(
-                                    CACHE_NAME
-                                );
-
-
-                            /*
-                                Cache the exact online request.
-
-                                Example:
-                                ./js/nav.js?v=7
-                            */
-
-                            await cache.put(
-                                event.request,
-                                response.clone()
-                            );
-
-
+                        if (
+                            !response ||
+                            !response.ok
+                        ) {
                             return response;
-
                         }
-                    )
 
-
-                    /* -------------------------------------
-                       OFFLINE FALLBACK
-
-                       ignoreSearch means:
-                       nav.js?v=7 can use cached nav.js
-                       ------------------------------------- */
-
-                    .catch(
-                        () => {
-
-                            return matchCachedRequest(
-                                event.request
+                        const cache =
+                            await caches.open(
+                                CACHE_NAME
                             );
 
-                        }
-                    )
+                        await cache.put(
+                            event.request,
+                            response.clone()
+                        );
 
+                        return response;
+                    })
+                    .catch(
+                        () =>
+                            matchCachedRequest(
+                                event.request
+                            )
+                    )
             );
 
-
             return;
-
         }
-
 
 
         /* =================================================
@@ -426,63 +275,37 @@ self.addEventListener(
            ================================================= */
 
         event.respondWith(
+            matchCachedRequest(event.request)
+                .then(cachedResponse => {
 
-            matchCachedRequest(
-                event.request
-            )
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
 
-                .then(
-                    cachedResponse => {
+                    return fetch(event.request)
+                        .then(async response => {
 
+                            if (
+                                !response ||
+                                !response.ok
+                            ) {
+                                return response;
+                            }
 
-                        if (
-                            cachedResponse
-                        ) {
+                            const cache =
+                                await caches.open(
+                                    CACHE_NAME
+                                );
 
-                            return cachedResponse;
-
-                        }
-
-
-                        return fetch(
-                            event.request
-                        )
-
-                            .then(
-                                async response => {
-
-                                    if (
-                                        !response ||
-                                        !response.ok
-                                    ) {
-
-                                        return response;
-
-                                    }
-
-
-                                    const cache =
-                                        await caches.open(
-                                            CACHE_NAME
-                                        );
-
-
-                                    await cache.put(
-                                        event.request,
-                                        response.clone()
-                                    );
-
-
-                                    return response;
-
-                                }
+                            await cache.put(
+                                event.request,
+                                response.clone()
                             );
 
-                    }
-                )
-
+                            return response;
+                        });
+                })
         );
-
     }
 );
 

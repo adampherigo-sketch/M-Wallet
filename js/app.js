@@ -910,7 +910,7 @@ const BudgetApp = {
                         return `
                             <tr>
 
-                                <td>
+                                <td data-label="Income">
                                     <strong>
                                         ${this.escapeHTML(
                                             item.source ||
@@ -920,20 +920,20 @@ const BudgetApp = {
                                     </strong>
                                 </td>
 
-                                <td>
+                                <td data-label="Date">
                                     ${this.formatDate(
                                         item.date
                                     )}
                                 </td>
 
-                                <td>
+                                <td data-label="Type">
                                     ${this.escapeHTML(
                                         item.category ||
                                         "Other Income"
                                     )}
                                 </td>
 
-                                <td>
+                                <td data-label="Frequency">
                                     ${this.escapeHTML(
                                         this.formatIncomeFrequency(
                                             item
@@ -941,13 +941,13 @@ const BudgetApp = {
                                     )}
                                 </td>
 
-                                <td class="money-positive">
+                                <td data-label="Amount" class="money-positive">
                                     ${this.formatCurrency(
                                         item.amount
                                     )}
                                 </td>
 
-                                <td>
+                                <td data-label="Actions">
 
                                     <div class="income-actions">
 
@@ -1094,7 +1094,7 @@ const BudgetApp = {
                         return `
                             <tr>
 
-                                <td>
+                                <td data-label="Expense">
 
                                     <strong>
                                         ${this.escapeHTML(
@@ -1117,34 +1117,34 @@ const BudgetApp = {
 
                                 </td>
 
-                                <td>
+                                <td data-label="Date">
                                     ${this.formatDate(
                                         expense.date
                                     )}
                                 </td>
 
-                                <td>
+                                <td data-label="Merchant">
                                     ${this.escapeHTML(
                                         expense.merchant ||
                                         "—"
                                     )}
                                 </td>
 
-                                <td>
+                                <td data-label="Category">
                                     ${this.escapeHTML(
                                         expense.category ||
                                         "Other"
                                     )}
                                 </td>
 
-                                <td>
+                                <td data-label="Subcategory">
                                     ${this.escapeHTML(
                                         expense.subcategory ||
                                         "—"
                                     )}
                                 </td>
 
-                                <td>
+                                <td data-label="Frequency">
                                     ${this.escapeHTML(
                                         this.formatExpenseFrequency(
                                             expense
@@ -1152,13 +1152,13 @@ const BudgetApp = {
                                     )}
                                 </td>
 
-                                <td class="money-negative">
+                                <td data-label="Amount" class="money-negative">
                                     ${this.formatCurrency(
                                         expense.amount
                                     )}
                                 </td>
 
-                                <td>
+                                <td data-label="Actions">
 
                                     <div class="expense-actions">
 
@@ -1372,11 +1372,23 @@ const BudgetApp = {
                         );
 
 
+                    const scheduleLabel =
+                        bill.recurring
+                            ? (
+                                bill.endDate
+                                    ? `Monthly · Ends ${this.formatDate(
+                                        bill.endDate
+                                    )}`
+                                    : "Monthly"
+                            )
+                            : "One-time";
+
+
                     return `
 
                         <tr>
 
-                            <td>
+                            <td data-label="Bill">
 
                                 <strong>
                                     ${this.escapeHTML(
@@ -1388,7 +1400,7 @@ const BudgetApp = {
                             </td>
 
 
-                            <td>
+                            <td data-label="Due">
 
                                 ${this.formatDate(
                                     bill.dueDate
@@ -1397,7 +1409,7 @@ const BudgetApp = {
                             </td>
 
 
-                            <td>
+                            <td data-label="Category">
 
                                 ${this.escapeHTML(
                                     bill.category ||
@@ -1407,7 +1419,7 @@ const BudgetApp = {
                             </td>
 
 
-                            <td class="money-negative">
+                            <td data-label="Amount" class="money-negative">
 
                                 ${this.formatCurrency(
                                     bill.amount
@@ -1416,7 +1428,7 @@ const BudgetApp = {
                             </td>
 
 
-                            <td>
+                            <td data-label="Status">
 
                                 <span class="
                                     bill-status
@@ -1434,16 +1446,18 @@ const BudgetApp = {
                             </td>
 
 
-                            <td>
+                            <td data-label="Schedule">
 
-                                ${bill.recurring
-                                    ? "Yes"
-                                    : "No"}
+                                <span class="bill-schedule">
+                                    ${this.escapeHTML(
+                                        scheduleLabel
+                                    )}
+                                </span>
 
                             </td>
 
 
-                            <td>
+                            <td data-label="Actions">
 
                                 <div class="income-actions bill-actions">
 
@@ -2174,7 +2188,7 @@ const BudgetApp = {
                                     class="savings-action-button allocate"
                                     data-savings-allocate="${goalId}"
                                 >
-                                    + Allocate
+                                    + Add Funds
                                 </button>
 
                                 <button
@@ -2187,7 +2201,7 @@ const BudgetApp = {
                                             : ""
                                     }
                                 >
-                                    ↩ Return
+                                    ↩ Return Funds
                                 </button>
 
                                 <button

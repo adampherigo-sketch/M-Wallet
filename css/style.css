@@ -4,6 +4,7 @@
    Reports + Savings Upgrade
    UI Cleanup 1: Simplified Navigation + Quick Add
    UI Cleanup 2: Cleaner Dashboard + Activity
+   Final UI Cleanup: Responsive Budget + Savings + Settings
    ========================================================= */
 
 
@@ -1395,6 +1396,92 @@ tbody tr:last-child td {
 
 
 /* =========================================================
+   FINAL BUDGET CLEANUP
+   ========================================================= */
+
+#budget-page .page-heading {
+    margin-bottom: 18px;
+}
+
+#budget-page .budget-block {
+    margin-bottom: 16px;
+
+    border-radius: var(--radius-lg);
+}
+
+#budget-page .budget-block .section-header {
+    margin-bottom: 15px;
+}
+
+#budget-page .budget-block .section-header > div {
+    min-width: 0;
+}
+
+#budget-page .budget-block .summary-card {
+    background: #ffffff;
+}
+
+#budget-page .add-button {
+    flex-shrink: 0;
+
+    min-width: 68px;
+}
+
+#budget-page .amount-display {
+    border: 1px solid rgba(36, 92, 66, 0.12);
+}
+
+#bill-list table {
+    min-width: 850px;
+}
+
+.bill-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 28px;
+
+    padding: 5px 9px;
+
+    border-radius: 999px;
+
+    font-size: 0.72rem;
+    font-weight: 780;
+
+    white-space: nowrap;
+}
+
+.bill-status.paid {
+    background: var(--success-soft);
+
+    color: var(--success);
+}
+
+.bill-status.unpaid {
+    background: var(--gold-soft);
+
+    color: #765f2f;
+}
+
+.bill-schedule {
+    display: inline-block;
+
+    max-width: 180px;
+
+    color: var(--muted);
+
+    font-size: 0.76rem;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.bill-actions {
+    flex-wrap: wrap;
+}
+
+
+/* =========================================================
    22. SAVINGS SYSTEM
    ========================================================= */
 
@@ -1620,7 +1707,7 @@ tbody tr:last-child td {
     display: grid;
     grid-template-columns:
         repeat(
-            4,
+            3,
             minmax(0, 1fr)
         );
 
@@ -3456,6 +3543,29 @@ input[type="date"] {
 }
 
 
+/* ---------------------------------------------------------
+   Final Settings Cleanup
+   --------------------------------------------------------- */
+
+#settings-page .page-heading {
+    margin-bottom: 18px;
+}
+
+#settings-page .settings-section {
+    margin-bottom: 16px;
+}
+
+#settings-page .danger-settings-item .settings-item-content strong,
+#settings-page .danger-settings-item .settings-item-arrow {
+    color: var(--danger);
+}
+
+#settings-page .danger-settings-item:hover .settings-item-content strong,
+#settings-page .danger-settings-item:hover .settings-item-arrow {
+    color: var(--danger-dark);
+}
+
+
 /* =========================================================
    31. PWA INSTALL
    ========================================================= */
@@ -4049,6 +4159,163 @@ textarea:focus-visible {
     }
 
 
+    /* Budget Tables -> Mobile Cards */
+
+    #budget-page .table-container {
+        width: 100%;
+
+        margin-right: 0;
+
+        overflow: visible;
+    }
+
+    #budget-page table,
+    #budget-page #income-list table,
+    #budget-page #bill-list table,
+    #budget-page #expense-list table {
+        min-width: 0;
+    }
+
+    #budget-page table,
+    #budget-page tbody,
+    #budget-page tr,
+    #budget-page td {
+        display: block;
+
+        width: 100%;
+    }
+
+    #budget-page thead {
+        position: absolute;
+
+        width: 1px;
+        height: 1px;
+
+        overflow: hidden;
+
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+
+        white-space: nowrap;
+    }
+
+    #budget-page tbody {
+        display: grid;
+
+        gap: 11px;
+    }
+
+    #budget-page tbody tr {
+        padding: 13px 14px;
+
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+
+        background: var(--surface-soft);
+
+        box-shadow:
+            0 2px 8px
+            rgba(20, 40, 30, 0.035);
+    }
+
+    #budget-page tbody tr:hover {
+        background: var(--surface-soft);
+    }
+
+    #budget-page tbody td {
+        display: grid;
+        grid-template-columns:
+            minmax(88px, 0.42fr)
+            minmax(0, 1fr);
+
+        align-items: start;
+
+        gap: 10px;
+
+        padding: 7px 0;
+
+        border-bottom: 1px solid rgba(221, 217, 207, 0.7);
+
+        font-size: 0.82rem;
+    }
+
+    #budget-page tbody td:last-child {
+        width: 100%;
+
+        padding-bottom: 0;
+
+        border-bottom: none;
+    }
+
+    #budget-page tbody td::before {
+        content: attr(data-label);
+
+        color: var(--muted);
+
+        font-size: 0.68rem;
+        font-weight: 800;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.05em;
+    }
+
+    #budget-page tbody td[data-label="Income"],
+    #budget-page tbody td[data-label="Bill"],
+    #budget-page tbody td[data-label="Expense"] {
+        padding-top: 0;
+    }
+
+    #budget-page tbody td[data-label="Income"] strong,
+    #budget-page tbody td[data-label="Bill"] strong,
+    #budget-page tbody td[data-label="Expense"] strong {
+        color: var(--green-dark);
+
+        font-size: 0.9rem;
+    }
+
+    #budget-page .income-actions,
+    #budget-page .expense-actions,
+    #budget-page .bill-actions {
+        display: grid;
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        gap: 7px;
+
+        width: 100%;
+
+        white-space: normal;
+    }
+
+    #budget-page .bill-actions {
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(0, 1fr)
+            );
+    }
+
+    #budget-page .income-actions .text-button,
+    #budget-page .expense-actions .text-button,
+    #budget-page .bill-actions .text-button {
+        width: 100%;
+
+        min-height: 38px;
+
+        padding: 7px 8px;
+
+        font-size: 0.7rem;
+    }
+
+    #budget-page .table-note {
+        max-width: none;
+    }
+
+
     /* Tables */
 
     .table-container {
@@ -4439,6 +4706,23 @@ textarea:focus-visible {
     }
 
 
+    /* Budget Cards */
+
+    #budget-page tbody td {
+        grid-template-columns: 1fr;
+
+        gap: 4px;
+    }
+
+    #budget-page .bill-actions {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    #budget-page .bill-actions .text-button:first-child {
+        grid-column: 1 / -1;
+    }
+
+
     /* Reports */
 
     .report-range-fields {
@@ -4570,7 +4854,7 @@ textarea:focus-visible {
     .savings-quick-actions {
         grid-template-columns:
             repeat(
-                2,
+                3,
                 minmax(0, 1fr)
             );
     }
@@ -4598,6 +4882,10 @@ textarea:focus-visible {
         grid-template-columns: 1fr 1fr;
 
         gap: 10px;
+    }
+
+    .savings-quick-action.goal {
+        grid-column: 1 / -1;
     }
 
     .savings-quick-action {
@@ -4660,6 +4948,10 @@ textarea:focus-visible {
 
     .savings-quick-actions {
         grid-template-columns: 1fr;
+    }
+
+    .savings-quick-action.goal {
+        grid-column: auto;
     }
 
     .savings-quick-action {

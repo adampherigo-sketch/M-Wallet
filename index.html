@@ -82,7 +82,7 @@
 
     <link
         rel="stylesheet"
-        href="./css/style.css?v=7"
+        href="./css/style.css?v=8"
     >
 
     <link
@@ -798,9 +798,17 @@
 
                     <div class="section-header">
 
-                        <h3>
-                            Monthly Bills
-                        </h3>
+                        <div>
+
+                            <h3>
+                                Monthly Bills
+                            </h3>
+
+                            <p>
+                                Track one-time and recurring bills due this month.
+                            </p>
+
+                        </div>
 
 
                         <button
@@ -931,20 +939,10 @@
                         </h2>
 
                         <p>
-                            Your money movement for the selected month.
+                            Your money movement for the selected month. Use Add when you need to record a manual transaction.
                         </p>
 
                     </div>
-
-
-                    <button
-                        class="primary-button"
-                        id="add-transaction-button"
-                        type="button"
-                        data-money-action="transaction"
-                    >
-                        + Transaction
-                    </button>
 
                 </div>
 
@@ -1086,7 +1084,7 @@
                             </h3>
 
                             <p>
-                                Move money between Checking, General Savings, and your funds.
+                                Move money between Checking and General Savings, or create a new savings fund.
                             </p>
 
                         </div>
@@ -1148,30 +1146,6 @@
                         </button>
 
 
-
-                        <button
-                            type="button"
-                            class="savings-quick-action allocate"
-                            data-money-action="savings-allocation"
-                        >
-
-                            <span class="savings-quick-action-icon">
-                                ⇢
-                            </span>
-
-                            <span>
-
-                                <strong>
-                                    Allocate
-                                </strong>
-
-                                <small>
-                                    General Savings → Fund
-                                </small>
-
-                            </span>
-
-                        </button>
 
 
 
@@ -1856,8 +1830,12 @@
                     <div class="settings-section-heading">
 
                         <h3>
-                            Data Management
+                            Data & Backup
                         </h3>
+
+                        <p>
+                            Export a copy of your M-Wallet data or reset the app when you intentionally want a fresh start.
+                        </p>
 
                     </div>
 
@@ -1867,7 +1845,23 @@
                         class="settings-item"
                         id="export-data"
                     >
-                        Export M-Wallet Data
+
+                        <span class="settings-item-content">
+
+                            <strong>
+                                Export M-Wallet Data
+                            </strong>
+
+                            <small>
+                                Save a JSON backup of the data currently stored in M-Wallet.
+                            </small>
+
+                        </span>
+
+                        <span class="settings-item-arrow" aria-hidden="true">
+                            ↓
+                        </span>
+
                     </button>
 
 
@@ -1876,7 +1870,23 @@
                         class="settings-item danger-settings-item"
                         id="clear-data"
                     >
-                        Reset M-Wallet Data
+
+                        <span class="settings-item-content">
+
+                            <strong>
+                                Reset M-Wallet Data
+                            </strong>
+
+                            <small>
+                                Permanently clear the data stored by this M-Wallet installation.
+                            </small>
+
+                        </span>
+
+                        <span class="settings-item-arrow" aria-hidden="true">
+                            ×
+                        </span>
+
                     </button>
 
                 </section>
@@ -2314,7 +2324,7 @@
 
     <!-- ========================================
          JAVASCRIPT
-         UI CLEANUP 2 CACHE VERSION
+         FINAL UI CLEANUP CACHE VERSION
     ========================================= -->
 
     <script src="./js/storage.js?v=6"></script>
@@ -2327,7 +2337,7 @@
 
     <script src="./js/m-cash/cash.js?v=2"></script>
 
-    <script src="./js/app.js?v=7"></script>
+    <script src="./js/app.js?v=8"></script>
 
     <script src="./js/money.js?v=6"></script>
 
