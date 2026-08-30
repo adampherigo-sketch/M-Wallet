@@ -374,6 +374,542 @@ const BudgetApp = {
         this.renderDashboardSavings(
             snapshot
         );
+
+
+        /* ZG2 — Zevaryn Grid dashboard modules.
+           Display-only; each derives from existing snapshot /
+           storage state. No financial logic is added here. */
+
+        this.renderDashboardPeriodLabel();
+
+        this.renderDashboardOverview(
+            snapshot
+        );
+
+        this.renderDashboardBudget(
+            snapshot
+        );
+
+        this.renderDashboardBillsSummary(
+            snapshot
+        );
+
+        this.renderDashboardRecent(
+            snapshot
+        );
+    },
+
+
+    /* =====================================================
+       6a. ZG2 — DASHBOARD PERIOD LABEL
+       ===================================================== */
+
+    renderDashboardPeriodLabel() {
+
+        const label =
+            document.getElementById(
+                "dashboard-period-label"
+            );
+
+        const title =
+            document.getElementById(
+                "current-month"
+            );
+
+        if (
+            !label ||
+            !title
+        ) {
+            return;
+        }
+
+        const text =
+            String(
+                title.textContent || ""
+            ).trim();
+
+        label.textContent =
+            text || "the selected month";
+    },
+
+
+    /* =====================================================
+       6b. ZG2 — M-CASH WALLET TOTAL
+       Derives from the existing stored cash wallet. Returns a
+       dollar amount (number). Safe when M-Cash is unavailable.
+       ===================================================== */
+
+    getMCashTotal() {
+
+        const storage =
+            this.getStorage();
+
+        const cashStorage =
+            window.MCashStorage;
+
+        if (
+            !storage ||
+            !cashStorage ||
+            typeof storage.getCashWallet !== "function" ||
+            typeof cashStorage.calculateTotalCashCents !== "function"
+        ) {
+            return 0;
+        }
+
+        try {
+
+            const wallet =
+                storage.getCashWallet();
+
+            const cents =
+                cashStorage.calculateTotalCashCents(
+                    wallet
+                );
+
+            return (
+                Number(cents) || 0
+            ) / 100;
+
+        }
+        catch (error) {
+
+            return 0;
+        }
+    },
+
+
+    /* =====================================================
+       6c. ZG2 — TOTAL BALANCE + ACCOUNT GRID
+       ===================================================== */
+
+    renderDashboardOverview(snapshot) {
+
+        const storage =
+            this.getStorage();
+
+        const summary =
+            snapshot.summary || {};
+
+
+        const checking =
+            Number(
+                summary.endingBalance
+            ) || 0;
+
+
+        const savings =
+            typeof storage?.getTotalSavingsBalance === "function"
+                ? (
+                    Number(
+                        storage.getTotalSavingsBalance()
+                    ) || 0
+                )
+                : (
+                    Number(
+                        snapshot.totalSavingsBalance
+                    ) || 0
+                );
+
+
+        const mcash =
+            this.getMCashTotal();
+
+
+        this.setMoneyText(
+            "dashboard-total-balance",
+            checking + savings + mcash
+        );
+
+        this.setMoneyText(
+            "dashboard-savings-balance",
+            savings
+        );
+
+        this.setMoneyText(
+            "dashboard-mcash-balance",
+            mcash
+        );
+
+
+        const totalSub =
+            document.getElementById(
+                "dashboard-total-sub"
+            );
+
+        if (totalSub) {
+
+            totalSub.innerHTML = `
+                Checking <strong>${this.escapeHTML(
+                    this.formatCurrency(checking)
+                )}</strong>
+                &nbsp;·&nbsp;
+                Savings <strong>${this.escapeHTML(
+                    this.formatCurrency(savings)
+                )}</strong>
+                &nbsp;·&nbsp;
+                M-Cash <strong>${this.escapeHTML(
+                    this.formatCurrency(mcash)
+                )}</strong>
+            `;
+        }
+
+
+        const savingsMeta =
+            document.getElementById(
+                "dashboard-savings-meta"
+            );
+
+        if (savingsMeta) {
+
+            const goals =
+                Array.isArray(
+                    snapshot.savingsGoals
+                )
+                    ? snapshot.savingsGoals
+                    : [];
+
+            savingsMeta.textContent =
+                goals.length === 0
+                    ? "General savings"
+                    : (
+                        goals.length === 1
+                            ? "1 savings fund"
+                            : `${goals.length} savings funds`
+                    );
+        }
+    },
+
+
+    /* =====================================================
+       6d. ZG2 — MONTHLY BUDGET SNAPSHOT
+       income = monthly income · spent = bills + expenses
+       ===================================================== */
+
+    renderDashboardBudget(snapshot) {
+
+        const body =
+            document.getElementById(
+                "dashboard-budget-body"
+            );
+
+        const card =
+            document.getElementById(
+                "dashboard-budget"
+            );
+
+        if (!body) {
+            return;
+        }
+
+
+        const summary =
+            snapshot.summary || {};
+
+
+        const income =
+            Number(summary.income) || 0;
+
+        const spent =
+            (Number(summary.bills) || 0) +
+            (Number(summary.expenses) || 0);
+
+
+        if (card) {
+            card.classList.remove(
+                "zg-budget--over"
+            );
+        }
+
+
+        if (income <= 0) {
+
+            body.innerHTML = `
+                <p class="empty-message">
+                    Add income to see your monthly budget.
+                </p>
+            `;
+
+            return;
+        }
+
+
+        const remaining =
+            income - spent;
+
+        const rawPercent =
+            (spent / income) * 100;
+
+        const fillPercent =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    rawPercent
+                )
+            );
+
+        const overBudget =
+            spent > income;
+
+
+        if (
+            card &&
+            overBudget
+        ) {
+            card.classList.add(
+                "zg-budget--over"
+            );
+        }
+
+
+        const footRight =
+            overBudget
+                ? `<strong>${this.escapeHTML(
+                    this.formatCurrency(
+                        Math.abs(remaining)
+                    )
+                )}</strong> over budget`
+                : `<strong>${this.escapeHTML(
+                    this.formatCurrency(remaining)
+                )}</strong> remaining`;
+
+
+        const barClass =
+            overBudget
+                ? "z-progress-bar z-progress-bar--warning"
+                : "z-progress-bar z-progress-bar--teal";
+
+
+        body.innerHTML = `
+            <div class="zg-budget-figure">
+                <span class="zg-budget-pct">${Math.round(rawPercent)}%</span>
+                <span class="zg-budget-of">
+                    ${this.escapeHTML(
+                        this.formatCurrency(spent)
+                    )}
+                    of
+                    ${this.escapeHTML(
+                        this.formatCurrency(income)
+                    )}
+                </span>
+            </div>
+
+            <div
+                class="z-progress"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="${Math.round(fillPercent)}"
+            >
+                <div
+                    class="${barClass}"
+                    style="width: ${fillPercent}%"
+                ></div>
+            </div>
+
+            <p class="zg-budget-foot">
+                <span>Spent this month</span>
+                <span>${footRight}</span>
+            </p>
+        `;
+    },
+
+
+    /* =====================================================
+       6e. ZG2 — BILLS DUE SUMMARY
+       Aggregates the same unpaid bills the list already shows.
+       ===================================================== */
+
+    renderDashboardBillsSummary(snapshot) {
+
+        const element =
+            document.getElementById(
+                "dashboard-bills-summary"
+            );
+
+        if (!element) {
+            return;
+        }
+
+
+        const unpaid =
+            (Array.isArray(snapshot.bills)
+                ? snapshot.bills
+                : []
+            ).filter(
+                bill => !bill.paid
+            );
+
+
+        if (unpaid.length === 0) {
+
+            /* The list container already shows a single
+               "No upcoming bills." empty state — keep one voice. */
+            element.hidden = true;
+            element.textContent = "";
+
+            return;
+        }
+
+        element.hidden = false;
+
+
+        const total =
+            unpaid.reduce(
+                (sum, bill) =>
+                    sum +
+                    Math.abs(
+                        Number(bill.amount) || 0
+                    ),
+                0
+            );
+
+
+        const countText =
+            unpaid.length === 1
+                ? "1 bill due"
+                : `${unpaid.length} bills due`;
+
+
+        element.innerHTML = `
+            ${this.escapeHTML(countText)}
+            &nbsp;·&nbsp;
+            <strong>${this.escapeHTML(
+                this.formatCurrency(total)
+            )}</strong> total
+        `;
+    },
+
+
+    /* =====================================================
+       6f. ZG2 — RECENT TRANSACTIONS
+       Same ledger + row markup as the Activity page, capped.
+       ===================================================== */
+
+    renderDashboardRecent(snapshot) {
+
+        const container =
+            document.getElementById(
+                "dashboard-recent-transactions"
+            );
+
+        if (!container) {
+            return;
+        }
+
+
+        const transactions =
+            (Array.isArray(snapshot.transactions)
+                ? [...snapshot.transactions]
+                : []
+            ).sort(
+                (first, second) => {
+
+                    const dateOrder =
+                        this.compareDates(
+                            second.date,
+                            first.date
+                        );
+
+                    if (dateOrder !== 0) {
+                        return dateOrder;
+                    }
+
+                    return String(
+                        second.createdAt || ""
+                    ).localeCompare(
+                        String(
+                            first.createdAt || ""
+                        )
+                    );
+                }
+            ).slice(0, 5);
+
+
+        if (transactions.length === 0) {
+
+            container.innerHTML = `
+                <p class="empty-message">
+                    No recent transactions yet.
+                </p>
+            `;
+
+            return;
+        }
+
+
+        container.innerHTML =
+            transactions.map(
+                transaction => {
+
+                    const amount =
+                        Number(
+                            transaction.amount
+                        ) || 0;
+
+                    const isIncome =
+                        amount >= 0;
+
+                    const icon =
+                        this.getTransactionIcon(
+                            transaction
+                        );
+
+                    const subtitle =
+                        this.getTransactionSubtitle(
+                            transaction
+                        );
+
+
+                    return `
+                        <article class="transaction-item">
+
+                            <div class="transaction-icon">
+                                ${icon}
+                            </div>
+
+                            <div class="transaction-info">
+
+                                <strong>
+                                    ${this.escapeHTML(
+                                        transaction.description ||
+                                        transaction.name ||
+                                        "Transaction"
+                                    )}
+                                </strong>
+
+                                <span>
+                                    ${this.escapeHTML(
+                                        subtitle
+                                    )}
+                                    ${
+                                        transaction.date
+                                            ? ` · ${this.formatDate(
+                                                transaction.date
+                                            )}`
+                                            : ""
+                                    }
+                                </span>
+
+                            </div>
+
+                            <div class="
+                                transaction-amount
+                                ${
+                                    isIncome
+                                        ? "income"
+                                        : "expense"
+                                }
+                            ">
+                                ${this.formatSignedCurrency(
+                                    amount
+                                )}
+                            </div>
+
+                        </article>
+                    `;
+                }
+            ).join("");
     },
 
 
@@ -694,46 +1230,110 @@ const BudgetApp = {
 
 
         /*
-            Keep the Dashboard focused on the answer:
+            ZG2 — Zevaryn snapshot.
 
-            "How much do I have saved?"
-
-            Detailed goal cards and savings controls belong
-            on the Savings page instead of being repeated
-            here.
+            Detailed goal cards and savings controls stay on the
+            Savings page. Here we surface the one answer the
+            account card can't: progress on the fund closest to
+            being funded.
         */
 
+        const trackedGoals =
+            goals
+                .map(goal => {
+
+                    const targetAmount =
+                        Number(goal.targetAmount) || 0;
+
+                    const currentAmount =
+                        Number(goal.currentAmount) || 0;
+
+                    return {
+                        goal,
+                        targetAmount,
+                        currentAmount,
+                        ratio:
+                            targetAmount > 0
+                                ? currentAmount / targetAmount
+                                : 0
+                    };
+                })
+                .filter(
+                    entry =>
+                        entry.targetAmount > 0 &&
+                        entry.currentAmount < entry.targetAmount
+                )
+                .sort(
+                    (a, b) => b.ratio - a.ratio
+                );
+
+
+        if (trackedGoals.length === 0) {
+
+            container.innerHTML = `
+                <div class="zg-snap-line">
+                    <span>Total saved</span>
+                    <strong>${this.escapeHTML(
+                        this.formatCurrency(totalSavings)
+                    )}</strong>
+                </div>
+                <p class="zg-snap-note">
+                    ${
+                        goals.length === 0
+                            ? "General savings only — add a fund to start tracking goals."
+                            : "Every savings fund is fully funded."
+                    }
+                </p>
+            `;
+
+            return;
+        }
+
+
+        const top =
+            trackedGoals[0];
+
+        const percent =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    top.ratio * 100
+                )
+            );
+
+
         container.innerHTML = `
-            <article class="info-card">
+            <div class="zg-snap-line">
+                <span>Next fund · ${this.escapeHTML(
+                    top.goal.name || "Savings Fund"
+                )}</span>
+                <strong>${Math.round(percent)}%</strong>
+            </div>
 
-                <div>
+            <div
+                class="z-progress"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="${Math.round(percent)}"
+            >
+                <div
+                    class="z-progress-bar z-progress-bar--teal"
+                    style="width: ${percent}%"
+                ></div>
+            </div>
 
-                    <span>
-                        Total Savings
-                    </span>
-
-                    <strong>
-                        ${this.formatCurrency(
-                            totalSavings
-                        )}
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span>
-                        Savings Funds
-                    </span>
-
-                    <strong>
-                        ${goals.length}
-                    </strong>
-
-                </div>
-
-            </article>
+            <div class="zg-snap-sub">
+                <span>${this.escapeHTML(
+                    this.formatCurrency(top.currentAmount)
+                )} of ${this.escapeHTML(
+                    this.formatCurrency(top.targetAmount)
+                )}</span>
+                <span>${this.escapeHTML(
+                    this.formatCurrency(totalSavings)
+                )} total saved</span>
+            </div>
         `;
     },
 

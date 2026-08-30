@@ -39,7 +39,7 @@
 
     <meta
         name="theme-color"
-        content="#163b2b"
+        content="#0b0e14"
     >
 
     <meta
@@ -90,6 +90,30 @@
         href="./css/m-cash.css?v=2"
     >
 
+
+    <!-- =====================================================
+         ZEVARYN GRID  ·  GLOBAL DESIGN FOUNDATION (ZG1)
+         Loaded last so its token re-map + patches win the
+         cascade over the legacy theme.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/zevaryn-grid.css?v=1"
+    >
+
+
+    <!-- =====================================================
+         ZEVARYN GRID  ·  DASHBOARD (ZG2)
+         Page-specific styling for #home-page. Builds on the
+         ZG1 token system + .z-* primitives.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/dashboard.css?v=1"
+    >
+
 </head>
 
 
@@ -125,9 +149,17 @@
                             class="header-logo"
                         >
 
-                        <p class="header-label">
-                            M-Wallet
-                        </p>
+                        <span class="header-brand-text">
+
+                            <span class="header-label">
+                                M-Wallet
+                            </span>
+
+                            <span class="header-system-label">
+                                Zevaryn Systems
+                            </span>
+
+                        </span>
 
                     </div>
 
@@ -295,16 +327,21 @@
             >
 
 
-                <div class="page-heading">
+                <div class="page-heading zg-dash-heading">
 
                     <div>
+
+                        <span class="z-eyebrow">
+                            M-Wallet / Dashboard
+                        </span>
 
                         <h2>
                             Dashboard
                         </h2>
 
                         <p>
-                            Your money at a glance for the selected month.
+                            Your financial overview for
+                            <span id="dashboard-period-label">the selected month</span>.
                         </p>
 
                     </div>
@@ -312,316 +349,358 @@
                 </div>
 
 
+                <div class="zg-dash">
 
-                <!-- Main Checking Balance -->
 
-                <section class="balance-card">
+                    <!-- ============================
+                         1. TOTAL BALANCE
+                    ============================= -->
 
-                    <p>
-                        Current Checking Balance
-                    </p>
-
-
-                    <h2 id="checking-balance">
-                        $0.00
-                    </h2>
-
-
-                    <div class="balance-details">
-
-
-                        <div>
-
-                            <span>
-                                Monthly Remaining
-                            </span>
-
-                            <strong id="monthly-remaining">
-                                $0.00
-                            </strong>
-
-                        </div>
-
-
-                        <div>
-
-                            <span>
-                                Monthly Savings
-                            </span>
-
-                            <strong id="monthly-savings">
-                                $0.00
-                            </strong>
-
-                        </div>
-
-
-                    </div>
-
-                </section>
-
-
-
-                <!-- Monthly Summary -->
-
-                <section class="dashboard-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Monthly Summary
-                            </h3>
-
-                            <p>
-                                The key numbers for this month.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="summary-grid">
-
-
-                        <article class="summary-card">
-
-                            <span>
-                                Income
-                            </span>
-
-                            <strong id="total-income">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                        <article class="summary-card">
-
-                            <span>
-                                Bills
-                            </span>
-
-                            <strong id="total-bills">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                        <article class="summary-card">
-
-                            <span>
-                                Expenses
-                            </span>
-
-                            <strong id="total-expenses">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                        <article class="summary-card">
-
-                            <span>
-                                Savings
-                            </span>
-
-                            <strong id="total-savings">
-                                $0.00
-                            </strong>
-
-                        </article>
-
-
-                    </div>
-
-                </section>
-
-
-
-                <!-- Upcoming Bills -->
-
-                <section class="dashboard-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Upcoming Bills
-                            </h3>
-
-                            <p>
-                                Your next unpaid bills for this month.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="list-container"
-                        id="upcoming-bills"
+                    <section
+                        class="zg-card zg-total"
+                        aria-labelledby="zg-total-label"
                     >
 
-                        <p class="empty-message">
-                            No upcoming bills.
+                        <span class="z-eyebrow" id="zg-total-label">
+                            Total Balance
+                        </span>
+
+                        <p class="zg-total-value" id="dashboard-total-balance">
+                            $0.00
                         </p>
 
-                    </div>
-
-                </section>
-
-
-
-                <!-- Next Income -->
-
-                <section class="dashboard-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Next Income
-                            </h3>
-
-                            <p>
-                                The next expected income in this month.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <article class="info-card">
-
-                        <div>
-
-                            <span>
-                                Expected Date
-                            </span>
-
-                            <strong id="next-pay-date">
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div>
-
-                            <span>
-                                Expected Amount
-                            </span>
-
-                            <strong id="next-pay-amount">
-                                $0.00
-                            </strong>
-
-                        </div>
-
-                    </article>
-
-                </section>
-
-
-
-                <!-- Savings Overview -->
-
-                <section class="dashboard-section">
-
-                    <div class="section-header">
-
-                        <div>
-
-                            <h3>
-                                Savings
-                            </h3>
-
-                            <p>
-                                A quick look at your savings position.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="list-container"
-                        id="savings-overview"
-                    >
-
-                        <p class="empty-message">
-                            No savings yet.
+                        <p class="zg-total-sub" id="dashboard-total-sub">
+                            Across your Checking, Savings and M-Cash balances.
                         </p>
 
+                    </section>
+
+
+                    <!-- ============================
+                         2. ACCOUNT SUMMARY GRID
+                    ============================= -->
+
+                    <div class="zg-accounts">
+
+
+                        <button
+                            type="button"
+                            class="zg-account zg-account--checking"
+                            data-page="budget"
+                            aria-label="Open Budget"
+                        >
+
+                            <span class="zg-account-top">
+
+                                <span class="zg-account-icon" aria-hidden="true">
+                                    &#9703;
+                                </span>
+
+                                <span class="zg-account-label z-eyebrow">
+                                    Checking
+                                </span>
+
+                            </span>
+
+                            <span class="zg-account-value" id="checking-balance">
+                                $0.00
+                            </span>
+
+                            <span class="zg-account-meta">
+                                <strong id="monthly-remaining">$0.00</strong> remaining
+                                &middot;
+                                <strong id="monthly-savings">$0.00</strong> saved
+                            </span>
+
+                            <span class="zg-account-cta" aria-hidden="true">
+                                View Budget &rsaquo;
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="zg-account zg-account--savings"
+                            data-page="savings"
+                            aria-label="Open Savings"
+                        >
+
+                            <span class="zg-account-top">
+
+                                <span class="zg-account-icon" aria-hidden="true">
+                                    &#9672;
+                                </span>
+
+                                <span class="zg-account-label z-eyebrow">
+                                    Savings
+                                </span>
+
+                            </span>
+
+                            <span class="zg-account-value" id="dashboard-savings-balance">
+                                $0.00
+                            </span>
+
+                            <span class="zg-account-meta" id="dashboard-savings-meta">
+                                General savings &amp; funds
+                            </span>
+
+                            <span class="zg-account-cta" aria-hidden="true">
+                                View Savings &rsaquo;
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="zg-account zg-account--mcash"
+                            data-page="m-cash"
+                            aria-label="Open M-Cash"
+                        >
+
+                            <span class="zg-account-top">
+
+                                <span class="zg-account-icon" aria-hidden="true">
+                                    &#9635;
+                                </span>
+
+                                <span class="zg-account-label z-eyebrow">
+                                    M-Cash
+                                </span>
+
+                            </span>
+
+                            <span class="zg-account-value" id="dashboard-mcash-balance">
+                                $0.00
+                            </span>
+
+                            <span class="zg-account-meta">
+                                Physical cash tracked
+                            </span>
+
+                            <span class="zg-account-cta" aria-hidden="true">
+                                Open M-Cash &rsaquo;
+                            </span>
+
+                        </button>
+
                     </div>
 
-                </section>
+
+                    <!-- ============================
+                         3. BUDGET + BILLS ROW
+                    ============================= -->
+
+                    <div class="zg-row-2">
 
 
+                        <section
+                            class="zg-card zg-budget"
+                            id="dashboard-budget"
+                            aria-labelledby="zg-budget-label"
+                        >
 
-                <!-- M-Cash -->
+                            <div class="zg-card-head">
 
-                <section class="dashboard-section m-cash-home-entry">
+                                <span class="z-eyebrow" id="zg-budget-label">
+                                    Monthly Budget
+                                </span>
 
-                    <div class="section-header">
+                                <button
+                                    type="button"
+                                    class="zg-card-link"
+                                    data-page="budget"
+                                >
+                                    View Budget &rsaquo;
+                                </button>
 
-                        <div>
+                            </div>
 
-                            <h3>
-                                M-Cash
-                            </h3>
+                            <div id="dashboard-budget-body">
 
-                            <p>
-                                Track the physical cash in your wallet.
+                                <p class="empty-message">
+                                    Add income to see your monthly budget.
+                                </p>
+
+                            </div>
+
+                        </section>
+
+
+                        <section
+                            class="zg-card zg-bills"
+                            aria-labelledby="zg-bills-label"
+                        >
+
+                            <div class="zg-card-head">
+
+                                <span class="z-eyebrow" id="zg-bills-label">
+                                    Bills Due
+                                </span>
+
+                                <button
+                                    type="button"
+                                    class="zg-card-link"
+                                    data-page="budget"
+                                >
+                                    View Bills &rsaquo;
+                                </button>
+
+                            </div>
+
+                            <p class="zg-bills-summary" id="dashboard-bills-summary">
+                                No upcoming bills.
+                            </p>
+
+                            <div
+                                class="list-container"
+                                id="upcoming-bills"
+                            >
+
+                                <p class="empty-message">
+                                    No upcoming bills.
+                                </p>
+
+                            </div>
+
+                        </section>
+
+                    </div>
+
+
+                    <!-- ============================
+                         4. RECENT TRANSACTIONS
+                    ============================= -->
+
+                    <section
+                        class="zg-card zg-recent"
+                        aria-labelledby="zg-recent-label"
+                    >
+
+                        <div class="zg-card-head">
+
+                            <span class="z-eyebrow" id="zg-recent-label">
+                                Recent Transactions
+                            </span>
+
+                            <button
+                                type="button"
+                                class="zg-card-link"
+                                data-page="transactions"
+                            >
+                                View All &rsaquo;
+                            </button>
+
+                        </div>
+
+                        <div
+                            class="list-container"
+                            id="dashboard-recent-transactions"
+                        >
+
+                            <p class="empty-message">
+                                No recent transactions yet.
                             </p>
 
                         </div>
 
-                    </div>
+                    </section>
 
 
-                    <button
-                        type="button"
-                        class="money-action-card"
-                        data-page="m-cash"
+                    <!-- ============================
+                         5. THIS MONTH
+                    ============================= -->
+
+                    <section
+                        class="zg-card zg-this-month"
+                        aria-labelledby="zg-month-label"
                     >
 
-                        <span class="money-action-icon" aria-hidden="true">
-                            $
-                        </span>
+                        <div class="zg-card-head">
+
+                            <span class="z-eyebrow" id="zg-month-label">
+                                This Month
+                            </span>
+
+                        </div>
+
+                        <div class="zg-stat-grid">
+
+                            <article class="zg-stat zg-stat--income">
+                                <span>Income</span>
+                                <strong id="total-income">$0.00</strong>
+                            </article>
+
+                            <article class="zg-stat zg-stat--bills">
+                                <span>Bills</span>
+                                <strong id="total-bills">$0.00</strong>
+                            </article>
+
+                            <article class="zg-stat zg-stat--expenses">
+                                <span>Expenses</span>
+                                <strong id="total-expenses">$0.00</strong>
+                            </article>
+
+                            <article class="zg-stat zg-stat--savings">
+                                <span>Savings</span>
+                                <strong id="total-savings">$0.00</strong>
+                            </article>
+
+                        </div>
+
+                        <p class="zg-month-foot">
+                            <span>
+                                Next income
+                                <strong id="next-pay-amount">$0.00</strong>
+                            </span>
+                            <span>
+                                Expected
+                                <strong id="next-pay-date">&mdash;</strong>
+                            </span>
+                        </p>
+
+                    </section>
 
 
-                        <span class="money-action-content">
+                    <!-- ============================
+                         6. SAVINGS SNAPSHOT
+                    ============================= -->
 
-                            <strong>
-                                Cash Wallet
-                            </strong>
+                    <section
+                        class="zg-card zg-savings-snap"
+                        aria-labelledby="zg-snap-label"
+                    >
 
-                            <small>
-                                View your cash balance, denominations, and M-Cash tools.
-                            </small>
+                        <div class="zg-card-head">
 
-                        </span>
+                            <span class="z-eyebrow" id="zg-snap-label">
+                                Savings Snapshot
+                            </span>
+
+                            <button
+                                type="button"
+                                class="zg-card-link"
+                                data-page="savings"
+                            >
+                                Open &rsaquo;
+                            </button>
+
+                        </div>
+
+                        <div id="savings-overview">
+
+                            <p class="empty-message">
+                                No savings yet.
+                            </p>
+
+                        </div>
+
+                    </section>
 
 
-                        <span class="money-action-arrow" aria-hidden="true">
-                            ›
-                        </span>
-
-                    </button>
-
-                </section>
+                </div>
 
 
             </section>

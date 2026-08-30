@@ -1,0 +1,1523 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   ZG1 — Global Design Foundation
+   Zevaryn Systems
+
+   Modular. Intelligent. Yours.
+
+   This file is loaded AFTER css/style.css and css/m-cash.css.
+   It re-skins M-Wallet into the Zevaryn Grid design language by:
+
+     1. Defining the Zevaryn token system (--z-*).
+     2. Re-mapping the existing legacy tokens (--bg, --surface,
+        --charcoal, ...) onto Zevaryn values so the entire app
+        inherits the dark / violet / teal identity automatically.
+     3. Patching the handful of places that used hard-coded
+        light colours instead of tokens.
+     4. Providing reusable Zevaryn components (.z-card, .z-grid,
+        .z-btn, .z-input, .z-badge, .z-progress, ...) for the
+        later page-specific phases.
+
+   No financial / business logic is touched. No IDs or data-*
+   attributes are changed. Selectors mirror the originals so the
+   cascade — not !important — resolves the override.
+   ========================================================= */
+
+
+/* =========================================================
+   1. ZEVARYN TOKEN SYSTEM
+   ========================================================= */
+
+:root {
+
+    /* Surfaces */
+    --z-bg: #080a0f;
+    --z-bg-secondary: #0d1017;
+
+    --z-panel: #11151d;
+    --z-panel-hover: #151a24;
+    --z-panel-soft: rgba(17, 21, 29, 0.82);
+
+    /* Lines */
+    --z-border: #252b37;
+    --z-border-soft: rgba(255, 255, 255, 0.08);
+    --z-border-strong: #333c4c;
+
+    /* Text */
+    --z-text: #f4f6fb;
+    --z-text-secondary: #9da6b5;
+    --z-text-muted: #687182;
+
+    /* Violet — primary accent */
+    --z-violet: #9b5cff;
+    --z-violet-bright: #b67aff;
+    --z-violet-soft: rgba(155, 92, 255, 0.15);
+
+    /* Teal — secondary accent */
+    --z-teal: #35dfc1;
+    --z-teal-bright: #5fe9d2;
+    --z-teal-soft: rgba(53, 223, 193, 0.14);
+
+    /* Financial / status */
+    --z-success: #42dfa8;
+    --z-danger: #ff6577;
+    --z-danger-bright: #ff8a97;
+    --z-warning: #f5be62;
+
+    /* Radii */
+    --z-radius-sm: 10px;
+    --z-radius-md: 14px;
+    --z-radius-lg: 18px;
+    --z-radius-xl: 24px;
+
+    /* Depth */
+    --z-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --z-shadow-md: 0 14px 40px rgba(0, 0, 0, 0.46);
+    --z-shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.6);
+
+    /* Restrained glow — selected / important elements only */
+    --z-glow-violet:
+        0 0 0 1px rgba(155, 92, 255, 0.35),
+        0 0 26px rgba(155, 92, 255, 0.22);
+
+    --z-grid-line: rgba(255, 255, 255, 0.018);
+}
+
+
+/* =========================================================
+   2. LEGACY TOKEN RE-MAP
+   The existing stylesheet is almost entirely token-driven.
+   Re-pointing those tokens cascades the new identity through
+   every screen without editing style.css.
+   ========================================================= */
+
+:root {
+
+    color-scheme: dark;
+
+    --bg: var(--z-bg);
+    --surface: var(--z-panel);
+    --surface-soft: var(--z-panel-hover);
+
+    /* --green-dark drove primary actions + strong accents  → violet
+       --green drove hover / "brighter" states              → violet-bright */
+    --green-dark: var(--z-violet);
+    --green: var(--z-violet-bright);
+    --green-light: rgba(155, 92, 255, 0.30);
+    --green-soft: rgba(155, 92, 255, 0.12);
+
+    /* --gold was the warm secondary → teal */
+    --gold: var(--z-teal);
+    --gold-soft: var(--z-teal-soft);
+
+    /* --purple was the tertiary accent → keep in the violet family */
+    --purple: var(--z-violet-bright);
+    --purple-soft: rgba(155, 92, 255, 0.16);
+
+    --charcoal: var(--z-text);
+    --text: #e9edf5;
+    --muted: var(--z-text-secondary);
+    --border: var(--z-border);
+
+    --danger: var(--z-danger);
+    --danger-dark: var(--z-danger-bright);
+    --danger-soft: rgba(255, 101, 119, 0.16);
+
+    --success: var(--z-success);
+    --success-soft: rgba(66, 223, 168, 0.15);
+
+    --shadow-sm: var(--z-shadow-sm);
+    --shadow-md: var(--z-shadow-md);
+    --shadow-lg: var(--z-shadow-lg);
+
+    --radius-sm: var(--z-radius-sm);
+    --radius-md: var(--z-radius-md);
+    --radius-lg: var(--z-radius-lg);
+    --radius-xl: var(--z-radius-xl);
+}
+
+
+/* =========================================================
+   3. APP BACKGROUND — SUBTLE ZEVARYN GRID TEXTURE
+   ========================================================= */
+
+html {
+    background: var(--z-bg);
+}
+
+body {
+    color: var(--text);
+
+    background:
+        linear-gradient(
+            var(--z-grid-line) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            var(--z-grid-line) 1px,
+            transparent 1px
+        ),
+        radial-gradient(
+            circle at 82% -10%,
+            rgba(155, 92, 255, 0.10),
+            transparent 45%
+        ),
+        radial-gradient(
+            circle at 0% 8%,
+            rgba(53, 223, 193, 0.05),
+            transparent 40%
+        ),
+        var(--z-bg);
+
+    background-size:
+        28px 28px,
+        28px 28px,
+        100% 100%,
+        100% 100%,
+        100% 100%;
+
+    /* grid scrolls with content — avoids iOS / PWA fixed-attachment repaint jank */
+    background-attachment: scroll;
+}
+
+
+/* Selection */
+
+::selection {
+    background: rgba(155, 92, 255, 0.32);
+    color: #ffffff;
+}
+
+
+/* Native form controls / date pickers follow the dark scheme */
+
+input[type="date"] {
+    color-scheme: dark;
+}
+
+
+/* Scrollbar */
+
+::-webkit-scrollbar-track {
+    background: var(--z-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    border: 2px solid var(--z-bg);
+    background: #2c3442;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--z-violet);
+}
+
+
+/* Visible focus ring — violet, stronger than the legacy 0.2 alpha */
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   4. GLOBAL HEADER
+   ========================================================= */
+
+.app-header {
+    background: rgba(8, 10, 15, 0.82);
+    border-bottom: 1px solid var(--z-border);
+}
+
+.header-brand {
+    align-items: center;
+}
+
+/* Wordmark + system label stack (see index.html .header-brand-text) */
+
+.header-brand-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 2px;
+
+    line-height: 1;
+}
+
+.header-logo {
+    border-radius: 7px;
+    border: 1px solid var(--z-border-soft);
+}
+
+.header-label {
+    /* keep the legacy responsive sizing; only restyle colour + tracking */
+    color: var(--z-text);
+    letter-spacing: 0.14em;
+}
+
+.header-system-label {
+    display: block;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.56rem;
+    font-weight: 700;
+
+    line-height: 1;
+
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+
+    white-space: nowrap;
+}
+
+.month-arrow:hover {
+    background: var(--z-violet-soft);
+    border-color: var(--z-border-strong);
+}
+
+.report-type-select {
+    color: var(--z-text);
+}
+
+.current-month-title {
+    color: var(--z-text);
+}
+
+
+/* =========================================================
+   5. BOTTOM NAVIGATION
+   Dark graphite surface · thin top border · violet active
+   ========================================================= */
+
+.bottom-nav {
+    background: rgba(13, 16, 23, 0.9);
+
+    border-color: var(--z-border);
+    border-bottom: none;
+
+    box-shadow:
+        0 -10px 34px
+        rgba(0, 0, 0, 0.5);
+}
+
+.bottom-nav::after {
+    background: #0d1017;
+}
+
+.nav-button:hover {
+    color: var(--z-text);
+    background: var(--z-violet-soft);
+}
+
+.nav-button.active {
+    color: var(--z-violet-bright);
+    background: var(--z-violet-soft);
+}
+
+.nav-button[data-quick-add-toggle] .nav-icon {
+    border-color: #0b0e14;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--z-violet),
+            var(--z-violet-bright)
+        );
+
+    box-shadow:
+        0 8px 22px
+        rgba(155, 92, 255, 0.35);
+}
+
+.nav-button[data-quick-add-toggle]:hover .nav-icon {
+    box-shadow:
+        0 11px 26px
+        rgba(155, 92, 255, 0.42);
+}
+
+.nav-button[data-quick-add-toggle][aria-expanded="true"] .nav-icon {
+    background:
+        linear-gradient(
+            135deg,
+            var(--z-violet-bright),
+            #c98cff
+        );
+}
+
+.nav-button[data-quick-add-toggle] > span:last-child {
+    color: var(--z-text-secondary);
+}
+
+/* Mobile: active pill + center action */
+
+@media (max-width: 600px) {
+
+    .nav-button.active:not([data-quick-add-toggle]) > span:last-child {
+        color: var(--z-violet-bright);
+    }
+
+    .nav-button.active:not([data-quick-add-toggle]) .nav-icon {
+        background: var(--z-violet-soft);
+        color: var(--z-violet-bright);
+    }
+
+    .nav-button[data-quick-add-toggle] .nav-icon {
+        box-shadow:
+            0 7px 18px
+            rgba(155, 92, 255, 0.32);
+    }
+}
+
+
+/* =========================================================
+   6. CARD / PANEL SURFACES
+   Patch the rules that hard-coded #ffffff gradients so every
+   modular card reads as a Zevaryn panel.
+   ========================================================= */
+
+.dashboard-section,
+.budget-block,
+.settings-section,
+.money-management-section,
+.savings-actions-section,
+.report-section,
+#transactions-page .transaction-list {
+    border-color: var(--z-border);
+    background: var(--z-panel);
+}
+
+.money-action-card,
+.savings-quick-action,
+.savings-goal-card,
+.report-control-card,
+.report-breakdown-item,
+#home-page .summary-card,
+#home-page .m-cash-home-entry .money-action-card,
+#budget-page .budget-block .summary-card {
+    border-color: var(--z-border);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(21, 26, 36, 0.96),
+            rgba(13, 16, 23, 0.96)
+        );
+}
+
+.summary-card,
+.report-summary-card {
+    border-color: var(--z-border);
+    background: var(--z-panel);
+}
+
+.summary-card:nth-child(2) {
+    border-top-color: var(--z-text-secondary);
+}
+
+.report-summary-card.net {
+    background:
+        linear-gradient(
+            160deg,
+            rgba(155, 92, 255, 0.12),
+            rgba(13, 16, 23, 0.96)
+        );
+}
+
+.savings-goal-card:hover,
+.money-action-card:hover,
+.savings-quick-action:hover {
+    border-color: var(--z-border-strong);
+    background:
+        linear-gradient(
+            180deg,
+            rgba(25, 31, 43, 0.98),
+            rgba(16, 20, 29, 0.98)
+        );
+    box-shadow: var(--z-shadow-md);
+}
+
+.savings-quick-action:hover {
+    background: var(--z-violet-soft);
+}
+
+.savings-goal-card.completed {
+    border-color: rgba(66, 223, 168, 0.32);
+    background:
+        linear-gradient(
+            160deg,
+            rgba(66, 223, 168, 0.14),
+            rgba(13, 16, 23, 0.96)
+        );
+}
+
+.savings-goal-card.completed::before {
+    background: var(--z-success);
+}
+
+.savings-form-context {
+    border-color: rgba(155, 92, 255, 0.22);
+    background:
+        linear-gradient(
+            160deg,
+            rgba(155, 92, 255, 0.12),
+            rgba(13, 16, 23, 0.9)
+        );
+}
+
+.install-app-button {
+    border-color: rgba(155, 92, 255, 0.24);
+    background:
+        linear-gradient(
+            135deg,
+            rgba(155, 92, 255, 0.14),
+            rgba(13, 16, 23, 0.9)
+        );
+}
+
+.app-installed-message {
+    border-color: rgba(66, 223, 168, 0.24);
+}
+
+.amount-display,
+.report-period-summary {
+    border: 1px solid var(--z-border) !important;
+    background: var(--z-violet-soft);
+}
+
+.settings-item {
+    border-color: var(--z-border);
+    background: var(--z-panel-hover);
+}
+
+.settings-item:hover {
+    background: var(--z-violet-soft);
+    border-color: var(--z-border-strong);
+}
+
+.danger-settings-item:hover {
+    background: rgba(255, 101, 119, 0.14);
+    border-color: rgba(255, 101, 119, 0.28);
+}
+
+.report-control-card::before {
+    background:
+        linear-gradient(
+            90deg,
+            var(--z-violet),
+            var(--z-teal),
+            var(--z-violet-bright)
+        );
+}
+
+/* Mobile budget "table → card" rows */
+
+@media (max-width: 600px) {
+
+    #budget-page tbody tr {
+        border-color: var(--z-border);
+        background: var(--z-panel-hover);
+    }
+
+    #budget-page tbody tr:hover {
+        background: var(--z-panel-hover);
+    }
+
+    #budget-page tbody td {
+        border-bottom-color: var(--z-border-soft);
+    }
+}
+
+
+/* =========================================================
+   7. FEATURE BALANCE CARDS
+   ========================================================= */
+
+/* Dashboard — checking balance (violet identity) */
+
+.balance-card {
+    border: 1px solid rgba(155, 92, 255, 0.28);
+
+    background:
+        radial-gradient(
+            circle at 88% 6%,
+            rgba(53, 223, 193, 0.16),
+            transparent 42%
+        ),
+        linear-gradient(
+            135deg,
+            #1b1240,
+            #241a5c 48%,
+            #10131d
+        );
+
+    box-shadow:
+        var(--z-shadow-md),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.balance-card::after {
+    color: rgba(155, 92, 255, 0.10);
+}
+
+
+/* Savings — general savings balance (teal identity) */
+
+.savings-balance-card {
+    border: 1px solid rgba(53, 223, 193, 0.24);
+
+    background:
+        radial-gradient(
+            circle at 90% 6%,
+            rgba(53, 223, 193, 0.20),
+            transparent 40%
+        ),
+        linear-gradient(
+            135deg,
+            #06231f,
+            #0a3630 55%,
+            #0c1c1a
+        );
+
+    box-shadow:
+        var(--z-shadow-md),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.savings-balance-card::after {
+    color: rgba(53, 223, 193, 0.07);
+}
+
+.savings-balance-stat.total {
+    border-color: rgba(53, 223, 193, 0.4);
+    background: rgba(53, 223, 193, 0.12);
+}
+
+.savings-balance-stat.total span {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.savings-balance-stat.total strong {
+    color: var(--z-teal-bright);
+}
+
+
+/* =========================================================
+   8. PROGRESS BARS
+   Dark track · violet / teal fill · rounded ends
+   ========================================================= */
+
+.savings-progress,
+.report-overview-track,
+.report-breakdown-track {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.savings-progress-bar,
+.report-breakdown-fill {
+    background:
+        linear-gradient(
+            90deg,
+            var(--z-violet),
+            var(--z-teal)
+        );
+}
+
+.savings-goal-card.completed .savings-progress-bar {
+    background:
+        linear-gradient(
+            90deg,
+            var(--z-success),
+            var(--z-teal-bright)
+        );
+}
+
+.report-overview-fill.income {
+    background:
+        linear-gradient(90deg, var(--z-success), var(--z-teal));
+}
+
+.report-overview-fill.bills {
+    background:
+        linear-gradient(90deg, var(--z-warning), #ffd68a);
+}
+
+.report-overview-fill.expenses {
+    background:
+        linear-gradient(90deg, var(--z-danger), var(--z-danger-bright));
+}
+
+.report-overview-fill.savings {
+    background:
+        linear-gradient(90deg, var(--z-violet), var(--z-violet-bright));
+}
+
+
+/* =========================================================
+   9. FORMS
+   Dark field · thin border · muted placeholder · violet ring
+   ========================================================= */
+
+input,
+select,
+textarea {
+    background: var(--z-panel);
+    color: var(--text);
+    border-color: var(--z-border);
+}
+
+.money-modal input,
+.money-modal select,
+.money-modal textarea {
+    background: var(--z-panel-hover);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+    border-color: var(--z-border-strong);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--z-violet);
+    background: var(--z-panel);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(155, 92, 255, 0.14);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--z-text-muted);
+}
+
+.month-select,
+.year-select,
+.report-type-select,
+.report-field select {
+    background: var(--z-panel);
+}
+
+.form-group.checkbox,
+.checkbox-group {
+    border-color: var(--z-border);
+    background: var(--z-panel-hover);
+}
+
+.form-group.checkbox input[type="checkbox"],
+.checkbox-group input[type="checkbox"] {
+    accent-color: var(--z-violet);
+}
+
+.report-range-group {
+    border-color: var(--z-border);
+    background: var(--z-panel-hover);
+}
+
+.report-range-arrow {
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+}
+
+
+/* =========================================================
+   10. MODALS
+   ========================================================= */
+
+.money-modal-overlay {
+    background: rgba(4, 6, 10, 0.66);
+}
+
+.money-modal-content {
+    border: 1px solid var(--z-border);
+    background: var(--z-panel);
+    box-shadow: var(--z-shadow-lg);
+}
+
+.money-modal-header {
+    border-bottom: 1px solid var(--z-border);
+    background:
+        linear-gradient(
+            180deg,
+            var(--z-panel-hover),
+            var(--z-panel)
+        );
+}
+
+.money-modal-header h3 {
+    color: var(--z-text);
+}
+
+.money-modal-label {
+    color: var(--z-violet-bright);
+}
+
+.money-modal-close {
+    border: 1px solid rgba(255, 101, 119, 0.28);
+    background: rgba(255, 101, 119, 0.16);
+    color: var(--z-danger);
+}
+
+.money-modal-close:hover {
+    background: var(--z-danger);
+    color: #ffffff;
+}
+
+.money-modal-status {
+    color: var(--z-success);
+}
+
+.money-modal-status.error {
+    color: var(--z-danger);
+}
+
+.money-modal-actions {
+    border-top: 1px solid var(--z-border);
+    background: var(--z-panel-hover);
+}
+
+.money-undo-button {
+    border: 1px solid var(--z-border);
+    background: var(--z-panel);
+    color: var(--z-text);
+}
+
+.money-undo-button:hover {
+    background: var(--z-violet-soft);
+    border-color: var(--z-border-strong);
+}
+
+.money-save-button {
+    background:
+        linear-gradient(
+            135deg,
+            var(--z-violet),
+            var(--z-violet-bright)
+        );
+    color: #ffffff;
+    box-shadow:
+        0 6px 18px
+        rgba(155, 92, 255, 0.3);
+}
+
+.money-save-button:hover {
+    background:
+        linear-gradient(
+            135deg,
+            var(--z-violet-bright),
+            #c98cff
+        );
+}
+
+
+/* =========================================================
+   11. BUTTONS  (legacy classes, Zevaryn skin)
+   ========================================================= */
+
+.primary-button {
+    background: var(--z-violet);
+    color: #ffffff;
+    box-shadow:
+        0 6px 18px
+        rgba(155, 92, 255, 0.28);
+}
+
+.primary-button:hover {
+    background: var(--z-violet-bright);
+}
+
+.secondary-button {
+    border: 1px solid var(--z-border);
+    background: var(--z-panel-hover);
+    color: var(--z-text);
+}
+
+.secondary-button:hover {
+    background: var(--z-violet-soft);
+    border-color: var(--z-border-strong);
+}
+
+.add-button {
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+}
+
+.add-button:hover {
+    background: rgba(155, 92, 255, 0.22);
+}
+
+.text-button {
+    color: var(--z-violet-bright);
+}
+
+.text-button:hover {
+    color: #ffffff;
+}
+
+.today-button {
+    background: var(--z-violet);
+    color: #ffffff;
+}
+
+.today-button:hover {
+    background: var(--z-violet-bright);
+}
+
+.header-button {
+    border: 1px solid var(--z-border);
+    background: var(--z-panel);
+    color: var(--z-violet-bright);
+}
+
+.header-button:hover {
+    background: var(--z-violet-soft);
+    border-color: var(--z-border-strong);
+}
+
+
+/* =========================================================
+   12. TEXT LEGIBILITY
+   Places where the legacy sheet coloured strong text with an
+   accent that no longer has enough contrast on a dark panel.
+   ========================================================= */
+
+.info-card strong,
+.amount-display strong,
+.report-period-summary strong,
+.savings-goal-title > strong,
+.savings-form-context strong,
+#budget-page tbody td[data-label="Income"] strong,
+#budget-page tbody td[data-label="Bill"] strong,
+#budget-page tbody td[data-label="Expense"] strong {
+    color: var(--z-text);
+}
+
+.amount-display span,
+.report-period-summary span,
+.section-header p,
+.settings-section-heading p,
+.page-heading p {
+    color: var(--z-text-secondary);
+}
+
+.report-range-label {
+    color: var(--z-text-secondary);
+}
+
+.report-summary-card.savings strong {
+    color: var(--z-violet-bright);
+}
+
+.report-summary-card.net strong {
+    color: var(--z-violet-bright);
+}
+
+.settings-item-arrow,
+.settings-item-content strong {
+    color: var(--z-text);
+}
+
+.danger-settings-item .settings-item-content strong,
+.danger-settings-item .settings-item-arrow,
+#settings-page .danger-settings-item .settings-item-content strong,
+#settings-page .danger-settings-item .settings-item-arrow {
+    color: var(--z-danger);
+}
+
+.transaction-icon {
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+}
+
+/* Dashboard savings overview split: savings = teal, cash = violet */
+
+#home-page #savings-overview .info-card div:first-child {
+    border-color: rgba(53, 223, 193, 0.2);
+    background: var(--z-teal-soft);
+}
+
+#home-page #savings-overview .info-card div:last-child {
+    border-color: rgba(155, 92, 255, 0.2);
+    background: var(--z-violet-soft);
+}
+
+
+/* =========================================================
+   13. TABLES / STATUS PILLS
+   ========================================================= */
+
+thead {
+    background: var(--z-panel-hover);
+    color: var(--z-text-secondary);
+}
+
+th,
+td {
+    border-bottom: 1px solid var(--z-border);
+}
+
+tbody tr:hover {
+    background: var(--z-violet-soft);
+}
+
+.bill-status.paid {
+    background: rgba(66, 223, 168, 0.15);
+    color: var(--z-success);
+}
+
+.bill-status.unpaid {
+    background: rgba(245, 190, 98, 0.16);
+    color: var(--z-warning);
+}
+
+.savings-action-button {
+    background: var(--z-violet-soft);
+    color: var(--z-text);
+}
+
+.savings-action-button.release {
+    background: rgba(245, 190, 98, 0.16);
+    color: var(--z-warning);
+}
+
+.savings-action-button.release:hover:not(:disabled) {
+    background: rgba(245, 190, 98, 0.26);
+    border-color: rgba(245, 190, 98, 0.4);
+}
+
+.savings-action-button.edit {
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+}
+
+.savings-action-button.edit:hover:not(:disabled) {
+    background: rgba(155, 92, 255, 0.24);
+    border-color: rgba(155, 92, 255, 0.4);
+}
+
+.savings-action-button.delete {
+    background: rgba(255, 101, 119, 0.16);
+    color: var(--z-danger);
+}
+
+.savings-action-button.delete:hover:not(:disabled) {
+    background: rgba(255, 101, 119, 0.26);
+    border-color: rgba(255, 101, 119, 0.4);
+    color: var(--z-danger-bright);
+}
+
+.savings-quick-action.withdraw .savings-quick-action-icon {
+    background: rgba(245, 190, 98, 0.16);
+    color: var(--z-warning);
+}
+
+.income-actions .text-button.money-negative,
+.expense-actions .text-button.money-negative {
+    background: rgba(255, 101, 119, 0.16);
+    color: var(--z-danger) !important;
+}
+
+.income-actions .text-button.money-negative:hover,
+.expense-actions .text-button.money-negative:hover {
+    background: rgba(255, 101, 119, 0.26);
+    color: var(--z-danger-bright) !important;
+}
+
+.savings-action-button.delete:hover:not(:disabled),
+.income-actions .text-button:hover,
+.expense-actions .text-button:hover {
+    color: var(--z-text);
+}
+
+.quick-add-modal .money-action-card:nth-child(1) .money-action-icon {
+    background: rgba(66, 223, 168, 0.15);
+    color: var(--z-success);
+}
+
+.quick-add-modal .money-action-card:nth-child(2) .money-action-icon {
+    background: rgba(245, 190, 98, 0.16);
+    color: var(--z-warning);
+}
+
+.quick-add-modal .money-action-card:nth-child(3) .money-action-icon {
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+}
+
+.quick-add-modal .money-action-card:nth-child(4) .money-action-icon {
+    background: var(--z-teal-soft);
+    color: var(--z-teal);
+}
+
+
+/* =========================================================
+   14. FINANCIAL COLOUR RULES
+   ========================================================= */
+
+.transaction-amount.income,
+.money-positive {
+    color: var(--z-success) !important;
+}
+
+.transaction-amount.expense,
+.money-negative {
+    color: var(--z-danger) !important;
+}
+
+.money-neutral {
+    color: var(--z-text) !important;
+}
+
+.gold-accent {
+    color: var(--z-teal);
+}
+
+.purple-accent {
+    color: var(--z-violet-bright);
+}
+
+
+/* =========================================================
+   15. ZEVARYN COMPONENT LIBRARY
+   Reusable primitives for the later page-specific phases.
+   Not yet wired to markup — established here as the shared
+   component language.
+   ========================================================= */
+
+/* ---- Card ---- */
+
+.z-card {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(18, 22, 31, 0.96),
+            rgba(12, 15, 22, 0.96)
+        );
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-lg);
+
+    box-shadow: var(--z-shadow-sm);
+}
+
+.z-card--pad {
+    padding: 20px;
+}
+
+.z-card--glow {
+    border-color: rgba(155, 92, 255, 0.4);
+    box-shadow: var(--z-glow-violet);
+}
+
+@media (hover: hover) {
+
+    .z-card--interactive {
+        transition:
+            transform var(--transition),
+            border-color var(--transition),
+            box-shadow var(--transition);
+    }
+
+    .z-card--interactive:hover {
+        transform: translateY(-2px);
+        border-color: var(--z-border-strong);
+        box-shadow: var(--z-shadow-md);
+    }
+}
+
+
+/* ---- Responsive grid ---- */
+
+.z-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.z-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.z-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.z-grid-auto {
+    grid-template-columns:
+        repeat(auto-fit, minmax(200px, 1fr));
+}
+
+@media (max-width: 899px) {
+
+    .z-grid-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 599px) {
+
+    .z-grid-2,
+    .z-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ---- Buttons ---- */
+
+.z-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    min-height: 44px;
+
+    padding: 11px 18px;
+
+    border: 1px solid transparent;
+    border-radius: 999px;
+
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition:
+        transform var(--transition),
+        background var(--transition),
+        border-color var(--transition),
+        box-shadow var(--transition),
+        color var(--transition);
+}
+
+.z-btn:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+.z-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.z-btn-primary {
+    background: var(--z-violet);
+    color: #ffffff;
+    box-shadow:
+        0 6px 18px
+        rgba(155, 92, 255, 0.26);
+}
+
+.z-btn-primary:hover:not(:disabled) {
+    background: var(--z-violet-bright);
+    transform: translateY(-1px);
+}
+
+.z-btn-secondary {
+    background: var(--z-panel-hover);
+    border-color: var(--z-border);
+    color: var(--z-text);
+}
+
+.z-btn-secondary:hover:not(:disabled) {
+    border-color: var(--z-border-strong);
+}
+
+.z-btn-positive {
+    background: var(--z-teal);
+    color: #04231d;
+}
+
+.z-btn-positive:hover:not(:disabled) {
+    background: var(--z-teal-bright);
+    transform: translateY(-1px);
+}
+
+.z-btn-danger {
+    background: rgba(255, 101, 119, 0.16);
+    border-color: rgba(255, 101, 119, 0.3);
+    color: var(--z-danger);
+}
+
+.z-btn-danger:hover:not(:disabled) {
+    background: rgba(255, 101, 119, 0.24);
+}
+
+
+/* ---- Form fields ---- */
+
+.z-field {
+    margin-bottom: 18px;
+}
+
+.z-label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--z-text);
+    font-size: 0.79rem;
+    font-weight: 700;
+}
+
+.z-input,
+.z-select,
+.z-textarea {
+    width: 100%;
+    padding: 12px 14px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-sm);
+
+    background: var(--z-panel);
+    color: var(--z-text);
+
+    font: inherit;
+    font-size: 0.95rem;
+
+    outline: none;
+
+    transition:
+        border-color var(--transition),
+        box-shadow var(--transition);
+}
+
+.z-input::placeholder,
+.z-textarea::placeholder {
+    color: var(--z-text-muted);
+}
+
+.z-input:focus,
+.z-select:focus,
+.z-textarea:focus {
+    border-color: var(--z-violet);
+    box-shadow:
+        0 0 0 3px
+        rgba(155, 92, 255, 0.12);
+}
+
+.z-help {
+    display: block;
+    margin-top: 6px;
+    color: var(--z-text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+.z-input-error {
+    border-color: var(--z-danger) !important;
+    box-shadow:
+        0 0 0 3px
+        rgba(255, 101, 119, 0.14) !important;
+}
+
+.z-input-valid {
+    border-color: var(--z-success) !important;
+}
+
+
+/* ---- Badges / status pills ---- */
+
+.z-badge {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 5px;
+
+    min-height: 22px;
+
+    padding: 3px 9px;
+
+    border: 1px solid var(--z-border-soft);
+    border-radius: 999px;
+
+    background: var(--z-panel-hover);
+    color: var(--z-text-secondary);
+
+    font-size: 0.68rem;
+    font-weight: 800;
+
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+
+    white-space: nowrap;
+}
+
+.z-badge-success {
+    background: rgba(66, 223, 168, 0.14);
+    color: var(--z-success);
+    border-color: rgba(66, 223, 168, 0.3);
+}
+
+.z-badge-danger {
+    background: rgba(255, 101, 119, 0.14);
+    color: var(--z-danger);
+    border-color: rgba(255, 101, 119, 0.3);
+}
+
+.z-badge-warning {
+    background: rgba(245, 190, 98, 0.14);
+    color: var(--z-warning);
+    border-color: rgba(245, 190, 98, 0.3);
+}
+
+.z-badge-violet {
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+    border-color: rgba(155, 92, 255, 0.35);
+}
+
+.z-badge-teal {
+    background: var(--z-teal-soft);
+    color: var(--z-teal);
+    border-color: rgba(53, 223, 193, 0.32);
+}
+
+
+/* ---- Progress ---- */
+
+.z-progress {
+    width: 100%;
+    height: 10px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.z-progress-bar {
+    height: 100%;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--z-violet),
+            var(--z-violet-bright)
+        );
+
+    transition: width 0.35s ease;
+}
+
+.z-progress-bar--teal {
+    background:
+        linear-gradient(
+            90deg,
+            var(--z-teal),
+            var(--z-teal-bright)
+        );
+}
+
+.z-progress-bar--warning {
+    background:
+        linear-gradient(
+            90deg,
+            var(--z-warning),
+            #ffd68a
+        );
+}
+
+
+/* ---- Page-header language + system / module labels ---- */
+
+.z-eyebrow,
+.z-system-label {
+    display: block;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.66rem;
+    font-weight: 800;
+
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.z-eyebrow--violet {
+    color: var(--z-violet-bright);
+}
+
+.z-eyebrow--teal {
+    color: var(--z-teal);
+}
+
+.z-page-title {
+    margin: 4px 0 6px;
+
+    color: var(--z-text);
+
+    font-size: clamp(1.55rem, 4vw, 2rem);
+    font-weight: 760;
+
+    letter-spacing: -0.01em;
+}
+
+.z-page-subtitle {
+    max-width: 620px;
+
+    color: var(--z-text-secondary);
+
+    line-height: 1.5;
+}
+
+
+/* ---- Modal foundation utility ---- */
+
+.z-modal-overlay {
+    position: absolute;
+    inset: 0;
+
+    background: rgba(4, 6, 10, 0.66);
+
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.z-modal-panel {
+    position: relative;
+    z-index: 1;
+
+    width: min(520px, 100%);
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-xl);
+
+    background: var(--z-panel);
+
+    box-shadow: var(--z-shadow-lg);
+}
+
+
+/* =========================================================
+   16. MOTION FOUNDATION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .z-btn,
+    .z-card--interactive,
+    .z-progress-bar,
+    .z-progress-bar--teal {
+        transition: none;
+    }
+}
+
+
+/* =========================================================
+   END ZEVARYN-GRID.CSS  ·  ZG1
+   ========================================================= */

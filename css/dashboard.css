@@ -1,0 +1,716 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   ZG2 — Dashboard / Home command center
+
+   Loaded after css/zevaryn-grid.css. Uses the ZG1 --z-* token
+   system and .z-* primitives. Page-specific only — nothing
+   here belongs to the global design system.
+
+   Scope: #home-page only. No financial logic. All values are
+   populated by BudgetApp.renderDashboard* from existing state.
+   ========================================================= */
+
+
+/* =========================================================
+   1. MODULAR GRID SHELL
+   ========================================================= */
+
+#home-page .zg-dash {
+    display: grid;
+    gap: 16px;
+
+    /* replaces the legacy stacked .dashboard-section rhythm */
+    margin-top: 4px;
+}
+
+#home-page .zg-dash-heading {
+    margin-bottom: 6px;
+}
+
+#home-page .zg-dash-heading .z-eyebrow {
+    margin-bottom: 8px;
+}
+
+
+/* Shared dashboard module surface */
+
+.zg-card {
+    position: relative;
+
+    padding: clamp(16px, 3vw, 22px);
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-lg);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(19, 24, 33, 0.96),
+            rgba(12, 15, 22, 0.96)
+        );
+
+    box-shadow: var(--z-shadow-sm);
+}
+
+.zg-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 12px;
+
+    margin-bottom: 14px;
+}
+
+.zg-card-link {
+    flex-shrink: 0;
+
+    padding: 2px 0;
+
+    border: 0;
+
+    background: none;
+
+    color: var(--z-violet-bright);
+
+    font: inherit;
+    font-size: 0.74rem;
+    font-weight: 750;
+
+    letter-spacing: 0.02em;
+
+    text-decoration: none;
+
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition: color var(--transition);
+}
+
+.zg-card-link:hover {
+    color: var(--z-text);
+}
+
+.zg-card-link:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+
+/* Two-up rows collapse to one column on small screens */
+
+.zg-row-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+
+/* =========================================================
+   2. TOTAL BALANCE — the dominant module
+   ========================================================= */
+
+.zg-total {
+    overflow: hidden;
+
+    padding: clamp(22px, 4vw, 34px);
+
+    border: 1px solid rgba(155, 92, 255, 0.30);
+
+    background:
+        radial-gradient(
+            circle at 86% 4%,
+            rgba(53, 223, 193, 0.16),
+            transparent 44%
+        ),
+        linear-gradient(
+            135deg,
+            #1b1240,
+            #241a5c 46%,
+            #10131d
+        );
+
+    box-shadow:
+        var(--z-shadow-md),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.zg-total::after {
+    content: "";
+
+    position: absolute;
+    right: -60px;
+    top: -60px;
+
+    width: 220px;
+    height: 220px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(155, 92, 255, 0.18),
+            transparent 70%
+        );
+
+    pointer-events: none;
+}
+
+.zg-total > * {
+    position: relative;
+    z-index: 1;
+}
+
+.zg-total .z-eyebrow {
+    color: rgba(255, 255, 255, 0.62);
+}
+
+.zg-total-value {
+    margin: 8px 0 10px;
+
+    min-width: 0;
+
+    color: #ffffff;
+
+    font-size: clamp(2.35rem, 9vw, 3.6rem);
+    font-weight: 780;
+
+    line-height: 1;
+    letter-spacing: -0.035em;
+
+    font-variant-numeric: tabular-nums;
+
+    overflow-wrap: anywhere;
+}
+
+.zg-total-sub {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+
+    color: rgba(255, 255, 255, 0.66);
+
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.zg-total-sub strong {
+    color: var(--z-teal-bright);
+    font-weight: 750;
+}
+
+
+/* =========================================================
+   3. ACCOUNT SUMMARY GRID
+   ========================================================= */
+
+.zg-accounts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.zg-account {
+    display: grid;
+    align-content: start;
+    gap: 7px;
+
+    width: 100%;
+
+    padding: 16px 16px 15px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-lg);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(21, 26, 36, 0.96),
+            rgba(13, 16, 23, 0.96)
+        );
+
+    color: var(--z-text);
+
+    text-align: left;
+
+    font: inherit;
+
+    cursor: pointer;
+
+    transition:
+        transform var(--transition),
+        border-color var(--transition),
+        box-shadow var(--transition),
+        background var(--transition);
+}
+
+.zg-account::before {
+    content: "";
+
+    display: block;
+
+    width: 34px;
+    height: 3px;
+
+    margin-bottom: 3px;
+
+    border-radius: 999px;
+
+    background: var(--z-border-strong);
+}
+
+.zg-account--checking::before,
+.zg-account--mcash::before {
+    background: var(--z-violet);
+}
+
+.zg-account--savings::before {
+    background: var(--z-teal);
+}
+
+@media (hover: hover) {
+
+    .zg-account:hover {
+        transform: translateY(-2px);
+        border-color: var(--z-border-strong);
+        box-shadow: var(--z-shadow-md);
+    }
+
+    .zg-account--savings:hover {
+        border-color: rgba(53, 223, 193, 0.4);
+    }
+
+    .zg-account--checking:hover,
+    .zg-account--mcash:hover {
+        border-color: rgba(155, 92, 255, 0.42);
+    }
+}
+
+.zg-account:active {
+    transform: translateY(0);
+}
+
+.zg-account-top {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.zg-account-icon {
+    display: grid;
+    place-items: center;
+
+    width: 30px;
+    height: 30px;
+
+    flex: 0 0 30px;
+
+    border-radius: 9px;
+
+    background: var(--z-violet-soft);
+    color: var(--z-violet-bright);
+
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.zg-account--savings .zg-account-icon {
+    background: var(--z-teal-soft);
+    color: var(--z-teal);
+}
+
+.zg-account-label {
+    color: var(--z-text-secondary);
+}
+
+.zg-account-value {
+    color: #ffffff;
+
+    font-size: clamp(1.3rem, 4.4vw, 1.62rem);
+    font-weight: 770;
+
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+
+    font-variant-numeric: tabular-nums;
+
+    overflow-wrap: anywhere;
+}
+
+.zg-account-meta {
+    color: var(--z-text-muted);
+
+    font-size: 0.73rem;
+    line-height: 1.4;
+}
+
+.zg-account-meta strong {
+    color: var(--z-text-secondary);
+    font-weight: 700;
+}
+
+.zg-account-cta {
+    margin-top: 3px;
+
+    color: var(--z-violet-bright);
+
+    font-size: 0.72rem;
+    font-weight: 750;
+
+    letter-spacing: 0.02em;
+}
+
+.zg-account--savings .zg-account-cta {
+    color: var(--z-teal);
+}
+
+
+/* =========================================================
+   4. MONTHLY BUDGET GAUGE
+   ========================================================= */
+
+.zg-budget-figure {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+
+    margin-bottom: 4px;
+}
+
+.zg-budget-pct {
+    color: #ffffff;
+
+    font-size: clamp(1.8rem, 6vw, 2.3rem);
+    font-weight: 780;
+
+    line-height: 1;
+    letter-spacing: -0.03em;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.zg-budget-of {
+    color: var(--z-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    overflow-wrap: anywhere;
+}
+
+.zg-budget .z-progress {
+    margin: 12px 0 10px;
+}
+
+.zg-budget-foot {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.75rem;
+    font-weight: 650;
+}
+
+.zg-budget-foot strong {
+    color: var(--z-text-secondary);
+    font-weight: 750;
+}
+
+.zg-budget--over .zg-budget-pct {
+    color: var(--z-warning);
+}
+
+.zg-budget--over .zg-budget-foot strong {
+    color: var(--z-warning);
+}
+
+
+/* =========================================================
+   5. BILLS DUE
+   ========================================================= */
+
+.zg-bills-summary {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+
+    margin-bottom: 4px;
+
+    color: var(--z-text-secondary);
+
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.zg-bills-summary strong {
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 770;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.zg-bills .list-container,
+.zg-recent .list-container {
+    margin-top: 6px;
+}
+
+/* tighten the reused .transaction-item rows inside dashboard modules */
+
+.zg-bills .transaction-item,
+.zg-recent .transaction-item {
+    gap: 12px;
+    padding: 11px 0;
+}
+
+.zg-bills .transaction-item:first-child,
+.zg-recent .transaction-item:first-child {
+    padding-top: 2px;
+}
+
+.zg-bills .transaction-item:last-child,
+.zg-recent .transaction-item:last-child {
+    padding-bottom: 0;
+}
+
+.zg-bills .transaction-icon,
+.zg-recent .transaction-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+}
+
+.zg-recent .transaction-info strong,
+.zg-bills .transaction-info strong {
+    font-size: 0.88rem;
+}
+
+.zg-recent .transaction-info span,
+.zg-bills .transaction-info span {
+    font-size: 0.72rem;
+}
+
+.zg-recent .transaction-amount,
+.zg-bills .transaction-amount {
+    font-size: 0.86rem;
+}
+
+.zg-card .empty-message {
+    padding: 18px 8px;
+    font-size: 0.82rem;
+}
+
+
+/* =========================================================
+   6. THIS MONTH — summary stat tiles + next income
+   ========================================================= */
+
+.zg-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+/* Full-width module — spread to a single row when there's space */
+
+@media (min-width: 620px) {
+
+    .zg-stat-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.zg-stat {
+    min-width: 0;
+
+    padding: 13px 13px 14px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background: var(--z-panel-hover);
+}
+
+.zg-stat span {
+    display: block;
+    margin-bottom: 6px;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.68rem;
+    font-weight: 750;
+
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.zg-stat strong {
+    display: block;
+
+    overflow: hidden;
+
+    color: var(--z-text);
+
+    font-size: clamp(0.92rem, 2.6vw, 1.02rem);
+    font-weight: 760;
+
+    line-height: 1.15;
+
+    font-variant-numeric: tabular-nums;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.zg-stat--income {
+    border-top: 2px solid var(--z-success);
+}
+
+.zg-stat--bills {
+    border-top: 2px solid var(--z-teal);
+}
+
+.zg-stat--expenses {
+    border-top: 2px solid var(--z-danger);
+}
+
+.zg-stat--savings {
+    border-top: 2px solid var(--z-violet-bright);
+}
+
+.zg-month-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+
+    margin-top: 14px;
+    padding-top: 13px;
+
+    border-top: 1px solid var(--z-border);
+
+    color: var(--z-text-muted);
+
+    font-size: 0.76rem;
+    font-weight: 650;
+}
+
+.zg-month-foot strong {
+    color: var(--z-text-secondary);
+    font-weight: 750;
+
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* =========================================================
+   7. SAVINGS SNAPSHOT
+   ========================================================= */
+
+.zg-snap-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+
+    margin-bottom: 10px;
+
+    color: var(--z-text-secondary);
+
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.zg-snap-line strong {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 780;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.zg-snap-sub {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+
+    margin-top: 9px;
+
+    color: var(--z-text-muted);
+
+    font-size: 0.73rem;
+    font-weight: 650;
+}
+
+.zg-snap-note {
+    color: var(--z-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+
+/* =========================================================
+   8. RESPONSIVE COMPOSITION
+   ========================================================= */
+
+/* Tablet — two-up module rows, 3-up accounts */
+
+@media (min-width: 620px) {
+
+    .zg-accounts {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 760px) {
+
+    .zg-row-2 {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
+/* Desktop — a touch more breathing room */
+
+@media (min-width: 1000px) {
+
+    #home-page .zg-dash {
+        gap: 18px;
+    }
+
+    .zg-row-2 {
+        gap: 18px;
+    }
+}
+
+/* Very small phones — keep account values from wrapping */
+
+@media (max-width: 380px) {
+
+    .zg-account-value {
+        font-size: 1.32rem;
+    }
+}
+
+
+/* Motion */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .zg-account {
+        transition: none;
+    }
+}
+
+
+/* =========================================================
+   END DASHBOARD.CSS  ·  ZG2
+   ========================================================= */
