@@ -11,6 +11,115 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP8 — Local-first sync engine (`0.9.0-beta.6` → `0.9.0-beta.7`)
+
+The complete synchronization engine that connects local `mWalletData` to the
+BP7 cloud `wallet_documents` store — **built but shipped OFF**. Live
+multi-device / conflict / offline verification is **deferred to BP12** and is a
+**hard release gate before BP13 closed beta**.
+
+**The committed build does not sync.** `MWalletSyncRelease.isEnabled()` is
+`false`, so the engine makes **zero** cloud requests: no bootstrap check, no
+upload, no download, no background timers, no online-event sync. A local save
+never depends on the cloud.
+
+- **Release gate** — new `js/sync/sync-release.js` (`window.MWalletSyncRelease`):
+  the single source of truth for whether sync is activated. Ships
+  `{ enabled: false, verificationPhase: "BP12" }`. Contains no credentials.
+  **No production enable path:** `setOverride` is present *only* when a test
+  harness set `window.__MWALLET_TEST_ENV__ = true` before the script loaded — a
+  normal browser build has no override, and there is no query-string,
+  localStorage, Settings, console, or hostname switch. BP12 flips `BASE.enabled`
+  itself after live verification.
+- **Mid-sync data-loss hardening** — the engine now re-reads and re-encodes the
+  current local state (and re-hashes each affected document) immediately before
+  applying any remote download / tombstone and before every outbound create /
+  update / tombstone. A local edit that lands during a cloud request is never
+  overwritten: the remote copy becomes a `local_changed_during_sync` conflict
+  and a stale outbound write is skipped (the document stays pending, the
+  baseline only ever reflects what was actually written). The bootstrap restore
+  is likewise aborted in favour of no-baseline reconciliation if the empty
+  workspace became meaningful during the cloud check.
+- **Local sync state** — new `js/sync/sync-state.js` (`window.MWalletSyncState`):
+  owner-bound metadata in `mwallet.sync.state.v1` — document identities, SHA-256
+  content hashes, cloud revisions, pending / conflict identities, timestamps,
+  bootstrap status. **Whitelist-validated before every write** (an unexpected
+  key or a non-primitive value is rejected), so a bug elsewhere cannot leak a
+  balance, transaction, note, or payload into this key. Bound to the Supabase
+  user id; a state written by user A is ignored when user B is signed in.
+- **Pure planner** — new `js/sync/sync-planner.js` (`window.MWalletSyncPlanner`):
+  a pure function that compares BASE × LOCAL × REMOTE per document and returns
+  `{ downloads, creates, updates, tombstones, baselineUpdates, conflicts,
+  ignored }`. No network, storage, DOM, input mutation, timestamp guessing, or
+  array merging. Conservative: same-document concurrent change with no shared
+  baseline → conflict; independent documents keep syncing.
+- **Sync engine** — new `js/sync/sync-engine.js` (`window.MWalletSync`): dirty
+  detection after a successful local save, cloud calls **only** through
+  `MWalletCloudFinancial`, optimistic concurrency by `revision`, a single
+  atomic remote apply (`storage.load` → `codec.applyDocuments` → one
+  `storage.save` → verify → one `BudgetApp.refresh`), bounded exponential
+  backoff, single-flight cycles, owner re-checks around every apply, and the
+  second-device cloud bootstrap. Never logs a payload / owner id / token;
+  `diagnostics()` exposes counts + safe codes only.
+- **Sync UI** — new `js/sync/sync-ui.js` (`window.MWalletSyncUI`): the
+  `#mw-sync-bootstrap` fresh-device gate (Retry / Continue Offline) and the
+  `#mw-sync-conflicts` review overlay ("Keep this device" / "Use cloud
+  version" / "Decide later", with human labels like "August 2026 budget" and an
+  explicit confirmation — never raw JSON, never an owner id). Both dormant while
+  release is off.
+- **Codec apply helpers** — `cloud-financial-codec.js` (`?v=2`): new **pure**
+  `applyDocument` / `removeDocument` / `applyDocuments` (the inverse of the BP7
+  encoding — preserve `version` + `migrations` and every unrelated slice, never
+  touch storage or the network), plus `canonicalStringify` /
+  `documentFingerprintInput` (order-independent hashing input) and
+  `DELETABLE_TYPES` (`month` only — singletons are required).
+- **Store** — `cloud-financial-store.js` (`?v=2`): new `duplicate_document`
+  error code; `23505` / "duplicate key" now maps to it (a normal first-sync
+  create race, not a generic write failure).
+- **Canonical save event** — `js/storage.js` (`?v=8`): `save()` now dispatches
+  one `mwallet:financial-saved` event (`detail: { source: "local" }`, no
+  payload) after a successful write. `load()`'s normalization re-save goes
+  through a new `saveSilently()` and does **not** emit. `save()` is unchanged
+  otherwise — still synchronous, still returns `true` / `false`.
+- **Gate order** — `js/auth/auth-ui.js` (`?v=6`): new fail-open `setBootstrapGuard`
+  / `setBootstrapScreenActive` / `bootstrapReleased` / `holdForBootstrap`,
+  inserted **between** BP4 ownership and BP5 setup. Holds only on an explicit
+  `{ release: false }`; a missing / throwing / never-loaded sync module always
+  releases. In the committed build (sync off) it always releases.
+- **BP5 coordination** — `js/setup/first-run-setup.js` (`?v=2`): also subscribes
+  to `MWalletSync` so a cloud-restored device is re-evaluated immediately and
+  recognised as `existing` (reusing BP5's own established-data detection — no
+  BP8-specific logic, no fake completion record).
+- **Settings** — `js/settings-ui.js` (`?v=9`): a read-only **Cloud Sync** row.
+  In the shipped build: *"Built — activation pending pre-beta verification"* /
+  *"Your financial data remains local on this device…"*. When release is on it
+  shows "Up to date" / "Syncing…" / "Offline — changes saved on this device" /
+  "N changes waiting" / "Needs attention — N conflicts" with a **Sync now** and
+  a **Review sync conflicts** control. Never says "Backed up".
+- **Version / cache** — `0.9.0-beta.6` → `0.9.0-beta.7`; `m-wallet-v26` →
+  `m-wallet-v27` (APP_SHELL adds the five `js/sync/` modules + `css/sync.css`).
+  New `css/sync.css`.
+- **Tests** — 118 new (`479` BP7 baseline → **`597` passing**; the first `+1`
+  to an intermediate `480` was a new `bp7-no-auto-sync.test.js` assertion that
+  the BP8 engine talks to the cloud only through the store):
+  `sync-planner.test.js` (24 — every BASE×LOCAL×REMOTE case + determinism + no
+  mutation), `sync-state.test.js` (15 — whitelist / owner-binding / no payload),
+  `sync-codec-apply.test.js` (12), `sync-engine.test.js` (15),
+  `sync-multidevice.test.js` (12 — two-device A↔B cases A–K + financial
+  realism), `sync-bootstrap.test.js` (8), `sync-race.test.js` (5 — the mid-sync
+  edit / tombstone / bootstrap / outbound-stale races), `sync-ui.test.js` (17 —
+  bootstrap gate, conflict overlay, keep / use-cloud / decide-later,
+  confirmation, Escape, accessibility, the Settings row), plus BP8 static
+  wiring + no-production-override checks + the updated cloud-boundary checks in
+  `auth-architecture.test.js` / `bp7-no-auto-sync.test.js`. New helpers:
+  `tests/helpers/fake-cloud.js`, `tests/helpers/sync-device.js`;
+  `tests/helpers/dom-stub.js` gained `removeChild` / `replaceChildren` /
+  `firstChild`.
+- **Docs** — new `docs/BP8-SYNC-ENGINE.md`; README + `tests/README.md` updates.
+- **Not E2EE** — BP8 adds synchronization, not encryption. The docs continue to
+  state that cloud financial payloads are protected by RLS / access control,
+  **not** zero-knowledge, **not** end-to-end encrypted.
+
 ### BP7 — Cloud financial data + Row Level Security (`0.9.0-beta.5` → `0.9.0-beta.6`)
 
 The **capability** to store financial data as per-user, row-level-secured

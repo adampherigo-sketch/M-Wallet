@@ -112,6 +112,18 @@
        this module shows its own fallback view. */
     var ownershipScreenActive = false;
 
+    /* BP8 cloud-bootstrap guard — fail-open. fn(authSnapshot) ->
+       { release: boolean }. Sits BETWEEN BP4 ownership and BP5
+       setup: when sync release is enabled and this is a fresh
+       device, the sync engine holds the app while it checks the
+       cloud for an existing wallet, so BP5 never asks a returning
+       user to create a competing starting balance. Holds ONLY on
+       an explicit { release: false }; a sync fault never traps a
+       verified owner. In the committed BP8 build (sync disabled)
+       this always releases. */
+    var bootstrapGuard = null;
+    var bootstrapScreenActive = false;
+
     /* BP5 first-run setup guard — fail-open. fn(authSnapshot) ->
        { release: boolean }. Holds the app for setup ONLY on an
        explicit { release: false }. */
@@ -355,6 +367,14 @@
         ownershipScreenActive = active === true;
     }
 
+    function setBootstrapGuard(fn) {
+        bootstrapGuard = (typeof fn === "function") ? fn : null;
+    }
+
+    function setBootstrapScreenActive(active) {
+        bootstrapScreenActive = active === true;
+    }
+
     function setSetupGuard(fn) {
         setupGuard = (typeof fn === "function") ? fn : null;
     }
@@ -386,6 +406,23 @@
         }
         if (!result || typeof result !== "object") { return false; }
         return result.release === true;
+    }
+
+    /* FAIL-OPEN. BP8 cloud bootstrap is a data-integrity check,
+       not a security gate (BP4 already protected the data).
+       Returns false (hold for the cloud check) ONLY when a
+       working guard explicitly says { release: false }. No guard
+       / throw / malformed / sync module never loaded -> true. */
+    function bootstrapReleased(authSnap) {
+        if (typeof bootstrapGuard !== "function") { return true; }
+        var result;
+        try {
+            result = bootstrapGuard(authSnap);
+        } catch (e) {
+            return true;
+        }
+        if (!result || typeof result !== "object") { return true; }
+        return result.release !== false;
     }
 
     /* FAIL-OPEN. BP5 is an experience gate, not a security gate
@@ -443,6 +480,21 @@
         }
     }
 
+    /* App held for the BP8 cloud-bootstrap check. The sync UI
+       presents #mw-sync-bootstrap; auth-ui just keeps the app
+       root inert so a returning user can't start editing a fresh
+       local wallet before the cloud copy is restored. If the sync
+       UI is not presenting (guard holds but the screen failed or
+       a transient), FAIL OPEN — reveal the verified owner's app. */
+    function holdForBootstrap() {
+        if (bootstrapScreenActive) {
+            hideAllViews();
+            applyVisible(false, { keepAppGated: true });
+        } else {
+            applyVisible(false);
+        }
+    }
+
     /* App held for first-run setup (BP5). The setup UI presents
        #mw-setup-gate; auth-ui just keeps the app root inert. If
        the setup UI is not presenting (guard holds but UI failed
@@ -492,6 +544,14 @@
                    ownership release. */
                 if (!ownershipReleased(lastSnapshot)) {
                     holdForOwnership();
+                    return;
+                }
+                /* BP8: ownership verified -> if sync is active and
+                   this is a fresh device, hold briefly while the
+                   cloud is checked for an existing wallet. Fully
+                   fail-open; released by default in the BP8 build. */
+                if (!bootstrapReleased(lastSnapshot)) {
+                    holdForBootstrap();
                     return;
                 }
                 /* BP5: ownership verified -> only a fresh owner who
@@ -824,6 +884,10 @@
         /* BP4 coordination */
         setPostAuthGuard: setPostAuthGuard,
         setOwnershipScreenActive: setOwnershipScreenActive,
+
+        /* BP8 coordination */
+        setBootstrapGuard: setBootstrapGuard,
+        setBootstrapScreenActive: setBootstrapScreenActive,
 
         /* BP5 coordination */
         setSetupGuard: setSetupGuard,

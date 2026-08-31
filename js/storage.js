@@ -3658,7 +3658,7 @@ const BudgetStorage = {
                 this.createDefaultData();
 
 
-            this.save(
+            this.saveSilently(
                 defaultData
             );
 
@@ -3682,7 +3682,13 @@ const BudgetStorage = {
                 );
 
 
-            this.save(
+            /*
+                Re-persist the normalized shape. This is bookkeeping,
+                not a user action — it must NOT emit the
+                "mwallet:financial-saved" event (BP8), or a plain
+                page render would look like a financial change.
+            */
+            this.saveSilently(
                 normalizedData
             );
 
@@ -3885,6 +3891,9 @@ const BudgetStorage = {
             );
 
 
+            this.emitFinancialSaved();
+
+
             return true;
 
         }
@@ -3900,6 +3909,74 @@ const BudgetStorage = {
 
 
             return false;
+
+        }
+
+    },
+
+
+    /*
+        BP8 — a canonical local financial save just succeeded.
+
+        This is the single, reliable post-save hook the local-first
+        sync engine listens to. The detail carries NO financial
+        payload — only { source: "local" }. The sync engine does
+        the rest asynchronously; a network failure there never
+        affects this save (which has already returned true).
+
+        load()'s own normalization re-write goes through
+        saveSilently() and does NOT reach here — see the guard.
+    */
+    _suppressFinancialSaved: 0,
+
+    saveSilently(data) {
+
+        this._suppressFinancialSaved += 1;
+
+        try {
+
+            return this.save(data);
+
+        }
+
+        finally {
+
+            this._suppressFinancialSaved -= 1;
+
+        }
+
+    },
+
+    emitFinancialSaved() {
+
+        if (this._suppressFinancialSaved > 0) {
+
+            return;
+
+        }
+
+        try {
+
+            if (
+                typeof document !== "undefined" &&
+                typeof document.dispatchEvent === "function" &&
+                typeof CustomEvent === "function"
+            ) {
+
+                document.dispatchEvent(
+                    new CustomEvent(
+                        "mwallet:financial-saved",
+                        { detail: { source: "local" } }
+                    )
+                );
+
+            }
+
+        }
+
+        catch (error) {
+
+            /* a listener fault must never break a successful save */
 
         }
 

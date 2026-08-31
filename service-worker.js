@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v26";
+const CACHE_NAME = "m-wallet-v27";
 
 
 /* =========================================================
@@ -40,6 +40,7 @@ const APP_SHELL = [
     "./css/migration.css",
     "./css/setup.css",
     "./css/walkthrough.css",
+    "./css/sync.css",
 
     "./js/app-version.js",
 
@@ -59,6 +60,12 @@ const APP_SHELL = [
 
     "./js/cloud/cloud-financial-codec.js",
     "./js/cloud/cloud-financial-store.js",
+
+    "./js/sync/sync-release.js",
+    "./js/sync/sync-state.js",
+    "./js/sync/sync-planner.js",
+    "./js/sync/sync-engine.js",
+    "./js/sync/sync-ui.js",
 
     "./js/storage.js",
     "./js/nav.js",

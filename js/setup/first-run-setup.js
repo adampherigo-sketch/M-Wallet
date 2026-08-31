@@ -976,6 +976,17 @@
                 mig.subscribe(function () { resolve(authSnapshot()); });
             }
         } catch (e) { /* BP4 absent -> BP5 stays inactive, app not blocked */ }
+        /* BP8: when the sync engine restores an existing wallet onto a
+           fresh device, re-decide so this owner is recognised as
+           EXISTING (established data) and the balance wizard never
+           appears. Reuses BP5's own established-data detection — no
+           BP8-specific logic here. */
+        try {
+            var sync = global.MWalletSync;
+            if (sync && typeof sync.subscribe === "function") {
+                sync.subscribe(function () { resolve(authSnapshot()); });
+            }
+        } catch (e) { /* BP8 absent -> BP5 unaffected */ }
         initPromise = Promise.resolve(snapshot());
         return initPromise;
     }

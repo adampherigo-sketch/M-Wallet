@@ -187,6 +187,105 @@ publishable key + two throwaway account credentials from the environment (or a
 git-ignored `.env`), refuses a `service_role` key, and never prints a URL, key,
 token, or password.
 
+## Local-first sync tests (BP8)
+
+BP8 adds the sync engine that connects local `mWalletData` to the BP7 cloud
+store — **shipped with its release gate OFF**. These suites run entirely offline
+(`node:vm`, a deterministic `FakeCloud`, the real `js/storage.js` via
+`StorageHarness`); **no network, no real Supabase project**. Tests toggle the
+release gate per case via `MWalletSync.configureForTest` — the committed default
+(`enabled: false`) never changes.
+
+`sync-planner.test.js` drives the **pure** planner through every
+BASE × LOCAL × REMOTE combination: no-base create / download / baseline /
+conflict; steady-state no-op / local-update / remote-download / both-changed;
+deletions and tombstones (deletable month vs required singleton); unknown type
+and newer schema → ignored; determinism; no input mutation; and that different
+months / settings / M-Cash reconcile independently.
+
+`sync-state.test.js` proves `mwallet.sync.state.v1` is **whitelist-validated**
+(an unexpected key or a non-primitive leaf — i.e. a leaked payload — is
+rejected), owner-bound (user A's state is ignored for user B), resets safely on
+malformed JSON, de-dupes pending / conflict identities, and its summary /
+diagnostics never contain the owner id.
+
+`sync-codec-apply.test.js` covers the pure `applyDocument` / `removeDocument` /
+`applyDocuments` helpers: a month apply touches only that month, `settings` keeps
+the local category library, `version` + `migrations` + unrelated slices survive,
+an invalid item is skipped not applied, a newer schema is rejected, and a full
+encode → apply onto an empty default state reconstructs the same wallet.
+
+`sync-engine.test.js` uses the real engine + codec + planner + state + storage +
+a `FakeCloud`: release-off / unconfigured / signed-out / recovery /
+owner-mismatch → **zero cloud calls**; first-device upload at revision 1 with
+local data byte-identical; a local edit → one `expectedRevision` update;
+second-device restore; network failure keeps pending and never resets the
+baseline; schema-missing pauses sync; single-flight; a state-write failure after
+a cloud write does not duplicate the change; a local-save failure during a
+remote apply leaves local data authoritative; diagnostics leak nothing.
+
+`sync-multidevice.test.js` runs two `SyncDevice` sandboxes for one owner sharing
+one `FakeCloud` table (unique constraint, revisions, tombstones,
+`expectedRevision`) through cases **A–K**: first upload → restore; add
+transaction → pull; independent August / September edits → both survive;
+same-month concurrent edit → conflict, neither overwrites; **Keep this device**
+pushes the *current* local; **Use cloud version** applies the *current* cloud;
+offline edit then online sync; offline edit of a different document merges
+cleanly; stale revision → conflict, no clobber; remote tombstone → local
+deletion; account switch → no wrong-owner apply; and a realistic seeded wallet
+round-trips A → B with no lost cents / ids / categories / M-Cash quantities.
+
+`sync-bootstrap.test.js` covers the fresh-device bootstrap decision and its
+fail-open auth-ui guard: release-off → always releases; enabled + checking →
+holds, then releases after Continue Offline; meaningful local + empty cloud →
+READY (uploads async, local untouched); empty local + cloud data → RESTORED
+(BP5 re-decides → `existing`, no wizard); empty + empty → EMPTY (no fake
+"synced" metadata); empty + offline → NEEDS_DECISION (never assumes cloud
+empty) → deferred; a sync fault never traps a verified owner.
+
+`sync-race.test.js` proves no local edit is lost to a mid-cycle race: a local
+edit during a remote download → the remote copy becomes a
+`local_changed_during_sync` conflict, not an overwrite; a local edit during a
+remote tombstone → the deletion is blocked; local data becoming meaningful
+during the bootstrap check → the cloud restore is skipped in favour of
+no-baseline reconciliation; a newer local save before an outbound upload
+executes → the stale write is skipped, the document stays pending, the baseline
+reflects only what was written, and the next cycle uploads the current version.
+
+`sync-ui.test.js` drives `sync-ui.js` against a DOM stub: the `#mw-sync-bootstrap`
+gate (checking copy, Retry / Continue Offline wired to the engine, auth-ui
+coordination, never syncs on its own) and the `#mw-sync-conflicts` overlay
+(human labels — "August 2026 budget", "M-Cash", "Settings" — no raw JSON / owner
+id / payload; **Keep this device** = one explicit click → one `keep-local` call;
+**Use cloud version** = requires a confirmation whose text says the local copy
+is replaced, cancel does nothing, confirm → one `use-cloud` call; **Decide
+later** and **Close** and **Escape** change no data; dialog role / aria-modal /
+aria-labelledby / aria-describedby / focus-into-dialog / real `<button>`
+controls). It also loads `settings-ui.js` and checks the **Cloud Sync** row:
+release-off → "activation pending" text, Sync Now + Review hidden, `onSyncNow`
+runs no cycle; release-on → "Up to date" / "Syncing…" / "Offline — changes
+saved…" / "N changes waiting" / "Needs attention — N conflicts", never "Backed
+up".
+
+BP8 static wiring lives in `auth-architecture.test.js`: release gate ships
+`enabled:false`; **a normal browser build has no `setOverride` and no
+query-string / localStorage / Settings / hostname switch — only a pre-load
+`window.__MWALLET_TEST_ENV__ = true` reveals the test-only override**; load
+order; sub-path-safe URLs; `m-wallet-v27`; `0.9.0-beta.7`; the `storage.js`
+save-event contract (one `mwallet:financial-saved`, still synchronous
+true/false); the `ownership → bootstrap → setup → walkthrough` gate order; no
+credential in any `js/sync/` file.
+
+New helpers: `helpers/fake-cloud.js` (the in-memory `wallet_documents` stand-in)
+and `helpers/sync-device.js` (a simulated device — its own engine sandbox, an
+injected release stub, a `setRaceHook` seam, its own sync-state storage, the
+real `js/storage.js`).
+
+**Not run by `npm test`, and deferred to BP12:** live multi-device / conflict /
+offline verification of BP8 against a real Supabase project — a hard release
+gate before BP13. The engine ships with its release gate OFF. See
+[`../docs/BP8-SYNC-ENGINE.md`](../docs/BP8-SYNC-ENGINE.md).
+
 ## Running
 
 Node.js is required. From the repository root:

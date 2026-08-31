@@ -2,13 +2,14 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.6`.** M-Wallet is a pre‑release build.
+> **Status: Beta Preparation — `0.9.0-beta.7`.** M-Wallet is a pre‑release build.
 > It is **not production‑ready**. Accounts, sign-in, non-destructive local
-> data ownership, a first‑run setup wizard, an optional guided walkthrough
-> for new owners, and a row-level-secured cloud data **capability** now exist
-> (when a Supabase project is configured). Cloud **synchronization** — actually
-> uploading, downloading, and reconciling financial data — is still being
-> built; local data remains the source of truth. See
+> data ownership, a first‑run setup wizard, an optional guided walkthrough,
+> a row-level-secured cloud data schema, and a complete local‑first
+> **sync engine** now exist (when a Supabase project is configured). The sync
+> engine is **shipped OFF** — its release gate stays disabled until a pre-beta
+> security pass (BP12). **Local data remains the source of truth** and nothing
+> synchronizes automatically. See
 > [Early Beta data warning](#early-beta-data-warning).
 
 ---
@@ -84,8 +85,9 @@ M-Wallet/
 │   ├── auth.css            BP3 — account gateway (scoped .mw-auth-*)
 │   ├── migration.css       BP4 — local data ownership gateway
 │   ├── setup.css           BP5 — first-run setup wizard
-│   └── walkthrough.css     BP6 — guided app walkthrough (#mw-walkthrough)
-│                           (BP7 adds no CSS — one reused Settings row)
+│   ├── walkthrough.css     BP6 — guided app walkthrough (#mw-walkthrough)
+│   │                       (BP7 adds no CSS — one reused Settings row)
+│   └── sync.css            BP8 — #mw-sync-bootstrap gate + #mw-sync-conflicts overlay
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -112,8 +114,14 @@ M-Wallet/
 │   │   ├── guided-walkthrough.js    tour state + owner-bound record/progress
 │   │   └── walkthrough-ui.js        the #mw-walkthrough coach-mark overlay
 │   ├── cloud/              cloud financial data capability (BP7 — NOT sync)
-│   │   ├── cloud-financial-codec.js   MWalletCloudFinancialCodec — pure local⇄cloud codec
+│   │   ├── cloud-financial-codec.js   MWalletCloudFinancialCodec — pure local⇄cloud codec (+ BP8 apply helpers)
 │   │   └── cloud-financial-store.js   MWalletCloudFinancial — the only wallet_documents client
+│   ├── sync/               local-first sync engine (BP8 — shipped OFF)
+│   │   ├── sync-release.js   MWalletSyncRelease — the release gate (enabled:false)
+│   │   ├── sync-state.js     MWalletSyncState — owner-bound metadata, no payloads
+│   │   ├── sync-planner.js   MWalletSyncPlanner — pure BASE×LOCAL×REMOTE reconciliation
+│   │   ├── sync-engine.js    MWalletSync — orchestration, bootstrap, conflicts
+│   │   └── sync-ui.js        MWalletSyncUI — bootstrap gate + conflict overlay
 │   ├── vendor/
 │   │   └── supabase-js.min.js   vendored @supabase/supabase-js (UMD, pinned)
 │   └── m-cash/
@@ -127,6 +135,7 @@ M-Wallet/
 ├── supabase/migrations/    BP7 cloud schema + RLS (applied manually — see docs/BP7-CLOUD-DATA.md)
 ├── scripts/                bp7-live-rls-check.mjs — standalone two-user RLS verifier
 ├── docs/BP7-CLOUD-DATA.md  cloud data model, RLS, migration + live-verification steps
+├── docs/BP8-SYNC-ENGINE.md local-first sync engine, conflict model, release gate
 ├── docs/design/            Zevaryn Grid concept reference (not used at runtime)
 ├── docs/archive/           superseded phase reports, kept for history
 ├── .github/workflows/      CI (runs the test suite on push / PR to main)
@@ -214,11 +223,26 @@ mapping), `tests/bp7-schema-contract.test.js` (static assertions over the SQL
 migration — RLS enabled + forced, authenticated-only policies on
 `auth.uid() = user_id`, no anon access, revision/immutability trigger), and
 `tests/bp7-no-auto-sync.test.js` (only the store names `wallet_documents`, boot
-does zero network, real `mWalletData` is byte-identical after encoding).
-See `tests/README.md`.
+does zero network, real `mWalletData` is byte-identical after encoding). The
+local-first sync engine (BP8) is covered by `tests/sync-planner.test.js` (every
+BASE×LOCAL×REMOTE reconciliation case + determinism + no mutation),
+`tests/sync-state.test.js` (whitelist validation, owner-binding, no payload),
+`tests/sync-codec-apply.test.js`, `tests/sync-engine.test.js`,
+`tests/sync-multidevice.test.js` (a deterministic two-device A↔B simulation:
+first upload, pull, independent edits, conflict, both resolutions, offline,
+stale revision, remote tombstone, account switch, financial realism),
+`tests/sync-race.test.js` (mid-sync local edit / tombstone / bootstrap /
+outbound-stale races — no new edit is ever lost),
+`tests/sync-bootstrap.test.js`, and `tests/sync-ui.test.js` (the bootstrap gate,
+the conflict overlay, and the Settings row) — all with a FakeCloud + the real
+`js/storage.js`; **no network, no real Supabase project**. See `tests/README.md`.
 
 **Live Supabase checks not covered by `npm test`:**
 
+- **BP8 — live multi-device / conflict / offline verification** is **deferred to
+  BP12** and is a **hard release gate before BP13 closed beta**. The engine
+  ships with its release gate OFF. See
+  [`docs/BP8-SYNC-ENGINE.md`](docs/BP8-SYNC-ENGINE.md).
 - **BP7 — applying the migration + `npm run bp7:verify-rls`** (the two-user Row
   Level Security proof) is **deferred to BP12**, the pre-beta security audit. It
   has **not** been run: the migration is not applied to any real project and RLS
@@ -457,6 +481,60 @@ and is a **hard release gate before BP13 closed beta** — see *Release gate* be
   details, migration steps, and verification instructions:
   [`docs/BP7-CLOUD-DATA.md`](docs/BP7-CLOUD-DATA.md).
 
+### Local-first sync (BP8)
+
+BP8 is the complete synchronization engine that connects local `mWalletData` to
+the BP7 cloud store — **built and shipped OFF**. `MWalletSyncRelease.isEnabled()`
+is `false`, so the engine makes **zero** cloud requests: no bootstrap check, no
+upload, no download, no timers, no online-event sync. **Local data is the source
+of truth** and nothing synchronizes automatically.
+
+- **The one rule** — a local save never depends on cloud success. `storage.save()`
+  is unchanged (synchronous, returns `true`/`false`, never async). It now
+  dispatches one `mwallet:financial-saved` event (no payload) that the engine
+  reacts to *after* the save has already succeeded; a cloud failure there never
+  affects local data.
+- **Pure planner** (`js/sync/sync-planner.js`) — compares BASE × LOCAL × REMOTE
+  per document. No network, storage, DOM, input mutation, timestamp guessing, or
+  array merging. **Conservative:** same-document concurrent change with no
+  shared baseline → conflict; independent documents (a different month, or
+  settings vs a month) keep syncing.
+- **Conflicts are never silent.** A conflict pauses that one document, surfaces
+  in Settings ("Needs attention — N conflicts" → Review), and never locks the
+  app or blocks other documents. "Keep this device" pushes the *current* local
+  version (re-fetching the live remote first); "Use cloud version" applies the
+  *current* cloud copy behind an explicit confirmation.
+- **Atomic remote apply** — downloads are applied in one pass: `storage.load` →
+  `codec.applyDocuments` on a clone → one `storage.save` → verify by reload →
+  one `BudgetApp.refresh`. `version` + `migrations` and every unrelated slice
+  are preserved.
+- **Second-device bootstrap** — when release is on and a fresh device signs in,
+  the engine restores an existing cloud wallet *before* BP5 runs, so a returning
+  user never creates a competing starting balance. Fail-open: a broken sync
+  module never traps a verified owner. Gate order becomes
+  `AUTH → BP4 ownership → BP8 bootstrap → BP5 setup → BP6 walkthrough → APP`.
+- **Owner-bound state** — `mwallet.sync.state.v1` holds only document
+  identities, content hashes, cloud revisions, and pending/conflict identities —
+  **whitelist-validated, never a financial payload**. Bound to the Supabase user
+  id; user A's state is ignored when user B signs in.
+- **No new local edit is ever lost.** The engine re-reads and re-hashes the
+  current local state immediately before applying any remote change and before
+  every outbound write; an edit that lands mid-cycle turns the remote copy into
+  a safe conflict, and a stale outbound write is skipped and re-queued.
+- **No production enable path.** `MWalletSyncRelease` has no `setOverride` in a
+  normal browser build (it appears only under a pre-load test opt-in), and there
+  is no query-string, localStorage, Settings, console, or hostname switch. BP12
+  flips the committed default itself.
+- **Cloud boundary** — the engine talks to Supabase **only** through
+  `MWalletCloudFinancial`; never `.from("wallet_documents")`, a client, a token,
+  or a `service_role` key. **BP8 adds sync, not encryption** — still RLS, still
+  not zero-knowledge / not E2EE. The Settings row never says "Backed up".
+- **Release gate** — the engine is final and test-covered (two-device
+  simulation, revisions, tombstones, offline/online, conflicts, races,
+  sign-out, storage failures). Live multi-device / conflict / offline
+  verification is **deferred to BP12** and is a **hard gate before BP13 closed
+  beta**. Full details: [`docs/BP8-SYNC-ENGINE.md`](docs/BP8-SYNC-ENGINE.md).
+
 ### Architecture
 
 - **One entry point** — `window.MWalletAuth`. The rest of the app never talks
@@ -569,11 +647,12 @@ A file override (`js/auth/auth-config.local.js`, git-ignored) is still supported
 for anyone who prefers files, but is no longer required. See
 `js/auth/auth-config.example.js`.
 
-**Not yet:** financial sync, cloud backup, and passkeys — each is its own later
-phase (BP8, BP9). BP7 adds the row-level-secured cloud data *schema and client*
-but **no synchronization**: no financial data leaves the device automatically. A
-production domain must be chosen before the passkey phase; GitHub Pages may serve
-the app under a repo sub-path (e.g. `/M-Wallet/`) rather than a domain root.
+**Not yet:** passkeys, account/privacy/recovery controls, and a beta feedback
+system — each is its own later phase (BP9–BP11). BP7 + BP8 build the
+row-level-secured cloud schema and a complete sync engine, but the sync **release
+gate ships OFF**: no financial data leaves the device automatically. A production
+domain must be chosen before the passkey phase; GitHub Pages may serve the app
+under a repo sub-path (e.g. `/M-Wallet/`) rather than a domain root.
 
 ---
 
@@ -586,11 +665,13 @@ multi‑device before real testers use it. Done so far: a versioned beta build
 (BP1), the authentication architecture (BP2), the account UI + session
 experience (BP3), non-destructive local existing-user data ownership (BP4),
 a first‑run setup wizard for genuinely new owners (BP5), an optional guided
-app walkthrough (BP6), and a row‑level‑secured cloud financial data **capability**
-(BP7 — schema, RLS, and a pure codec + repository client, but **not** sync;
-live two‑user RLS verification against a real project is deferred to BP12 and is
-a hard gate before BP13). Still planned: a local‑first sync engine (BP8),
-passkeys, account/privacy/recovery controls, and a beta feedback system.
+app walkthrough (BP6), a row‑level‑secured cloud financial data schema (BP7 —
+schema, RLS, and a pure codec + repository client), and a complete local‑first
+**sync engine** (BP8 — planner, engine, conflict UI, second‑device bootstrap).
+The BP8 sync **release gate ships OFF**; live two‑user RLS verification and live
+multi‑device sync verification are both **deferred to BP12** and are hard gates
+before BP13. Still planned: passkeys (BP9), account/privacy/recovery controls
+(BP10), and a beta feedback system (BP11).
 
 It is **not production‑ready** and should not be treated as a finished product.
 

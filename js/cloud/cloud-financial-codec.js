@@ -381,11 +381,214 @@
     }
 
 
+    /* =====================================================
+       BP8 — CANONICAL FINGERPRINT INPUT  (pure, deterministic)
+
+       A stable string form of a document, with object keys
+       recursively sorted, so two devices holding the same
+       logical data produce the same string regardless of the
+       key insertion order their local engines happened to use.
+       The sync engine hashes this string (SHA-256) for change
+       detection — this module never hashes (no Web Crypto here).
+       ===================================================== */
+
+    function canonicalize(value) {
+        if (value === null || typeof value !== "object") { return value; }
+        if (Array.isArray(value)) { return value.map(canonicalize); }
+        var out = {};
+        Object.keys(value).sort().forEach(function (k) {
+            out[k] = canonicalize(value[k]);
+        });
+        return out;
+    }
+
+    function canonicalStringify(value) {
+        return JSON.stringify(canonicalize(value));
+    }
+
+    /* the exact bytes the sync engine fingerprints for one document */
+    function documentFingerprintInput(doc) {
+        if (!isPlainObject(doc)) { return null; }
+        return canonicalStringify({
+            documentType: doc.documentType,
+            documentKey: doc.documentKey,
+            schemaVersion: doc.schemaVersion,
+            payload: doc.payload
+        });
+    }
+
+
+    /* =====================================================
+       BP8 — DELETABILITY
+
+       Only "month" documents map to a slice the local engine
+       can actually remove (months[key]). Every singleton is a
+       REQUIRED part of the financial state — an empty list is
+       payload {items:[]}, never a tombstone.
+       ===================================================== */
+
+    var DELETABLE_TYPES = ["month"];
+
+    function isDeletableType(type) {
+        return DELETABLE_TYPES.indexOf(type) !== -1;
+    }
+
+
+    /* =====================================================
+       BP8 — PURE APPLY  (cloud document -> local slice)
+
+       Inverse of encodeFinancialState's per-type encoding.
+       PURE: deep-clones the input, never touches localStorage,
+       never calls the network, never mutates its arguments.
+       Preserves version + migrations and every unrelated slice.
+       ===================================================== */
+
+    function applyOneInto(state, type, key, payload) {
+        if (type === MONTH_TYPE) {
+            if (!isPlainObject(state.months)) { state.months = {}; }
+            state.months[key] = deepClone(payload);
+            return;
+        }
+        if (type === "accounts") {
+            state.accounts = {
+                checking: isPlainObject(payload.checking) ? deepClone(payload.checking) : null,
+                savings: isPlainObject(payload.savings) ? deepClone(payload.savings) : null
+            };
+            return;
+        }
+        if (type === "settings") {
+            if (!isPlainObject(state.settings)) { state.settings = {}; }
+            state.settings.currency = Object.prototype.hasOwnProperty.call(payload, "currency") ? payload.currency : null;
+            state.settings.currencySymbol = Object.prototype.hasOwnProperty.call(payload, "currencySymbol") ? payload.currencySymbol : null;
+            state.settings.firstDayOfWeek = Object.prototype.hasOwnProperty.call(payload, "firstDayOfWeek") ? payload.firstDayOfWeek : null;
+            return;
+        }
+        if (type === "categories") {
+            if (!isPlainObject(state.settings)) { state.settings = {}; }
+            state.settings.categories = deepClone(payload);
+            return;
+        }
+        if (type === "recurring-income") {
+            state.income = Array.isArray(payload.items) ? deepClone(payload.items) : [];
+            return;
+        }
+        if (type === "recurring-expenses") {
+            state.expenses = Array.isArray(payload.items) ? deepClone(payload.items) : [];
+            return;
+        }
+        if (type === "savings") {
+            state.savingsGoals = Array.isArray(payload.goals) ? deepClone(payload.goals) : [];
+            state.savingsTransfers = Array.isArray(payload.transfers) ? deepClone(payload.transfers) : [];
+            return;
+        }
+        if (type === "cash") {
+            state.cash = {
+                initialized: payload.initialized === true,
+                wallet: isPlainObject(payload.wallet) ? deepClone(payload.wallet) : { denominations: {} },
+                savings: isPlainObject(payload.savings) ? deepClone(payload.savings) : { denominations: {} },
+                history: Array.isArray(payload.history) ? deepClone(payload.history) : [],
+                settings: isPlainObject(payload.settings) ? deepClone(payload.settings) : {}
+            };
+            return;
+        }
+        /* unreachable: caller validated the type */
+    }
+
+    /* cloudDoc: { documentType, documentKey, schemaVersion, payload } */
+    function applyDocument(localState, cloudDoc) {
+        if (!isPlainObject(localState)) {
+            return { ok: false, code: "invalid_local_state" };
+        }
+        if (!isPlainObject(cloudDoc)) {
+            return { ok: false, code: "invalid_remote_document" };
+        }
+        var type = cloudDoc.documentType;
+        var key = cloudDoc.documentKey;
+
+        if (ALL_TYPES.indexOf(type) === -1) {
+            return { ok: false, code: "unsupported_type" };
+        }
+        var sv = cloudDoc.schemaVersion;
+        if (typeof sv === "number" && Number.isInteger(sv) && sv > DEFAULT_SCHEMA_VERSION) {
+            return { ok: false, code: "unsupported_schema" };
+        }
+        var v = validateDocument({
+            documentType: type, documentKey: key,
+            schemaVersion: sv, payload: cloudDoc.payload
+        });
+        if (!v.ok) {
+            return { ok: false, code: v.code === "document_too_large" ? "document_too_large" : "invalid_remote_document" };
+        }
+
+        var next = deepClone(localState);
+        applyOneInto(next, type, key, cloudDoc.payload);
+        return { ok: true, state: next };
+    }
+
+    function removeDocument(localState, type, key) {
+        if (!isPlainObject(localState)) {
+            return { ok: false, code: "invalid_local_state" };
+        }
+        if (!isDeletableType(type)) {
+            return { ok: false, code: "not_deletable" };
+        }
+        var keyCheck = validateDocumentKey(type, key);
+        if (!keyCheck.ok) { return { ok: false, code: "invalid_remote_document" }; }
+
+        var next = deepClone(localState);
+        if (isPlainObject(next.months) && Object.prototype.hasOwnProperty.call(next.months, key)) {
+            delete next.months[key];
+        }
+        return { ok: true, state: next };
+    }
+
+    /* items: [{ documentType, documentKey, schemaVersion, payload, deleted? }]
+       Applies every item onto ONE clone, in a deterministic order, so the
+       caller can persist the result with a single canonical save. Invalid
+       items are skipped (reported), never applied — the rest still apply. */
+    function applyDocuments(localState, items) {
+        if (!isPlainObject(localState)) {
+            return { ok: false, code: "invalid_local_state" };
+        }
+        if (!Array.isArray(items)) {
+            return { ok: false, code: "invalid_documents" };
+        }
+
+        var ordered = items.slice().sort(function (a, b) {
+            var ka = String(a && a.documentType) + "/" + String(a && a.documentKey);
+            var kb = String(b && b.documentType) + "/" + String(b && b.documentKey);
+            return ka < kb ? -1 : (ka > kb ? 1 : 0);
+        });
+
+        var state = deepClone(localState);
+        var applied = [];
+        var skipped = [];
+
+        ordered.forEach(function (item) {
+            if (!isPlainObject(item)) { skipped.push({ id: "?", code: "invalid_remote_document" }); return; }
+            var id = String(item.documentType) + "/" + String(item.documentKey);
+            if (item.deleted === true) {
+                var rm = removeDocument(state, item.documentType, item.documentKey);
+                if (rm.ok) { state = rm.state; applied.push(id); }
+                else { skipped.push({ id: id, code: rm.code }); }
+                return;
+            }
+            var one = applyDocument(state, item);
+            if (one.ok) { state = one.state; applied.push(id); }
+            else { skipped.push({ id: id, code: one.code }); }
+        });
+
+        return { ok: true, state: state, applied: applied, skipped: skipped };
+    }
+
+
     global.MWalletCloudFinancialCodec = {
         CODEC_VERSION: CODEC_VERSION,
+        DEFAULT_SCHEMA_VERSION: DEFAULT_SCHEMA_VERSION,
         SINGLETON_TYPES: SINGLETON_TYPES.slice(),
         MONTH_TYPE: MONTH_TYPE,
         ALL_TYPES: ALL_TYPES.slice(),
+        DELETABLE_TYPES: DELETABLE_TYPES.slice(),
         SYNCABLE_FIELDS: SYNCABLE_FIELDS.slice(),
         EXCLUDED_LOCAL_FIELDS: EXCLUDED_LOCAL_FIELDS.slice(),
         MAX_PAYLOAD_BYTES: MAX_PAYLOAD_BYTES,
@@ -396,7 +599,16 @@
         encodeFinancialState: encodeFinancialState,
         decodeFinancialDocuments: decodeFinancialDocuments,
         syncableSlice: syncableSlice,
-        pickSyncable: pickSyncable
+        pickSyncable: pickSyncable,
+
+        /* BP8 additions (all pure) */
+        canonicalize: canonicalize,
+        canonicalStringify: canonicalStringify,
+        documentFingerprintInput: documentFingerprintInput,
+        isDeletableType: isDeletableType,
+        applyDocument: applyDocument,
+        removeDocument: removeDocument,
+        applyDocuments: applyDocuments
     };
 
 })(typeof window !== "undefined" ? window : this);

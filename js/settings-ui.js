@@ -478,6 +478,7 @@
         renderFirstRunStatus(state);
         renderWalkthroughStatus(state);
         renderCloudFinancialStatus(state);
+        renderSyncStatus(state);
     }
 
     /* BP4 — local data ownership status. Shown only for the
@@ -666,6 +667,109 @@
             renderCloudFinancialStatus();
             setStatus("Couldn't reach cloud storage right now.", "error");
         });
+    }
+
+    /* BP8 — local-first sync status. In the committed build the sync
+       RELEASE GATE is OFF: the engine is built but makes no cloud
+       requests. This row never says "Backed up". "Sync Now" and the
+       conflict "Review" control appear ONLY when release is enabled
+       (BP12 will flip that after live verification). */
+    var SYNC_LABELS = {
+        disabled: "Built — activation pending pre-beta verification",
+        unconfigured: "Not configured",
+        signed_out: "Signed out",
+        idle: "Up to date",
+        syncing: "Syncing…",
+        offline: "Offline — changes saved on this device",
+        pending: "Changes waiting to sync",
+        conflicts: "Needs attention",
+        unsupported: "Cloud unavailable",
+        error: "Sync unavailable"
+    };
+
+    function renderSyncStatus(authStateSnapshot) {
+        var panel = document.getElementById("settings-sync-panel");
+        var statusEl = document.getElementById("settings-sync-status");
+        var noteEl = document.getElementById("settings-sync-note");
+        var syncNowBtn = document.getElementById("settings-sync-now-btn");
+        var reviewBtn = document.getElementById("settings-sync-review-btn");
+        if (!panel) { return; }
+
+        var sync = global.MWalletSync;
+        var authState = authStateSnapshot ||
+            (global.MWalletAuth && typeof global.MWalletAuth.getState === "function"
+                ? global.MWalletAuth.getState()
+                : null);
+        var signedIn = authState && authState.status === "signed_in";
+
+        if (!signedIn || !sync || !authState || authState.configured !== true) {
+            panel.hidden = true;
+            if (syncNowBtn) { syncNowBtn.hidden = true; }
+            if (reviewBtn) { reviewBtn.hidden = true; }
+            return;
+        }
+
+        panel.hidden = false;
+
+        var state = typeof sync.getState === "function" ? sync.getState() : null;
+        var releaseOn = !!(state && state.releaseEnabled);
+        var status = state ? state.status : "disabled";
+        var label = SYNC_LABELS[status] || SYNC_LABELS.disabled;
+
+        if (releaseOn && status === "pending" && state.pendingCount > 0) {
+            label = state.pendingCount + (state.pendingCount === 1 ? " change waiting" : " changes waiting");
+        }
+        if (releaseOn && status === "conflicts" && state.conflictCount > 0) {
+            label = "Needs attention — " + state.conflictCount +
+                (state.conflictCount === 1 ? " conflict" : " conflicts");
+        }
+        if (releaseOn && status === "idle" && state.lastSuccessAt) {
+            label = "Up to date";
+        }
+        if (statusEl) { statusEl.textContent = label; }
+
+        if (noteEl) {
+            noteEl.textContent = releaseOn
+                ? "Financial changes reconcile across your signed-in devices. Conflicts are never resolved silently."
+                : "Your financial data remains local on this device. Cloud synchronization stays off until pre-beta security verification is complete.";
+        }
+
+        if (syncNowBtn) { syncNowBtn.hidden = !releaseOn; }
+        if (reviewBtn) {
+            reviewBtn.hidden = !(releaseOn && state && state.conflictCount > 0);
+        }
+    }
+
+    function onSyncNow() {
+        var sync = global.MWalletSync;
+        if (!sync || typeof sync.syncNow !== "function") { return; }
+        var st = typeof sync.getState === "function" ? sync.getState() : null;
+        if (!st || !st.releaseEnabled) { return; }
+        var btn = document.getElementById("settings-sync-now-btn");
+        if (btn) { btn.disabled = true; }
+        setStatus("Syncing…");
+        Promise.resolve(sync.syncNow({ manual: true })).then(function (res) {
+            if (btn) { btn.disabled = false; }
+            renderSyncStatus();
+            if (res && res.status === "conflicts") {
+                setStatus("Some financial data needs your attention.", "error");
+            } else if (res && (res.status === "offline" || res.status === "error")) {
+                setStatus("Couldn't sync right now. Your data is safe on this device.", "error");
+            } else {
+                setStatus("Sync finished.", "success");
+            }
+        }).catch(function () {
+            if (btn) { btn.disabled = false; }
+            renderSyncStatus();
+            setStatus("Couldn't sync right now. Your data is safe on this device.", "error");
+        });
+    }
+
+    function onSyncReview() {
+        var ui = global.MWalletSyncUI;
+        if (ui && typeof ui.openConflicts === "function") {
+            ui.openConflicts();
+        }
     }
 
     function onSignOut() {
@@ -944,6 +1048,14 @@
                 onCloudCheck();
                 return;
             }
+            if (action === "sync-now") {
+                onSyncNow();
+                return;
+            }
+            if (action === "sync-review") {
+                onSyncReview();
+                return;
+            }
 
             if (action === "add-category-open") {
                 adding = "category";
@@ -1132,6 +1244,13 @@
             });
         }
 
+        /* BP8 — keep the Cloud Sync row live as the engine works */
+        if (global.MWalletSync && typeof global.MWalletSync.subscribe === "function") {
+            global.MWalletSync.subscribe(function () {
+                renderSyncStatus();
+            });
+        }
+
         renderAll();
     }
 
@@ -1142,7 +1261,10 @@
         // exposed for tests
         estimateStorageBytes: estimateStorageBytes,
         formatBytes: formatBytes,
-        categoryRowModel: categoryRowModel
+        categoryRowModel: categoryRowModel,
+        renderSyncStatus: renderSyncStatus,
+        onSyncNow: onSyncNow,
+        onSyncReview: onSyncReview
     };
 
     if (typeof document !== "undefined") {
