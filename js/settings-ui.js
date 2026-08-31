@@ -479,6 +479,18 @@
         renderWalkthroughStatus(state);
         renderCloudFinancialStatus(state);
         renderSyncStatus(state);
+        renderPasskeyStatus(state);
+    }
+
+    /* BP9 — the Passkeys section is owned by js/auth/passkey-ui.js
+       (WebAuthn logic must not live in settings-ui.js). This is just
+       the render hook. */
+    function renderPasskeyStatus(authStateSnapshot) {
+        try {
+            if (global.MWalletPasskeyUI && typeof global.MWalletPasskeyUI.renderSettings === "function") {
+                global.MWalletPasskeyUI.renderSettings(authStateSnapshot);
+            }
+        } catch (e) { /* passkey UI absent -> Settings unaffected */ }
     }
 
     /* BP4 — local data ownership status. Shown only for the
@@ -1250,6 +1262,13 @@
                 renderSyncStatus();
             });
         }
+
+        /* BP9 — let the passkey UI attach to #settings-page */
+        try {
+            if (global.MWalletPasskeyUI && typeof global.MWalletPasskeyUI.init === "function") {
+                global.MWalletPasskeyUI.init(document);
+            }
+        } catch (e) { /* ignore */ }
 
         renderAll();
     }

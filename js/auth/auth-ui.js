@@ -783,6 +783,15 @@
         if (action === "go-forgot") { clearMessages(); showView("forgot"); return; }
         if (action === "go-welcome") { clearMessages(); showView("welcome"); return; }
         if (action === "resend") { handleResend(); return; }
+        if (action === "passkey-signin") {
+            /* BP9 — delegate the WebAuthn ceremony to the passkey layer.
+               No WebAuthn logic lives here. Hidden entirely unless the
+               passkey release gate is on AND the browser supports it. */
+            if (global.MWalletPasskeyUI && typeof global.MWalletPasskeyUI.startGatewaySignIn === "function") {
+                global.MWalletPasskeyUI.startGatewaySignIn(trigger);
+            }
+            return;
+        }
         if (action === "ownership-signout") { handleOwnershipSignOut(); return; }
         if (action === "ownership-retry") { handleOwnershipRetry(trigger); return; }
         if (action === "retry") {

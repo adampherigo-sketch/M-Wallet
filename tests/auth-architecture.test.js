@@ -87,9 +87,17 @@ function makeSession() {
         refresh_token: SECRET_REFRESH_TOKEN,
         token_type: "bearer",
         expires_at: 9999999999,
-        user: { id: "user-123", email: "tester@example.com" }
+        user: {
+            id: "user-123",
+            email: "tester@example.com",
+            email_confirmed_at: "2026-01-01T00:00:00.000Z",
+            is_anonymous: false
+        }
     };
 }
+
+/* the BP9 safe-user shape: id + email + two non-sensitive booleans */
+const SAFE_USER = { id: "user-123", email: "tester@example.com", confirmed: true, isAnonymous: false };
 
 function flush(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms || 15));
@@ -541,7 +549,7 @@ test("configured + stored session -> signed_in with a safe user", async () => {
     await env.auth.initialize();
     assert.equal(env.auth.getStatus(), "signed_in");
     assert.equal(env.auth.isAuthenticated(), true);
-    assert.deepEqual(plain(env.auth.getUser()), { id: "user-123", email: "tester@example.com" });
+    assert.deepEqual(plain(env.auth.getUser()), SAFE_USER);
 });
 
 test("restored session never exposes access or refresh tokens", async () => {
@@ -620,7 +628,7 @@ test("TOKEN_REFRESHED keeps the session signed_in", async () => {
 
     env.fireAuthEvent("TOKEN_REFRESHED", makeSession());
     assert.equal(env.auth.getStatus(), "signed_in");
-    assert.deepEqual(plain(env.auth.getUser()), { id: "user-123", email: "tester@example.com" });
+    assert.deepEqual(plain(env.auth.getUser()), SAFE_USER);
 });
 
 
@@ -1040,14 +1048,18 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 /* ---- static wiring checks ---------------------------- */
 
-test("service-worker precaches the auth + migration + setup + walkthrough + cloud + sync modules and bumped the cache", () => {
+test("service-worker precaches the auth + migration + setup + walkthrough + cloud + sync + passkey modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v27"/.test(sw), "cache bumped to v27");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v28"/.test(sw), "cache bumped to v28");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
         "./js/auth/auth.js",
         "./js/auth/auth-ui.js",
+        "./js/auth/passkey-release.js",
+        "./js/auth/passkeys.js",
+        "./js/auth/passkey-ui.js",
+        "./css/passkeys.css",
         "./js/migration/local-user-migration.js",
         "./js/migration/migration-ui.js",
         "./js/setup/first-run-setup.js",
@@ -1114,28 +1126,28 @@ test("index.html has the auth gateway markup + auth.css, and financial page mark
 
 test("changed modules are re-versioned in index.html", () => {
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.ok(/js\/auth\/auth-ui\.js\?v=6/.test(html), "auth-ui.js bumped to ?v=6");
-    assert.ok(/js\/auth\/auth\.js\?v=3/.test(html), "auth.js still ?v=3");
-    assert.ok(/js\/settings-ui\.js\?v=9/.test(html), "settings-ui.js bumped to ?v=9");
+    assert.ok(/js\/auth\/auth-ui\.js\?v=7/.test(html), "auth-ui.js bumped to ?v=7");
+    assert.ok(/js\/auth\/auth\.js\?v=4/.test(html), "auth.js bumped to ?v=4");
+    assert.ok(/js\/auth\/auth-client\.js\?v=3/.test(html), "auth-client.js bumped to ?v=3");
+    assert.ok(/js\/settings-ui\.js\?v=10/.test(html), "settings-ui.js bumped to ?v=10");
     assert.ok(/js\/setup\/first-run-setup\.js\?v=2/.test(html), "first-run-setup.js bumped to ?v=2");
     assert.ok(/js\/setup\/setup-ui\.js\?v=\d+/.test(html), "setup-ui.js has a ?v");
     assert.ok(/js\/walkthrough\/guided-walkthrough\.js\?v=\d+/.test(html), "guided-walkthrough.js has a ?v");
     assert.ok(/js\/walkthrough\/walkthrough-ui\.js\?v=\d+/.test(html), "walkthrough-ui.js has a ?v");
-    assert.ok(/js\/cloud\/cloud-financial-codec\.js\?v=2/.test(html), "cloud-financial-codec.js bumped to ?v=2");
-    assert.ok(/js\/cloud\/cloud-financial-store\.js\?v=2/.test(html), "cloud-financial-store.js bumped to ?v=2");
-    assert.ok(/js\/sync\/sync-release\.js\?v=\d+/.test(html), "sync-release.js has a ?v");
-    assert.ok(/js\/sync\/sync-state\.js\?v=\d+/.test(html), "sync-state.js has a ?v");
-    assert.ok(/js\/sync\/sync-planner\.js\?v=\d+/.test(html), "sync-planner.js has a ?v");
+    assert.ok(/js\/cloud\/cloud-financial-codec\.js\?v=2/.test(html), "cloud-financial-codec.js at ?v=2");
+    assert.ok(/js\/cloud\/cloud-financial-store\.js\?v=2/.test(html), "cloud-financial-store.js at ?v=2");
     assert.ok(/js\/sync\/sync-engine\.js\?v=\d+/.test(html), "sync-engine.js has a ?v");
-    assert.ok(/js\/sync\/sync-ui\.js\?v=\d+/.test(html), "sync-ui.js has a ?v");
-    assert.ok(/js\/storage\.js\?v=8/.test(html), "storage.js bumped to ?v=8");
+    assert.ok(/js\/storage\.js\?v=8/.test(html), "storage.js at ?v=8");
+    assert.ok(/js\/auth\/passkey-release\.js\?v=\d+/.test(html), "passkey-release.js has a ?v");
+    assert.ok(/js\/auth\/passkeys\.js\?v=\d+/.test(html), "passkeys.js has a ?v");
+    assert.ok(/js\/auth\/passkey-ui\.js\?v=\d+/.test(html), "passkey-ui.js has a ?v");
 });
 
-test("app version bumped to 0.9.0-beta.7 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.8 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.7"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.7", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.8"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.8", "package.json");
 });
 
 test("BP4 migration modules load after auth, before the financial engine", () => {
@@ -1584,6 +1596,141 @@ test("BP8: index.html has the bootstrap gate + conflict overlay markup, starting
     /* the Settings sync row never says "backed up" */
     assert.ok(/id="settings-sync-panel"/.test(html));
     assert.ok(!/Backed up|backed up/.test(html.slice(html.indexOf("settings-sync-panel"), html.indexOf("settings-sync-panel") + 600)));
+});
+
+/* =========================================================
+   BP9 — PASSKEYS / DEVICE AUTHENTICATION  (static / deployment)
+   ========================================================= */
+
+const stripJs = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+const PASSKEY_FILES = ["js/auth/passkey-release.js", "js/auth/passkeys.js", "js/auth/passkey-ui.js"];
+
+test("BP9: the ONE existing Supabase client gains experimental.passkey — no second client", () => {
+    const clientSrc = fs.readFileSync(path.join(ROOT, "js/auth/auth-client.js"), "utf8");
+    assert.ok(/experimental:\s*\{\s*passkey:\s*true\s*\}/.test(clientSrc), "experimental.passkey enabled in createClient");
+    /* every original auth option is still present */
+    for (const opt of ["persistSession", "autoRefreshToken", "detectSessionInUrl", "storageKey", "flowType"]) {
+        assert.ok(clientSrc.includes(opt), "kept option: " + opt);
+    }
+    /* the passkey modules never build their own client */
+    for (const f of PASSKEY_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/createClient|new\s+SupabaseClient|MWalletAuthClient\.createClient/.test(code), f + " builds no client");
+        assert.ok(/_getClient\s*\(\s*\)/.test(code) || f.endsWith("passkey-release.js") || f.endsWith("passkey-ui.js"),
+            f + " reuses MWalletAuth._getClient()");
+    }
+    /* the whole repo still has exactly one createClient call site */
+    const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) { return walk(full); }
+        return e.isFile() && e.name.endsWith(".js") && !full.includes("vendor") ? [full] : [];
+    });
+    let siteCount = 0;
+    for (const file of walk(path.join(ROOT, "js"))) {
+        const code = stripJs(fs.readFileSync(file, "utf8"));
+        siteCount += (code.match(/\blib\.createClient\s*\(/g) || []).length;
+    }
+    assert.equal(siteCount, 1, "exactly one lib.createClient() call site (auth-client.js)");
+});
+
+test("BP9: passkey release gate ships DISABLED, phase BP12, no RP ID / credential in JS", () => {
+    const src = fs.readFileSync(path.join(ROOT, "js/auth/passkey-release.js"), "utf8");
+    assert.ok(/enabled:\s*false/.test(src));
+    assert.ok(/verificationPhase:\s*["']BP12["']/.test(src));
+    assert.ok(!/BASE\s*=\s*\{[^}]*enabled:\s*true/.test(src), "BASE never enables passkeys");
+    for (const f of PASSKEY_FILES.concat(["js/auth/auth-client.js"])) {
+        const raw = fs.readFileSync(path.join(ROOT, f), "utf8");
+        const code = stripJs(raw);
+        assert.ok(!/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\./.test(raw), f + " no JWT");
+        assert.ok(!/sb_secret_[A-Za-z0-9]|service_role/.test(code), f + " no privileged key");
+        assert.ok(!/rp[_ ]?id\s*[:=]|relyingParty|"rpId"/i.test(code), f + " no hard-coded RP ID");
+        assert.ok(!/[a-z0-9]{20}\.supabase\.co/i.test(raw), f + " no project URL");
+    }
+});
+
+test("BP9: the passkey adapter never calls navigator.credentials, a token, or an Authorization header", () => {
+    for (const f of ["js/auth/passkeys.js", "js/auth/passkey-ui.js"]) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/navigator\.credentials\.(create|get)\s*\(/.test(code), f + " no navigator.credentials call");
+        assert.ok(!/\bfetch\s*\(\s*["'`]https?:/.test(code), f + " no direct GoTrue fetch");
+        assert.ok(!/Authorization|Bearer|access_token|refresh_token/.test(code), f + " no token / auth header");
+        assert.ok(!/localStorage|sessionStorage/.test(code), f + " no web storage");
+        assert.ok(!/console\.(log|info|warn|error|debug)\s*\([^)]*(credential|passkeyId|_ref|token|payload|friendly)/i.test(code),
+            f + " never logs a credential / token");
+    }
+    /* the adapter uses the high-level Supabase methods */
+    const adapter = stripJs(fs.readFileSync(path.join(ROOT, "js/auth/passkeys.js"), "utf8"));
+    assert.ok(/signInWithPasskey|registerPasskey|passkey\.(list|update|delete)/.test(adapter));
+});
+
+test("BP9: passkey modules load after the auth layer, before the financial engine, sub-path safe", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const at = (n) => html.indexOf(n);
+    const authUiAt = at("js/auth/auth-ui.js?v=");
+    const relAt = at("js/auth/passkey-release.js?v=");
+    const adapterAt = at("js/auth/passkeys.js?v=");
+    const uiAt = at("js/auth/passkey-ui.js?v=");
+    const storageAt = at("js/storage.js?v=");
+    assert.ok(authUiAt > 0 && relAt > authUiAt, "passkeys load after auth-ui");
+    assert.ok(relAt < adapterAt && adapterAt < uiAt, "release -> adapter -> ui");
+    assert.ok(uiAt < storageAt, "passkeys load before the financial engine");
+    assert.ok(!/["'(]\/js\/auth\/passkey/.test(html), "no root-absolute /js/auth/passkey URL");
+    const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
+    assert.ok(!/["']\/js\/auth\/passkey/.test(sw), "no root-absolute passkey URL in the service worker");
+});
+
+test("BP9: the auth gateway keeps email + password + forgot + create; passkey control starts hidden", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const signin = html.slice(html.indexOf('data-auth-view="signin"'), html.indexOf('data-auth-view="verify"'));
+    assert.ok(/name="password"/.test(signin), "password field kept");
+    assert.ok(/data-auth-action="go-forgot"/.test(signin), "Forgot password? kept");
+    assert.ok(/data-auth-action="go-signup"/.test(signin) || /Create account/.test(signin), "Create account kept");
+    assert.ok(/data-passkey-gateway[^>]*hidden/.test(signin), "'Use a Passkey' block starts hidden");
+    assert.ok(/data-auth-action="passkey-signin"/.test(signin), "passkey sign-in action present");
+    /* never mis-labelled as a single biometric method */
+    assert.ok(!/Face ID Login|Face ID Sign|Fingerprint Login/i.test(html));
+    assert.ok(/Face ID, Touch ID, Windows Hello, a device PIN, or a security key/.test(html), "truthful device-verification copy");
+});
+
+test("BP9: gate order unchanged — passkey sign-in enters ownership -> bootstrap -> setup -> walkthrough", () => {
+    /* passkeys add NO gate. auth-ui.js still runs the same signed-in chain. */
+    const src = fs.readFileSync(path.join(ROOT, "js/auth/auth-ui.js"), "utf8");
+    const o = src.indexOf("ownershipReleased(lastSnapshot)");
+    const b = src.indexOf("bootstrapReleased(lastSnapshot)");
+    const s = src.indexOf("setupReleased(lastSnapshot)");
+    const w = src.indexOf("walkthroughReleased(lastSnapshot)");
+    assert.ok(o > 0 && o < b && b < s && s < w, "BP4 -> BP8 -> BP5 -> BP6 order intact");
+    /* the passkey-signin handler only delegates — no gate / release logic here */
+    const handler = src.slice(src.indexOf('action === "passkey-signin"'), src.indexOf('action === "passkey-signin"') + 400);
+    assert.ok(/MWalletPasskeyUI/.test(handler), "delegates to the passkey UI");
+    assert.ok(!/inert|applyVisible|release\s*\(/.test(handler), "no gate logic in the passkey handler");
+});
+
+test("BP9: BP8 sync release stays a separate switch — passkeys never touch it", () => {
+    for (const f of PASSKEY_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/MWalletSyncRelease|MWalletSync\b/.test(code), f + " does not reference the sync engine");
+    }
+});
+
+test("BP9: no passkey source file touches financial data", () => {
+    for (const f of PASSKEY_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/mWalletData|wallet_documents|MWalletStorage|BudgetStorage|transactions|balance/i.test(code),
+            f + " has no financial-data knowledge");
+    }
+});
+
+test("BP9: version beta.8, cache v28, docs mention passkeys are not E2EE", () => {
+    const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.8"/.test(av));
+    const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v28"/.test(sw));
+    const doc = fs.readFileSync(path.join(ROOT, "docs/BP9-PASSKEYS.md"), "utf8");
+    assert.ok(/not end-to-end encrypt|not.{0,10}E2EE|RLS.{0,4}(≠|!=|is not).{0,4}E2EE/i.test(doc), "BP9 doc keeps the RLS ≠ E2EE line");
+    assert.ok(/does not receive your fingerprint|does not receive.*face/i.test(doc), "biometric-privacy statement present");
+    assert.ok(/RP ID|relying.?party/i.test(doc) && /invalidat|unusable|no longer (work|usable)/i.test(doc),
+        "RP-ID-change warning present");
 });
 
 test("no auth source file contains a hard-coded credential or logs a session", () => {

@@ -11,6 +11,98 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP9 — Passkeys / device authentication (`0.9.0-beta.7` → `0.9.0-beta.8`)
+
+The complete passkey / WebAuthn architecture — an **alternative** passwordless
+sign-in method — **built but shipped OFF**. Email + password sign-in and
+password recovery are unchanged and never removed. Live WebAuthn verification
+against a real Supabase project + real devices, and the choice of the permanent
+production **RP ID**, are **deferred to BP12** and are a **hard release gate
+before BP13 closed beta**.
+
+**The committed build makes zero passkey activity.**
+`MWalletPasskeyRelease.isEnabled()` is `false`, so there is no
+`registerPasskey` / `signInWithPasskey` / `passkey.list|update|delete` call, no
+`navigator.credentials` call, no automatic prompt, and no conditional-UI
+request. The "Use a Passkey" control is not shown to normal users.
+
+- **Release gate** — new `js/auth/passkey-release.js`
+  (`window.MWalletPasskeyRelease`): ships
+  `{ enabled: false, verificationPhase: "BP12", reason: "production_rp_verification_pending" }`.
+  **No production enable path** — `setOverride` exists only when a test harness
+  set `window.__MWALLET_TEST_ENV__ = true` before the script loaded; no
+  query-string / localStorage / Settings / hostname switch. No credentials, **no
+  RP ID** in JS. Independent of the BP8 sync gate (which stays `false`).
+- **Supabase client opt-in** — `js/auth/auth-client.js` (`?v=3`) adds
+  `auth: { experimental: { passkey: true } }` to the **existing** `createClient`
+  call (the vendored client is 2.112.4 — new enough). Every original option is
+  kept; no second client is created. This only makes the API *callable* — it
+  triggers no passkey / WebAuthn activity, and the `MWalletPasskeyRelease` gate
+  decides whether M-Wallet ever invokes it.
+- **Adapter** — new `js/auth/passkeys.js` (`window.MWalletPasskeys`): a narrow,
+  DOM-free wrapper. `initialize / getState / getCapabilities / signIn / register
+  / list / rename / remove / diagnostics`. Reuses the one Supabase client via
+  `MWalletAuth._getClient()` — never `createClient`, a token, an Authorization
+  header, or a direct GoTrue fetch. **Never calls `navigator.credentials`
+  itself** — the high-level Supabase methods own the WebAuthn ceremony.
+  Capability detection (`PublicKeyCredential` + `navigator.credentials`, secure
+  context, client method presence) never treats a missing built-in platform
+  authenticator as "no passkeys". Raw browser / Supabase errors map to a fixed
+  set of safe codes (`user_cancelled`, `no_passkey_available`, `unsupported`,
+  `project_not_enabled`, `network_error`, `auth_failed`, `management_failed`, …);
+  a cancelled ceremony is friendly, not fatal. Returns only safe result objects —
+  no raw session, token, credential, or challenge. Writes **no** localStorage /
+  sessionStorage. Registration requires a **confirmed, non-anonymous, signed-in**
+  user and is only ever an explicit action — never automatic after signup.
+- **Auth-user shape** — `js/auth/auth.js` (`?v=4`): `getState().user` gains two
+  non-sensitive booleans, `confirmed` and `isAnonymous` (from
+  `user.email_confirmed_at` / `user.is_anonymous`), which the enrollment guard
+  needs. `safeUser` still exposes nothing sensitive.
+- **UI** — new `js/auth/passkey-ui.js` (`window.MWalletPasskeyUI`): the
+  "Use a Passkey" control in the sign-in view (shown only when passkeys are
+  actually available; password + Forgot password? + Create account are never
+  removed), the Settings → **Passkeys** section (status, Add, list with
+  Rename / Remove, dates), and a **removal-confirmation dialog** ("Remove this
+  passkey? … Your email and password sign-in will remain available." — one
+  confirmation = one delete; a failed delete keeps the item). Friendly names:
+  trimmed, ≤ 120 chars, rendered with `textContent` (XSS-safe), never
+  auto-filled with an email / user id / financial data. Credential IDs are never
+  displayed or logged. The server passkey list is held **in memory only**,
+  fetched once per show + after each change, never polled. Release-disabled:
+  Settings says *"Built — activation pending security verification"* with no
+  button that can start a ceremony. `auth-ui.js` (`?v=7`) delegates the
+  `passkey-signin` action to the passkey UI — no WebAuthn logic in auth-ui.
+  `settings-ui.js` (`?v=10`) just calls the render hook. New `css/passkeys.css`
+  (44px targets, `prefers-reduced-motion`, dark-mode).
+- **Not MFA, not E2EE** — BP9 uses passkey sign-in as a passwordless
+  *first-factor* method; no TOTP / phone MFA is added. Passkeys improve
+  authentication only — cloud financial payloads are still protected by RLS,
+  **not** zero-knowledge, **not** end-to-end encrypted.
+- **Biometric privacy** — M-Wallet never receives a fingerprint, face scan, or
+  biometric template; the OS / authenticator performs user verification.
+  Wording is **"Use a passkey"**, never "Face ID Login".
+- **Gate order** — unchanged. A passkey sign-in enters the same chain as a
+  password sign-in: `AUTH → BP4 ownership → BP8 bootstrap → BP5 setup → BP6
+  walkthrough → APP`. A passkey-authenticated User B still hits BP4
+  `owner_mismatch` on User A's device. Password recovery still wins — passkey
+  sign-in / enrollment / management are all suppressed during recovery mode.
+- **Version / cache** — `0.9.0-beta.7` → `0.9.0-beta.8`; `m-wallet-v27` →
+  `m-wallet-v28` (APP_SHELL adds the 3 `js/auth/passkey*.js` + `css/passkeys.css`).
+- **Tests** — 74 new (`597` → `671` passing): `passkey-release.test.js` (6 — no
+  production override), `passkey-capability.test.js` (10), `passkey-auth.test.js`
+  (18 — sign-in + registration, zero calls when disabled/recovery, safe error
+  mapping, no token/credential leak, no auto-enrollment),
+  `passkey-management.test.js` (12 — list/rename/delete, no optimistic removal,
+  last-passkey removable, no persisted list), `passkey-ui.test.js` (19 —
+  release-disabled + enabled gateway/Settings, removal confirmation
+  Cancel/Confirm/Escape, XSS, accessibility, "recovery wins"), plus BP9 static
+  wiring + regression in `auth-architecture.test.js`. New helper
+  `tests/helpers/passkey-harness.js`.
+- **Docs** — new `docs/BP9-PASSKEYS.md` (passkey vs password, biometric privacy,
+  RP-ID importance + "do not enrol real passkeys until the RP ID is final"
+  warning, the 24-step BP12 verification procedure, cross-browser matrix);
+  README + `tests/README.md` updates.
+
 ### BP8 — Local-first sync engine (`0.9.0-beta.6` → `0.9.0-beta.7`)
 
 The complete synchronization engine that connects local `mWalletData` to the

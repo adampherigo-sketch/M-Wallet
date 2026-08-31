@@ -146,7 +146,16 @@
         if (!user) {
             return null;
         }
-        return { id: user.id || null, email: user.email || null };
+        return {
+            id: user.id || null,
+            email: user.email || null,
+            /* BP9 — non-sensitive booleans the passkey layer needs:
+               registration requires a confirmed, non-anonymous user.
+               Supabase always includes email_confirmed_at (null until
+               confirmed) on a session user, so this is a reliable signal. */
+            confirmed: Boolean(user.email_confirmed_at || user.confirmed_at),
+            isAnonymous: user.is_anonymous === true
+        };
     }
 
     /* A deliberately reduced view of a session: enough to know
@@ -304,7 +313,14 @@
             provider: current.provider,
             isAuthenticated: current.status === STATE.SIGNED_IN,
             user: current.user
-                ? { id: current.user.id, email: current.user.email }
+                ? {
+                    id: current.user.id,
+                    email: current.user.email,
+                    /* BP9 — non-sensitive; used only to decide whether the
+                       passkey-enrollment control may be offered */
+                    confirmed: current.user.confirmed === true,
+                    isAnonymous: current.user.isAnonymous === true
+                }
                 : null,
             session: current.session
                 ? {

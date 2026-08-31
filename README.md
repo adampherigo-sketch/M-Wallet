@@ -2,14 +2,15 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.7`.** M-Wallet is a pre‑release build.
+> **Status: Beta Preparation — `0.9.0-beta.8`.** M-Wallet is a pre‑release build.
 > It is **not production‑ready**. Accounts, sign-in, non-destructive local
 > data ownership, a first‑run setup wizard, an optional guided walkthrough,
-> a row-level-secured cloud data schema, and a complete local‑first
-> **sync engine** now exist (when a Supabase project is configured). The sync
-> engine is **shipped OFF** — its release gate stays disabled until a pre-beta
-> security pass (BP12). **Local data remains the source of truth** and nothing
-> synchronizes automatically. See
+> a row-level-secured cloud data schema, a complete local‑first **sync engine**,
+> and a complete **passkey** sign-in system now exist (when a Supabase project
+> is configured). Both the sync engine and passkeys are **shipped OFF** — their
+> release gates stay disabled until a pre-beta security pass (BP12). Email +
+> password sign-in and password reset are unchanged. **Local data remains the
+> source of truth** and nothing synchronizes automatically. See
 > [Early Beta data warning](#early-beta-data-warning).
 
 ---
@@ -87,7 +88,8 @@ M-Wallet/
 │   ├── setup.css           BP5 — first-run setup wizard
 │   ├── walkthrough.css     BP6 — guided app walkthrough (#mw-walkthrough)
 │   │                       (BP7 adds no CSS — one reused Settings row)
-│   └── sync.css            BP8 — #mw-sync-bootstrap gate + #mw-sync-conflicts overlay
+│   ├── sync.css            BP8 — #mw-sync-bootstrap gate + #mw-sync-conflicts overlay
+│   └── passkeys.css        BP9 — "Use a Passkey" + Settings passkeys + removal dialog
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -103,7 +105,10 @@ M-Wallet/
 │   │   ├── auth-client.js       lazy Supabase library loader + client factory
 │   │   ├── auth.js              state model, session restore, account actions
 │   │   ├── auth-ui.js           the account gateway UI + app gating (BP3)
-│   │   └── auth-config.example.js   config template + how-to (3 routes)
+│   │   ├── auth-config.example.js   config template + how-to (3 routes)
+│   │   ├── passkey-release.js   MWalletPasskeyRelease — the passkey gate (enabled:false, BP9)
+│   │   ├── passkeys.js          MWalletPasskeys — Supabase passkey adapter (no DOM)
+│   │   └── passkey-ui.js        MWalletPasskeyUI — "Use a Passkey" + Settings management
 │   ├── migration/          MWalletLocalMigration — local data ownership (BP4)
 │   │   ├── local-user-migration.js  ownership state + meaningful-data detector
 │   │   └── migration-ui.js          the #mw-migration-gate screens
@@ -136,6 +141,7 @@ M-Wallet/
 ├── scripts/                bp7-live-rls-check.mjs — standalone two-user RLS verifier
 ├── docs/BP7-CLOUD-DATA.md  cloud data model, RLS, migration + live-verification steps
 ├── docs/BP8-SYNC-ENGINE.md local-first sync engine, conflict model, release gate
+├── docs/BP9-PASSKEYS.md    passkeys, biometric privacy, RP ID, BP12 verification
 ├── docs/design/            Zevaryn Grid concept reference (not used at runtime)
 ├── docs/archive/           superseded phase reports, kept for history
 ├── .github/workflows/      CI (runs the test suite on push / PR to main)
@@ -235,10 +241,23 @@ stale revision, remote tombstone, account switch, financial realism),
 outbound-stale races — no new edit is ever lost),
 `tests/sync-bootstrap.test.js`, and `tests/sync-ui.test.js` (the bootstrap gate,
 the conflict overlay, and the Settings row) — all with a FakeCloud + the real
-`js/storage.js`; **no network, no real Supabase project**. See `tests/README.md`.
+`js/storage.js`; **no network, no real Supabase project**. Passkeys (BP9) are
+covered by `tests/passkey-release.test.js` (no production enable path),
+`tests/passkey-capability.test.js`, `tests/passkey-auth.test.js` (sign-in +
+registration — zero calls when the gate is off / in recovery, safe error
+mapping, no token or credential leak, no automatic enrollment),
+`tests/passkey-management.test.js` (list / rename / delete — no optimistic
+removal, no persisted list), and `tests/passkey-ui.test.js` (the gateway
+control, the Settings section, the removal confirmation, XSS, accessibility) —
+all with a stubbed Supabase client + a DOM stub; **no real
+`navigator.credentials`, no network**. See `tests/README.md`.
 
-**Live Supabase checks not covered by `npm test`:**
+**Live Supabase / device checks not covered by `npm test`:**
 
+- **BP9 — live WebAuthn / passkey verification + the final RP ID decision** is
+  **deferred to BP12** and is a **hard release gate before BP13 closed beta**.
+  The passkey release gate ships OFF. See
+  [`docs/BP9-PASSKEYS.md`](docs/BP9-PASSKEYS.md).
 - **BP8 — live multi-device / conflict / offline verification** is **deferred to
   BP12** and is a **hard release gate before BP13 closed beta**. The engine
   ships with its release gate OFF. See
@@ -535,6 +554,45 @@ of truth** and nothing synchronizes automatically.
   verification is **deferred to BP12** and is a **hard gate before BP13 closed
   beta**. Full details: [`docs/BP8-SYNC-ENGINE.md`](docs/BP8-SYNC-ENGINE.md).
 
+### Passkeys (BP9)
+
+BP9 adds a complete **passkey** (WebAuthn) sign-in system as an *alternative*
+passwordless method — **built and shipped OFF**. `MWalletPasskeyRelease.isEnabled()`
+is `false`, so M-Wallet makes **zero** passkey / `navigator.credentials` calls,
+shows no "Use a Passkey" control to normal users, and runs no automatic prompt.
+Email + password sign-in and password reset are unchanged.
+
+- **A passkey ≠ biometric data.** M-Wallet never receives a fingerprint, a face
+  scan, or a biometric template — the OS / authenticator performs verification
+  (Face ID, Touch ID, Windows Hello, a device PIN, or a security key). The
+  feature is worded **"Use a passkey"**, never "Face ID Login".
+- **Additive, not a replacement.** Passkeys never delete the password, disable
+  email/password sign-in, or clear recovery. During this beta, password + email
+  reset is the recovery path.
+- **One client, one boundary.** `js/auth/auth-client.js` adds
+  `experimental: { passkey: true }` to the *existing* Supabase client (2.112.4
+  already ships the API). The adapter `js/auth/passkeys.js` reuses
+  `MWalletAuth._getClient()` and the official high-level methods
+  (`signInWithPasskey`, `registerPasskey`, `passkey.list/update/delete`) — it
+  never builds a client, never calls `navigator.credentials` itself, never
+  touches a token, and stores nothing (no credential IDs, no list, no keys).
+- **Same gate chain.** A passkey sign-in enters `AUTH → BP4 ownership → BP8
+  bootstrap → BP5 → BP6 → APP` exactly like a password sign-in — a
+  passkey-authenticated User B still hits BP4 `owner_mismatch` on User A's
+  device. Password recovery still wins.
+- **Not MFA, not E2EE.** Passkey sign-in is a passwordless *first factor*, not a
+  second factor (no TOTP added). It improves authentication only — cloud
+  financial payloads are still RLS-protected, **not** zero-knowledge / E2EE.
+- **RP ID matters.** The WebAuthn relying-party ID is **not** in M-Wallet JS — it
+  is Supabase project configuration. The permanent production host must be chosen
+  before any real passkey is enrolled, because changing the RP ID later makes
+  existing passkeys unusable.
+- **Release gate** — the passkey code is final and test-covered (release gate,
+  capability detection, sign-in / registration / management, safe errors, XSS,
+  accessibility). Live WebAuthn / device verification + the RP ID decision are
+  **deferred to BP12** and are a **hard gate before BP13 closed beta**. Full
+  details: [`docs/BP9-PASSKEYS.md`](docs/BP9-PASSKEYS.md).
+
 ### Architecture
 
 - **One entry point** — `window.MWalletAuth`. The rest of the app never talks
@@ -647,12 +705,14 @@ A file override (`js/auth/auth-config.local.js`, git-ignored) is still supported
 for anyone who prefers files, but is no longer required. See
 `js/auth/auth-config.example.js`.
 
-**Not yet:** passkeys, account/privacy/recovery controls, and a beta feedback
-system — each is its own later phase (BP9–BP11). BP7 + BP8 build the
-row-level-secured cloud schema and a complete sync engine, but the sync **release
-gate ships OFF**: no financial data leaves the device automatically. A production
-domain must be chosen before the passkey phase; GitHub Pages may serve the app
-under a repo sub-path (e.g. `/M-Wallet/`) rather than a domain root.
+**Not yet:** account/privacy/recovery controls and a beta feedback system — each
+is its own later phase (BP10–BP11). BP7 + BP8 build the row-level-secured cloud
+schema and a complete sync engine, and BP9 builds passkey sign-in, but the sync
+**and** passkey **release gates ship OFF**: no financial data leaves the device
+automatically, and no passkey / WebAuthn call is made. A permanent production
+domain must be chosen (it becomes the WebAuthn RP ID) before real passkeys are
+enrolled; GitHub Pages may serve the app under a repo sub-path (e.g.
+`/M-Wallet/`) rather than a domain root.
 
 ---
 
@@ -666,12 +726,15 @@ multi‑device before real testers use it. Done so far: a versioned beta build
 experience (BP3), non-destructive local existing-user data ownership (BP4),
 a first‑run setup wizard for genuinely new owners (BP5), an optional guided
 app walkthrough (BP6), a row‑level‑secured cloud financial data schema (BP7 —
-schema, RLS, and a pure codec + repository client), and a complete local‑first
-**sync engine** (BP8 — planner, engine, conflict UI, second‑device bootstrap).
-The BP8 sync **release gate ships OFF**; live two‑user RLS verification and live
-multi‑device sync verification are both **deferred to BP12** and are hard gates
-before BP13. Still planned: passkeys (BP9), account/privacy/recovery controls
-(BP10), and a beta feedback system (BP11).
+schema, RLS, and a pure codec + repository client), a complete local‑first
+**sync engine** (BP8 — planner, engine, conflict UI, second‑device bootstrap),
+and a complete **passkey** sign-in system (BP9 — release gate, capability
+detection, sign-in / registration / management, confirmation dialogs). The BP8
+sync **and** BP9 passkey **release gates ship OFF**; live two‑user RLS
+verification, live multi‑device sync verification, and live WebAuthn / passkey
+verification (with the final RP ID) are all **deferred to BP12** and are hard
+gates before BP13. Still planned: account/privacy/recovery controls (BP10) and a
+beta feedback system (BP11).
 
 It is **not production‑ready** and should not be treated as a finished product.
 

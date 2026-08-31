@@ -1,0 +1,158 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   BP9 — Passkeys / device authentication
+
+     .mw-passkey-gateway     — "Use a Passkey" block in the sign-in view
+     #settings-passkey-*     — the Settings → Passkeys section
+     #mw-passkey-confirm     — the removal-confirmation dialog
+
+   Reuses the auth gateway shell (.mw-auth-*) and .z-* primitives.
+   Dormant while the passkey release gate is off (the committed default).
+   ========================================================= */
+
+/* ---- auth gateway "Use a Passkey" ------------------------ */
+
+.mw-passkey-gateway[hidden] { display: none; }
+
+.mw-passkey-or {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0 10px;
+    color: var(--z-text-muted, rgba(20, 22, 34, 0.55));
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.mw-passkey-or::before,
+.mw-passkey-or::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--z-border, rgba(20, 22, 34, 0.14));
+}
+
+.mw-passkey-hint {
+    margin: 8px 0 0;
+    font-size: 0.82rem;
+    color: var(--z-text-muted, rgba(20, 22, 34, 0.62));
+}
+
+
+/* ---- Settings → Passkeys -------------------------------- */
+
+.mw-passkey-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mw-passkey-list:empty { margin: 0; }
+
+.mw-passkey-row {
+    border: 1px solid var(--z-border, rgba(20, 22, 34, 0.12));
+    border-radius: var(--z-radius, 12px);
+    padding: 12px;
+    background: var(--z-surface-muted, rgba(20, 22, 34, 0.03));
+}
+
+.mw-passkey-name {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+}
+
+.mw-passkey-meta {
+    margin: 0 0 10px;
+    font-size: 0.8rem;
+    color: var(--z-text-muted, rgba(20, 22, 34, 0.62));
+}
+
+.mw-passkey-empty {
+    margin: 10px 0 0;
+    font-size: 0.85rem;
+    color: var(--z-text-muted, rgba(20, 22, 34, 0.62));
+}
+
+.mw-passkey-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mw-passkey-row-btn {
+    min-height: 44px;
+    font-size: 0.85rem;
+}
+
+.mw-passkey-rename { margin-bottom: 10px; }
+
+.mw-passkey-settings-msg,
+.mw-passkey-settings-msg[hidden] { }
+.mw-passkey-settings-msg {
+    margin-top: 8px;
+    font-size: 0.82rem;
+}
+.mw-passkey-settings-msg[data-kind="error"] { color: var(--z-danger, #c0392b); }
+.mw-passkey-settings-msg[data-kind="success"] { color: var(--z-success, #1e7d4f); }
+
+
+/* ---- removal confirmation dialog ------------------------ */
+
+.mw-passkey-confirm {
+    position: fixed;
+    inset: 0;
+    z-index: 992;   /* below the BP6 walkthrough (1000), above the app */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.mw-passkey-confirm[hidden] { display: none; }
+
+.mw-passkey-confirm-backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--z-overlay, rgba(12, 14, 22, 0.62));
+    backdrop-filter: blur(2px);
+}
+
+.mw-passkey-confirm-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: var(--z-surface, #fff);
+    color: var(--z-text, #12131a);
+    border: 1px solid var(--z-border, rgba(20, 22, 34, 0.12));
+    border-radius: var(--z-radius-lg, 16px);
+    box-shadow: var(--z-shadow-lg, 0 24px 60px rgba(8, 10, 20, 0.28));
+    padding: 22px;
+}
+
+.mw-passkey-confirm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.mw-passkey-confirm-btn {
+    flex: 1 1 auto;
+    min-width: 130px;
+    min-height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mw-passkey-confirm-backdrop { backdrop-filter: none; }
+    .mw-passkey-confirm-card { transition: none; animation: none; }
+}
+
+@media (prefers-color-scheme: dark) {
+    .mw-passkey-confirm-card {
+        background: var(--z-surface, #16181f);
+        color: var(--z-text, #f4f5f8);
+    }
+}
