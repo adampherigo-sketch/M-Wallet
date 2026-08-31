@@ -2,16 +2,19 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.9`.** M-Wallet is a pre‑release build.
+> **Status: Beta Preparation — `0.9.0-beta.10`.** M-Wallet is a pre‑release build.
 > It is **not production‑ready**. Accounts, sign-in, non-destructive local
 > data ownership, a first‑run setup wizard, an optional guided walkthrough,
 > a row-level-secured cloud data schema, a complete local‑first **sync engine**,
-> a complete **passkey** sign-in system, and a full **account-management centre**
+> a complete **passkey** sign-in system, a full **account-management centre**
 > in Settings (change email, sign out everywhere, export / restore / erase a
-> wallet backup, honest privacy statement) now exist (when a Supabase project
-> is configured). Both the sync engine and passkeys are **shipped OFF** — their
-> release gates stay disabled until a pre-beta security pass (BP12). Email +
-> password sign-in and password reset are unchanged. **Account management never
+> wallet backup, honest privacy statement), and a **Beta Hub** with
+> user-initiated feedback / bug reporting and privacy-safe diagnostics now exist
+> (when a Supabase project is configured). Both the sync engine and passkeys are
+> **shipped OFF** — their release gates stay disabled until a pre-beta security
+> pass (BP12). Email + password sign-in and password reset are unchanged.
+> **M-Wallet has no analytics or advertising trackers**; feedback is sent only
+> when you press Send. **Account management never
 > silently destroys financial data.** Secure **account deletion is intentionally
 > not built** — it needs a trusted server-side operation. **Local data remains
 > the source of truth** and nothing synchronizes automatically. See
@@ -94,7 +97,8 @@ M-Wallet/
 │   │                       (BP7 adds no CSS — one reused Settings row)
 │   ├── sync.css            BP8 — #mw-sync-bootstrap gate + #mw-sync-conflicts overlay
 │   ├── passkeys.css        BP9 — "Use a Passkey" + Settings passkeys + removal dialog
-│   └── account.css         BP10 — Settings account sections + change-email / restore / erase dialogs
+│   ├── account.css         BP10 — Settings account sections + change-email / restore / erase dialogs
+│   └── beta.css            BP11 — Settings Beta Hub + feedback / known-issues / what's-new dialogs
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -136,6 +140,12 @@ M-Wallet/
 │   │   ├── account-controls.js  MWalletAccount — DOM-free API: summary, change email,
 │   │   │                        sign out, export / inspect / restore / erase, diagnostics
 │   │   └── account-ui.js        MWalletAccountUI — Settings sections + the three BP10 dialogs
+│   ├── beta/               beta operations + feedback (BP11)
+│   │   ├── beta-config.js       MWalletBetaConfig — public deploy config (endpoint/support: null by default)
+│   │   ├── beta-known-issues.js MWalletBetaKnownIssues — curated static issue registry
+│   │   ├── beta-ops.js          MWalletBetaOps — build summary, sanitised diagnostics, limitations, report id, release notes
+│   │   ├── beta-feedback.js     MWalletBetaFeedback — validation, payload, the single user-initiated POST
+│   │   └── beta-ui.js           MWalletBetaUI — Beta Hub + feedback / known-issues / what's-new dialogs
 │   ├── vendor/
 │   │   └── supabase-js.min.js   vendored @supabase/supabase-js (UMD, pinned)
 │   └── m-cash/
@@ -152,6 +162,9 @@ M-Wallet/
 ├── docs/BP8-SYNC-ENGINE.md local-first sync engine, conflict model, release gate
 ├── docs/BP9-PASSKEYS.md    passkeys, biometric privacy, RP ID, BP12 verification
 ├── docs/BP10-ACCOUNT-PRIVACY-RECOVERY.md  account controls, export/restore/erase, privacy, why deletion is server-side only
+├── docs/BP11-BETA-OPERATIONS.md  Beta Hub, feedback report schema, diagnostics privacy model, endpoint setup, BP12 plan
+├── docs/BETA-TESTER-GUIDE.md  for closed-beta testers — reporting, diagnostics, what not to include, updating builds
+├── docs/BETA-ISSUE-TRIAGE.md  internal severity mapping, lifecycle, security escalation, data-loss response
 ├── docs/design/            Zevaryn Grid concept reference (not used at runtime)
 ├── docs/archive/           superseded phase reports, kept for history
 ├── .github/workflows/      CI (runs the test suite on push / PR to main)
@@ -274,8 +287,28 @@ dialogs, counts-only preview via `textContent`, Escape cancels
 non-destructively) — with `tests/helpers/account-harness.js` over the real
 `js/storage.js`; **no network, no real Supabase client**.
 
+Beta operations (BP11) are covered by `tests/beta-config.test.js` (no secret,
+null delivery defaults, HTTPS-only endpoint), `tests/beta-ops.test.js`
+(sanitised diagnostics — no financial data, no identity; limitations derived
+from the live release gates; report-scoped ids), `tests/beta-feedback.test.js`
+(validation, versioned payload, size cap, prototype-pollution guard, and the
+`submit` transport — no-endpoint/offline no-ops, one POST, HTTPS-only, timeout,
+4xx/5xx → `server_error`, no raw body, no retry), `tests/beta-known-issues.test.js`,
+`tests/beta-ui.test.js` (the Beta Hub + dialogs, `textContent` rendering, Send
+unavailable without an endpoint, copy/download, discard-confirm, Escape), and
+`tests/beta-integrity.test.js` (a full feedback lifecycle with **zero network
+calls until Send** and **zero localStorage / wallet / auth / ownership /
+sync writes**) — with `tests/helpers/beta-harness.js`; **no real network, no
+real feedback ever sent**.
+
 **Live Supabase / device checks not covered by `npm test`:**
 
+- **BP11 — configuring + verifying a real feedback destination** (send a test
+  report, confirm the exact sanitised payload, no wallet contents, no user UUID,
+  email/diagnostics only with opt-in, offline / timeout / 4xx / 5xx behaviour,
+  no automatic traffic) is **deferred to BP12**. The committed build ships with
+  no endpoint — feedback is copy / download only. BP11 closes no release gate.
+  See [`docs/BP11-BETA-OPERATIONS.md`](docs/BP11-BETA-OPERATIONS.md).
 - **BP10 — a real email-change confirmation, a real `scope:"global"` sign-out,
   and a restore/erase pass on a real browser** are **deferred to BP12**. Secure
   **account deletion** needs a trusted server-side path and is **not built** — a

@@ -1,0 +1,280 @@
+/* =========================================================
+   M-WALLET — BETA HUB + FEEDBACK  (BP11)
+
+   Settings "Beta Hub" rows and the feedback / known-issues /
+   what's-new dialogs. Leans on the shared Zevaryn Grid tokens
+   (.z-*), the Settings row system (.zg-set-*), and the same
+   dialog primitives as css/account.css.
+   ========================================================= */
+
+/* ---- Settings: Beta Hub ------------------------------- */
+
+.mw-beta-hub-value {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.mw-beta-hub-list {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--z-text-soft, #55555f);
+}
+
+.mw-beta-hub-list li { margin: 3px 0; }
+
+.mw-beta-hub-support {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+/* auth-gateway "Report a beta problem" link */
+.mw-auth-beta-report {
+    margin-top: 14px;
+    text-align: center;
+}
+
+.mw-auth-beta-report button {
+    background: none;
+    border: 0;
+    color: var(--z-link, #3d5afe);
+    font: inherit;
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+    min-height: 44px;
+    padding: 4px 8px;
+}
+
+.mw-auth-beta-report button:focus-visible {
+    outline: 2px solid var(--z-focus, #3d5afe);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+
+/* ---- dialogs ----------------------------------------- */
+
+.mw-beta-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 1250;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.mw-beta-dialog[hidden] { display: none; }
+
+.mw-beta-dialog-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(12, 12, 16, 0.55);
+}
+
+.mw-beta-dialog-card {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    background: var(--z-surface, #fff);
+    color: var(--z-text, #1c1c22);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+}
+
+.mw-beta-dialog-title {
+    margin: 0 0 6px;
+    font-size: 1.15rem;
+    font-weight: 650;
+}
+
+.mw-beta-dialog-sub {
+    margin: 0 0 16px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--z-text-soft, #55555f);
+}
+
+.mw-beta-warn {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border-left: 4px solid var(--z-warn, #9a6a00);
+    background: rgba(154, 106, 0, 0.10);
+    font-size: 0.84rem;
+    line-height: 1.5;
+}
+
+.mw-beta-field {
+    display: block;
+    margin: 0 0 14px;
+}
+
+.mw-beta-field > span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.mw-beta-field input,
+.mw-beta-field select,
+.mw-beta-field textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--z-border, #d0d0d7);
+    border-radius: 10px;
+    font: inherit;
+    font-size: 1rem;
+    background: var(--z-surface, #fff);
+    color: inherit;
+}
+
+.mw-beta-field textarea {
+    min-height: 88px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.mw-beta-field input:focus-visible,
+.mw-beta-field select:focus-visible,
+.mw-beta-field textarea:focus-visible {
+    outline: 2px solid var(--z-focus, #3d5afe);
+    outline-offset: 1px;
+}
+
+.mw-beta-field .is-invalid,
+.mw-beta-field input.is-invalid,
+.mw-beta-field textarea.is-invalid {
+    border-color: var(--z-bad, #c0392b);
+}
+
+.mw-beta-check {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0 0 10px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.mw-beta-check input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    flex: 0 0 auto;
+}
+
+.mw-beta-kv-list,
+.mw-beta-diag-preview {
+    margin: 0 0 16px;
+    border: 1px solid var(--z-border, #d0d0d7);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.mw-beta-kv {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 14px;
+    font-size: 0.86rem;
+}
+
+.mw-beta-kv + .mw-beta-kv {
+    border-top: 1px solid var(--z-border, #d0d0d7);
+}
+
+.mw-beta-kv-k { color: var(--z-text-soft, #55555f); flex: 0 0 auto; }
+.mw-beta-kv-v { text-align: right; word-break: break-word; }
+
+.mw-beta-issue {
+    padding: 10px 0;
+    border-top: 1px solid var(--z-border, #d0d0d7);
+    list-style: none;
+}
+
+.mw-beta-issue:first-child { border-top: 0; }
+
+.mw-beta-issue strong { display: block; }
+
+.mw-beta-issue-meta {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: var(--z-text-soft, #55555f);
+}
+
+.mw-beta-issue-workaround {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+
+.mw-beta-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.mw-beta-dialog-actions .z-btn { min-height: 44px; }
+
+.mw-beta-dialog-msg {
+    margin: 0 0 12px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    background: var(--z-surface-2, #f1f1f4);
+}
+
+.mw-beta-dialog-msg.is-error { background: rgba(192, 57, 43, 0.13); color: var(--z-bad-ink, #8e2418); }
+.mw-beta-dialog-msg.is-success { background: rgba(26, 127, 82, 0.13); color: var(--z-good-ink, #0f5c3a); }
+.mw-beta-dialog-msg[hidden] { display: none; }
+
+.mw-beta-privacy-note {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--z-text-soft, #55555f);
+}
+
+
+/* ---- dark mode --------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+    .mw-beta-dialog-card {
+        background: var(--z-surface, #1c1c22);
+        color: var(--z-text, #ececf1);
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    }
+    .mw-beta-field input,
+    .mw-beta-field select,
+    .mw-beta-field textarea {
+        background: var(--z-surface-2, #26262e);
+        border-color: var(--z-border, #3a3a44);
+    }
+    .mw-beta-dialog-msg { background: var(--z-surface-2, #26262e); color: var(--z-text, #ececf1); }
+}
+
+
+/* ---- reduced motion --------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .mw-beta-dialog,
+    .mw-beta-dialog * {
+        transition: none !important;
+        animation: none !important;
+    }
+}

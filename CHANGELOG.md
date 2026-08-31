@@ -11,6 +11,81 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP11 — Beta operations + feedback (`0.9.0-beta.9` → `0.9.0-beta.10`)
+
+Tooling to run M-Wallet as a professional closed beta: a **Beta Hub** in
+Settings, a structured **user-initiated** feedback / bug-report flow with
+optional privacy-safe diagnostics, a known-issues registry, curated release
+notes, and the tester + triage documentation. **This is not telemetry** —
+M-Wallet still has no analytics or advertising trackers, and BP11 keeps it that
+way: feedback is sent **only** when the tester presses Send, and only when a
+feedback destination is configured.
+
+- **New modules** — `js/beta/beta-config.js` (`MWalletBetaConfig` — public deploy
+  config; committed `feedbackEndpoint: null`, `supportEmail: null`; no secret),
+  `js/beta/beta-known-issues.js` (`MWalletBetaKnownIssues` — curated static
+  registry, empty for beta.10, honest empty state), `js/beta/beta-ops.js`
+  (`MWalletBetaOps` — build summary, **sanitised diagnostics**, live-derived beta
+  limitations, `MWB-<uuid>` report-id generator, curated release notes; no DOM),
+  `js/beta/beta-feedback.js` (`MWalletBetaFeedback` — validation, versioned
+  payload, and the **single** network boundary `submit()`; no DOM),
+  `js/beta/beta-ui.js` (`MWalletBetaUI` — Beta Hub + feedback / known-issues /
+  what's-new dialogs; fails open). New `css/beta.css`.
+- **Report format** — `{ format: "m-wallet-beta-feedback", formatVersion: 1,
+  reportId, createdAt, appVersion, channel, category, severity, title,
+  description, stepsToReproduce, expectedBehavior, actualBehavior, contactEmail,
+  diagnostics }`. `formatVersion` is independent of the app / wallet / export
+  versions. Field limits: title 120, description 5000, steps/expected/actual
+  3000, email 254; whole report capped at 48 KiB. Text is trimmed, CRLF→LF, null
+  bytes stripped; rendered with `textContent` only.
+- **Safe diagnostics (opt-in, unchecked by default)** — app version, channel,
+  current screen, online, standalone, SW-controlled, viewport, user-agent
+  string, language, auth *state label*, sync/passkey release flags, feedback-
+  configured flag. Previewable before sending. **Never** wallet data, balances,
+  transactions, aggregate financial counts, user UUID, owner id, account email
+  (unless separately opted in), tokens, sessions, passkey/sync ids, localStorage,
+  or cookies.
+- **Transport** — `submit()` is the only outbound network call in the app: one
+  `POST` of JSON, HTTPS-only (`http:`/`javascript:`/`data:`/`file:`/`ftp:`/`ws:`
+  rejected), `credentials: "omit"`, `~15 s` `AbortController` timeout, **no
+  retry, no background queue, no auto-resend on reconnect**. 4xx and 5xx both map
+  to `server_error`; raw bodies and fetch exceptions are never shown; only a
+  short plain `reference` string is accepted, else the local `reportId` is used.
+  Double-clicking Send yields one request.
+- **Manual fallback** — Copy (plain text to clipboard) and Download
+  (`m-wallet-feedback-<reportId>.json` via Blob + object URL) never use the
+  network and work offline. No feedback draft is written to `localStorage` —
+  form state is in memory only; a refresh loses it (by design).
+- **Auth-gateway reporting** — a "Report a beta problem" control on the sign-in
+  screen opens the same privacy-safe dialog while signed out / in an auth error /
+  on the verify screen. Authentication never depends on feedback code.
+- **Beta Hub (Settings)** — program name + version, "Report a beta problem",
+  feedback-delivery status, known issues, what's new, current beta limitations
+  (derived truthfully from the live release gates), and support status (the
+  configured email, or "Direct support contact has not been configured for this
+  build").
+- **Service worker** — `m-wallet-v29` → `m-wallet-v30`; `APP_SHELL` adds
+  `css/beta.css` + the five `js/beta/*` modules. The feedback `POST` is
+  non-GET **and** cross-origin, so the SW returns early for it — its request and
+  response never touch Cache Storage.
+- **Version** — `0.9.0-beta.9` → `0.9.0-beta.10` (`js/app-version.js` +
+  `package.json`).
+- **Legacy `storage.exportData` / `importData` / `clearAllData`** — unchanged;
+  BP11 adds nothing that reaches them.
+- **Docs** — new `docs/BP11-BETA-OPERATIONS.md`, `docs/BETA-TESTER-GUIDE.md`,
+  `docs/BETA-ISSUE-TRIAGE.md`. The closed-beta access model is documented as
+  **server-side only** — no front-end allowlist exists or is planned.
+- **Tests** — `758` → `840`. New: `tests/beta-config.test.js`,
+  `tests/beta-ops.test.js`, `tests/beta-feedback.test.js`,
+  `tests/beta-known-issues.test.js`, `tests/beta-ui.test.js`,
+  `tests/beta-integrity.test.js` (+ `tests/helpers/beta-harness.js`), plus BP11
+  static checks in `tests/auth-architecture.test.js`. No test sends real
+  feedback; no live endpoint verification yet.
+- **Status** — **IMPLEMENTATION COMPLETE — LIVE FEEDBACK-ENDPOINT VERIFICATION
+  DEFERRED TO BP12.** BP11 closes no release gate. Not enabled: BP8 sync, BP9
+  passkeys. Still pending: everything already deferred to BP12/BP13 plus a
+  configured + verified feedback destination.
+
 ### BP10 — Account, privacy & recovery controls (`0.9.0-beta.8` → `0.9.0-beta.9`)
 
 Settings becomes a trustworthy **account-management centre**: change email,
