@@ -34,7 +34,32 @@ class El {
         this.disabled = false;
         this.inert = false;
         this.checked = false;
+        this.style = {};
+        /* test-controlled layout box; default is an off-screen zero box
+           so an "inactive"/missing element reads as not-visible */
+        this._rect = { top: 0, left: 0, width: 0, height: 0 };
+        this.scrollIntoViewCalls = 0;
     }
+
+    /* test helper: give this element a layout box */
+    setRect(rect) {
+        rect = rect || {};
+        this._rect = {
+            top: Number(rect.top) || 0,
+            left: Number(rect.left) || 0,
+            width: Number(rect.width) || 0,
+            height: Number(rect.height) || 0
+        };
+    }
+    getBoundingClientRect() {
+        const r = this._rect || { top: 0, left: 0, width: 0, height: 0 };
+        return {
+            top: r.top, left: r.left, width: r.width, height: r.height,
+            right: r.left + r.width, bottom: r.top + r.height,
+            x: r.left, y: r.top
+        };
+    }
+    scrollIntoView() { this.scrollIntoViewCalls += 1; }
 
     /* ---- attributes ---- */
     setAttribute(name, val) {
@@ -203,6 +228,20 @@ class Doc {
     querySelector(sel) { return this.body.querySelector(sel) || (this.body.matches(sel) ? this.body : null); }
     querySelectorAll(sel) { return this.body.querySelectorAll(sel); }
     addEventListener(type, fn) { (this.listeners[type] = this.listeners[type] || []).push(fn); }
+    removeEventListener(type, fn) {
+        const list = this.listeners[type] || [];
+        const i = list.indexOf(fn);
+        if (i !== -1) { list.splice(i, 1); }
+    }
+    /* test helper: fire a document-level event (e.g. keydown) */
+    dispatch(type, event) {
+        event = event || {};
+        event.type = type;
+        event.target = event.target || this;
+        event.preventDefault = event.preventDefault || function () { event.defaultPrevented = true; };
+        (this.listeners[type] || []).slice().forEach((fn) => fn(event));
+        return event;
+    }
 }
 
 /*
@@ -517,4 +556,150 @@ function buildMigrationDom() {
     };
 }
 
-module.exports = { Doc, El, buildAuthDom, buildMigrationDom, buildSetupDom };
+const WT_STEP_TARGETS = {
+    "home": "home-overview",
+    "budget": "budget-overview",
+    "transactions": "transactions-overview",
+    "savings": "savings-overview",
+    "m-cash": "m-cash-overview",
+    "reports": "reports-overview",
+    "settings": "settings-overview"
+};
+
+/* Mirror of index.html's #mw-walkthrough (BP6) + a .app root with
+   the 7 financial pages, each carrying a [data-walkthrough-target]. */
+function buildWalkthroughGateInto(doc) {
+    const gate = doc.createElement("div");
+    gate.setAttribute("id", "mw-walkthrough");
+    gate.setAttribute("class", "mw-wt");
+    gate.setAttribute("role", "dialog");
+    gate.hidden = true;
+    gate.setAttribute("aria-hidden", "true");
+    doc.body.appendChild(gate);
+
+    const backdrop = doc.createElement("div");
+    backdrop.setAttribute("data-wt-backdrop", "");
+    gate.appendChild(backdrop);
+
+    const spot = doc.createElement("div");
+    spot.setAttribute("data-wt-spotlight", "");
+    spot.hidden = true;
+    gate.appendChild(spot);
+
+    const card = doc.createElement("div");
+    card.setAttribute("data-wt-card", "");
+    card.setRect({ top: 0, left: 0, width: 360, height: 240 });
+    gate.appendChild(card);
+
+    const count = doc.createElement("p");
+    const countSpan = doc.createElement("span");
+    countSpan.setAttribute("data-wt-step-count", "");
+    countSpan.textContent = "Step 1 of 8";
+    count.appendChild(countSpan);
+    card.appendChild(count);
+
+    const progress = doc.createElement("ol");
+    progress.setAttribute("data-wt-progress", "");
+    card.appendChild(progress);
+    for (let i = 0; i < 8; i += 1) {
+        const li = doc.createElement("li");
+        li.setAttribute("data-state", i === 0 ? "current" : "todo");
+        progress.appendChild(li);
+    }
+
+    const title = doc.createElement("h2");
+    title.setAttribute("id", "mw-wt-title");
+    title.setAttribute("data-wt-title", "");
+    title.setAttribute("tabindex", "-1");
+    title.textContent = "Here's your M-Wallet";
+    card.appendChild(title);
+
+    const body = doc.createElement("p");
+    body.setAttribute("id", "mw-wt-body");
+    body.setAttribute("data-wt-body", "");
+    card.appendChild(body);
+
+    const nav = doc.createElement("div");
+    nav.setAttribute("class", "mw-wt-nav");
+    card.appendChild(nav);
+
+    const skip = doc.createElement("button");
+    skip.setAttribute("type", "button");
+    skip.setAttribute("data-wt-action", "skip");
+    skip.textContent = "Skip Tour";
+    nav.appendChild(skip);
+
+    const right = doc.createElement("span");
+    right.setAttribute("class", "mw-wt-nav-right");
+    nav.appendChild(right);
+
+    const back = doc.createElement("button");
+    back.setAttribute("type", "button");
+    back.setAttribute("data-wt-action", "back");
+    back.hidden = true;
+    back.textContent = "Back";
+    right.appendChild(back);
+
+    const next = doc.createElement("button");
+    next.setAttribute("type", "button");
+    next.setAttribute("data-wt-action", "next");
+    next.textContent = "Start Tour";
+    right.appendChild(next);
+
+    return gate;
+}
+
+function buildWalkthroughDom() {
+    const doc = new Doc();
+
+    const app = doc.createElement("div");
+    app.setAttribute("class", "app");
+    doc.body.appendChild(app);
+
+    const pages = {};
+    ["home", "budget", "transactions", "savings", "m-cash", "reports", "settings"].forEach((name, i) => {
+        const page = doc.createElement("section");
+        page.setAttribute("class", i === 0 ? "page active" : "page");
+        page.setAttribute("data-page-content", name);
+        page.setAttribute("id", name + "-page");
+        app.appendChild(page);
+        const target = doc.createElement("div");
+        target.setAttribute("data-walkthrough-target", WT_STEP_TARGETS[name]);
+        /* a plausible on-screen box; the fake nav flips visibility */
+        target.setRect({ top: 120, left: 16, width: 320, height: 90 });
+        page.appendChild(target);
+        pages[name] = { page, target };
+    });
+
+    const bottomNav = doc.createElement("nav");
+    bottomNav.setAttribute("class", "bottom-nav");
+    bottomNav.setRect({ top: 780, left: 0, width: 390, height: 64 });
+    app.appendChild(bottomNav);
+
+    /* a minimal auth gate so the real auth-ui.js can attach in
+       integration tests (it returns false without #mw-auth-gate) */
+    const authGate = doc.createElement("div");
+    authGate.setAttribute("id", "mw-auth-gate");
+    authGate.setAttribute("class", "mw-auth-gate");
+    authGate.hidden = true;
+    doc.body.appendChild(authGate);
+
+    const gate = buildWalkthroughGateInto(doc);
+
+    return {
+        document: doc,
+        app,
+        authGate,
+        gate,
+        pages,
+        card: gate.querySelector("[data-wt-card]"),
+        spotlight: gate.querySelector("[data-wt-spotlight]"),
+        title: gate.querySelector("[data-wt-title]"),
+        body: gate.querySelector("[data-wt-body]"),
+        stepCount: gate.querySelector("[data-wt-step-count]"),
+        action(name) { return gate.querySelector('[data-wt-action="' + name + '"]'); },
+        target(page) { return pages[page] ? pages[page].target : null; }
+    };
+}
+
+module.exports = { Doc, El, buildAuthDom, buildMigrationDom, buildSetupDom, buildWalkthroughDom };

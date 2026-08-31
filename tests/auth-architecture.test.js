@@ -1040,9 +1040,9 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 /* ---- static wiring checks ---------------------------- */
 
-test("service-worker precaches the auth + migration + setup modules and bumped the cache", () => {
+test("service-worker precaches the auth + migration + setup + walkthrough modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v24"/.test(sw), "cache bumped to v24");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v25"/.test(sw), "cache bumped to v25");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1052,9 +1052,12 @@ test("service-worker precaches the auth + migration + setup modules and bumped t
         "./js/migration/migration-ui.js",
         "./js/setup/first-run-setup.js",
         "./js/setup/setup-ui.js",
+        "./js/walkthrough/guided-walkthrough.js",
+        "./js/walkthrough/walkthrough-ui.js",
         "./css/auth.css",
         "./css/migration.css",
         "./css/setup.css",
+        "./css/walkthrough.css",
         "./js/vendor/supabase-js.min.js"
     ]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
@@ -1103,18 +1106,20 @@ test("index.html has the auth gateway markup + auth.css, and financial page mark
 
 test("changed modules are re-versioned in index.html", () => {
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.ok(/js\/auth\/auth-ui\.js\?v=4/.test(html), "auth-ui.js bumped to ?v=4");
+    assert.ok(/js\/auth\/auth-ui\.js\?v=5/.test(html), "auth-ui.js bumped to ?v=5");
     assert.ok(/js\/auth\/auth\.js\?v=3/.test(html), "auth.js still ?v=3");
-    assert.ok(/js\/settings-ui\.js\?v=6/.test(html), "settings-ui.js bumped to ?v=6");
+    assert.ok(/js\/settings-ui\.js\?v=7/.test(html), "settings-ui.js bumped to ?v=7");
     assert.ok(/js\/setup\/first-run-setup\.js\?v=\d+/.test(html), "first-run-setup.js has a ?v");
     assert.ok(/js\/setup\/setup-ui\.js\?v=\d+/.test(html), "setup-ui.js has a ?v");
+    assert.ok(/js\/walkthrough\/guided-walkthrough\.js\?v=\d+/.test(html), "guided-walkthrough.js has a ?v");
+    assert.ok(/js\/walkthrough\/walkthrough-ui\.js\?v=\d+/.test(html), "walkthrough-ui.js has a ?v");
 });
 
-test("app version bumped to 0.9.0-beta.4 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.5 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.4"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.4", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.5"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.5", "package.json");
 });
 
 test("BP4 migration modules load after auth, before the financial engine", () => {
@@ -1251,6 +1256,93 @@ test("BP5 fail-open: auth-ui setup guard holds ONLY on explicit { release: false
 
     /* a failed 'existing' metadata write must NOT gate a verified owner */
     assert.ok(/fail[- ]?open/i.test(setup), "existing-user metadata failure fails open");
+});
+
+
+/* =========================================================
+   BP6 — GUIDED APP WALKTHROUGH  (static / deployment)
+   ========================================================= */
+
+test("BP6 walkthrough: loads after BP4 + BP5, overlay markup present, targets on every page", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const at = (needle) => html.indexOf(needle);
+
+    /* load order: auth-ui -> migration -> setup -> walkthrough -> storage */
+    const authUiAt = at("js/auth/auth-ui.js?v=");
+    const migAt = at("js/migration/migration-ui.js?v=");
+    const setupUiAt = at("js/setup/setup-ui.js?v=");
+    const wtSvcAt = at("js/walkthrough/guided-walkthrough.js?v=");
+    const wtUiAt = at("js/walkthrough/walkthrough-ui.js?v=");
+    const storageAt = at("js/storage.js?v=");
+    assert.ok(wtSvcAt > 0 && wtUiAt > 0, "walkthrough scripts present");
+    assert.ok(authUiAt < wtSvcAt && migAt < wtSvcAt && setupUiAt < wtSvcAt, "walkthrough loads after auth-ui + BP4 + BP5");
+    assert.ok(wtSvcAt < wtUiAt, "walkthrough service before its UI");
+    assert.ok(wtUiAt < storageAt, "walkthrough loads before the financial engine");
+
+    assert.ok(/href="\.\/css\/walkthrough\.css/.test(html), "walkthrough.css linked");
+    assert.ok(/id="mw-walkthrough"/.test(html), "#mw-walkthrough present");
+    assert.ok(/id="mw-walkthrough"[\s\S]{0,260}\bhidden\b/.test(html), "#mw-walkthrough starts hidden");
+
+    /* the overlay must live OUTSIDE the .app root so it stays usable
+       while auth-ui makes .app inert */
+    const appOpen = html.indexOf('<div class="app">');
+    const appClose = html.indexOf("</div>", html.lastIndexOf('class="bottom-nav"'));
+    const wtAt = html.indexOf('id="mw-walkthrough"');
+    assert.ok(appOpen > 0 && wtAt > appOpen, "sanity");
+    assert.ok(wtAt > appClose || appClose === -1 ? true : wtAt > html.indexOf("</main>"), "walkthrough overlay after the app content");
+    /* stronger: the auth + setup gates and the walkthrough are all siblings after .app */
+    assert.ok(html.indexOf('id="mw-walkthrough"') > html.indexOf('id="mw-setup-gate"'), "walkthrough after the setup gate");
+
+    for (const t of ["home-overview", "budget-overview", "transactions-overview", "savings-overview", "m-cash-overview", "reports-overview", "settings-overview"]) {
+        assert.ok(html.includes('data-walkthrough-target="' + t + '"'), "target " + t + " present");
+    }
+    /* action buttons + no forced-tutorial restart control */
+    for (const a of ["skip", "back", "next"]) {
+        assert.ok(html.includes('data-wt-action="' + a + '"'), "action " + a);
+    }
+    /* Settings replay row */
+    assert.ok(html.includes('id="settings-walkthrough-panel"'), "Settings Guided Tour row");
+    assert.ok(html.includes('data-set-action="walkthrough-start"'), "Settings replay button");
+
+    /* financial pages untouched */
+    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+        assert.ok(html.includes('id="' + p + '"'), p + " intact");
+    }
+});
+
+test("BP6 fail-open: auth-ui walkthrough guard holds ONLY on explicit { release: false }, consulted after BP5", () => {
+    const authUi = fs.readFileSync(path.join(ROOT, "js/auth/auth-ui.js"), "utf8");
+    const svc = fs.readFileSync(path.join(ROOT, "js/walkthrough/guided-walkthrough.js"), "utf8");
+    const ui = fs.readFileSync(path.join(ROOT, "js/walkthrough/walkthrough-ui.js"), "utf8");
+
+    /* the BP6 gate is consulted only AFTER ownership + setup have released */
+    const ownIdx = authUi.indexOf("if (!ownershipReleased(lastSnapshot))");
+    const setupIdx = authUi.indexOf("if (!setupReleased(lastSnapshot))");
+    const wtIdx = authUi.indexOf("if (!walkthroughReleased(lastSnapshot))");
+    assert.ok(ownIdx > 0 && setupIdx > ownIdx && wtIdx > setupIdx,
+        "renderState checks ownership -> setup -> walkthrough in that order");
+    assert.ok(/walkthroughReleased/.test(authUi) && /FAIL[- ]OPEN/i.test(authUi), "fail-open walkthrough logic present");
+    const wtRel = authUi.slice(authUi.indexOf("function walkthroughReleased"), authUi.indexOf("function walkthroughReleased") + 500);
+    assert.ok(/typeof walkthroughGuard !== "function"[^]{0,40}return true/.test(wtRel), "no guard -> release");
+    assert.ok(/catch \(e\) \{[\s\S]{0,30}return true/.test(wtRel), "throwing guard -> release");
+    assert.ok(/return result\.release !== false/.test(wtRel), "holds only on an explicit release:false");
+
+    /* the walkthrough layer makes ZERO network / cloud calls */
+    for (const [label, src] of [["guided-walkthrough.js", svc], ["walkthrough-ui.js", ui]]) {
+        assert.ok(!/\bfetch\s*\(/.test(src), label + " has no fetch()");
+        assert.ok(!/XMLHttpRequest|WebSocket|sendBeacon/.test(src), label + " has no XHR / WebSocket / sendBeacon");
+        assert.ok(!/createClient|supabase\.|\.rpc\s*\(/.test(src), label + " has no Supabase usage");
+        assert.ok(!/\.from\s*\(/.test(src) || /Array\.prototype|\.slice\.call/.test(src), label + " no Supabase .from()");
+        assert.ok(!/setItem\s*\(\s*["'`]mWalletData|removeItem\s*\(\s*["'`]mWalletData/.test(src), label + " never writes mWalletData");
+        assert.ok(!/sb_secret_|service_role/.test(src), label + " no secret key references");
+    }
+    assert.ok(!/\.innerHTML\s*=/.test(ui), "walkthrough-ui never assigns innerHTML");
+
+    /* local-only metadata keys; never auto-toured for a legacy user */
+    assert.ok(/mwallet\.walkthrough\.v1/.test(svc), "walkthrough record key");
+    assert.ok(/mwallet\.walkthrough\.progress\.v1/.test(svc), "walkthrough progress key");
+    assert.ok(/firstRunStatus\(\)\s*!==\s*"complete"/.test(svc), "auto-start requires BP5 status 'complete' (not 'existing')");
+    assert.ok(/ownershipVerified\(\)/.test(svc), "BP4 ownership required before BP6");
 });
 
 test(".gitignore excludes the local auth config override", () => {

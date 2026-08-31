@@ -90,6 +90,37 @@ never initialises still **fails open** (the verified owner reaches their app).
 The DOM stub was extended with descendant / compound / `:checked` selector
 support for this suite.
 
+## Guided walkthrough tests (BP6)
+
+`guided-walkthrough.test.js` loads the real `js/walkthrough/guided-walkthrough.js`
+through `node:vm` with stubbed `MWalletAuth` / `MWalletLocalMigration` (BP4) /
+`MWalletFirstRun` (BP5) / `BudgetNavigation`, the **real `js/storage.js`** as
+`MWalletStorage`, and an instrumented `localStorage`. It covers the auto-start
+decision (only a fresh, BP4-verified, BP5-`complete` owner with no record —
+never a legacy `existing` user, a `completed`/`skipped` user, owner mismatch,
+`needs_claim`, a required BP5 wizard, recovery, signed-out, or unconfigured),
+step navigation (one Next = one step, unknown step → Welcome), first-time
+progress + resume (owner-bound, foreign progress ignored), skip / complete
+(idempotent, and a write failure closes the tour without a false "saved" claim
+and without trapping the owner), manual-replay semantics (works for legacy users,
+never re-runs BP5, a manual skip never downgrades a prior `completed`), sign-out
+(progress kept for the same owner to resume), storage read/write failure
+(fails open), and a realistic financial fixture proving `mWalletData` is
+byte-for-byte identical before/after a full run with **zero** `setItem` /
+`removeItem` targeting it.
+
+`walkthrough-ui.test.js` unit-tests the pure placement solver
+(`computePlacement` never returns NaN / Infinity, always keeps the card inside
+the viewport, degrades to a centred card for a missing / oversized / off-screen
+target) plus `progressModel` / `stepModel`, then the DOM layer against
+`#mw-walkthrough` (overlay visibility per status, step copy via `textContent`,
+progress cells, Back/Next/Finish labels, the missing-target fallback, no
+double-fire, Escape == Skip), and finally a real `auth-ui.js` + service + UI
+**integration**: a fresh wizard-complete owner is held behind the tour (app
+inert), Finish releases the app, and a tour UI that never mounts still **fails
+open**. The DOM stub gained `getBoundingClientRect` / `scrollIntoView` and a
+`buildWalkthroughDom` helper.
+
 ## Running
 
 Node.js is required. From the repository root:

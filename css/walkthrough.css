@@ -1,0 +1,222 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   BP6 — Guided App Walkthrough  (#mw-walkthrough)
+
+   A polished coach-mark / spotlight overlay shown ONLY while
+   MWalletWalkthrough status is "active". It lives OUTSIDE the
+   .app root (which auth-ui makes inert while the tour is up),
+   so its own controls stay interactive while the financial UI
+   cannot be clicked or tabbed into.
+
+   Reuses the global .z-* primitives + Zevaryn Grid tokens.
+   ========================================================= */
+
+:root {
+    --mw-wt-dim: rgba(6, 8, 13, 0.74);
+    --sat-top: env(safe-area-inset-top, 0px);
+    --sat-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+#mw-walkthrough {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;                 /* above the auth gate (950) + setup gate (940) */
+    color: var(--z-text);
+    -webkit-tap-highlight-color: transparent;
+}
+
+#mw-walkthrough[hidden] {
+    display: none !important;
+}
+
+.mw-wt-backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--mw-wt-dim);
+    -webkit-backdrop-filter: blur(1.5px);
+    backdrop-filter: blur(1.5px);
+}
+
+/* when a target is spotlit, the spotlight box-shadow provides
+   the dim so the target region stays bright */
+#mw-walkthrough[data-wt-has-target="true"] .mw-wt-backdrop {
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+.mw-wt-spotlight {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    border-radius: 14px;
+    background: transparent;
+    pointer-events: none;
+    box-shadow:
+        0 0 0 9999px var(--mw-wt-dim),
+        0 0 0 2px var(--z-violet-bright),
+        0 0 30px 6px rgba(155, 92, 255, 0.36);
+    transition: left 160ms ease, top 160ms ease, width 160ms ease, height 160ms ease;
+}
+
+.mw-wt-spotlight[hidden] {
+    display: none;
+}
+
+/* ---- coach-mark card --------------------------------- */
+
+.mw-wt-card {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: min(400px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px - var(--sat-top) - var(--sat-bottom));
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    padding: 22px 22px 20px;
+    border-radius: var(--z-radius-lg);
+    border: 1px solid var(--z-border-strong);
+    background:
+        linear-gradient(180deg, rgba(155, 92, 255, 0.06), transparent 42%),
+        var(--z-panel);
+    box-shadow: var(--z-shadow-lg), 0 0 0 1px rgba(155, 92, 255, 0.12);
+
+    transition: left 160ms ease, top 160ms ease;
+}
+
+.mw-wt-eyebrow {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--z-text-muted);
+}
+
+.mw-wt-progress {
+    display: flex;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mw-wt-progress li {
+    flex: 1 1 0;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--z-border);
+    transition: background var(--transition);
+}
+
+.mw-wt-progress li[data-state="done"] {
+    background: var(--z-teal);
+}
+
+.mw-wt-progress li[data-state="current"] {
+    background: var(--z-violet);
+}
+
+.mw-wt-title {
+    margin: 4px 0 0;
+    font-size: 1.22rem;
+    line-height: 1.25;
+    font-weight: 700;
+    color: var(--z-text);
+}
+
+.mw-wt-title:focus-visible {
+    outline: 2px solid var(--z-violet-bright);
+    outline-offset: 4px;
+    border-radius: 6px;
+}
+
+.mw-wt-body {
+    margin: 0;
+    font-size: 0.94rem;
+    line-height: 1.5;
+    color: var(--z-text-secondary);
+}
+
+.mw-wt-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.mw-wt-nav-right {
+    display: inline-flex;
+    gap: 10px;
+    margin-left: auto;
+}
+
+#mw-walkthrough .z-btn {
+    min-height: 44px;
+}
+
+.mw-wt-skip {
+    appearance: none;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--z-text-muted);
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    padding: 10px 8px;
+    min-height: 44px;
+    border-radius: var(--z-radius-sm);
+    cursor: pointer;
+    transition: color var(--transition), background var(--transition);
+}
+
+.mw-wt-skip:hover {
+    color: var(--z-text);
+    background: var(--z-panel-hover);
+}
+
+.mw-wt-skip:focus-visible {
+    outline: 2px solid var(--z-violet-bright);
+    outline-offset: 2px;
+    color: var(--z-text);
+}
+
+.mw-wt-card [hidden] {
+    display: none !important;
+}
+
+/* keep the card clear of the bottom navigation on small screens */
+#mw-walkthrough[data-wt-placement="center"] .mw-wt-card {
+    width: min(420px, calc(100vw - 32px));
+}
+
+@media (max-width: 480px) {
+    .mw-wt-card {
+        width: calc(100vw - 24px);
+        padding: 18px 18px 16px;
+    }
+    .mw-wt-nav {
+        gap: 8px;
+    }
+    .mw-wt-nav-right {
+        width: 100%;
+    }
+    .mw-wt-nav-right .z-btn {
+        flex: 1 1 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mw-wt-spotlight,
+    .mw-wt-card {
+        transition: none;
+    }
+}
