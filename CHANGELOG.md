@@ -11,7 +11,51 @@ used in their commits.
 
 ## [Unreleased]
 
-_Nothing yet._
+### BP2 — Authentication architecture (infrastructure only)
+- Added a dedicated `js/auth/` subsystem with one public entry point,
+  `window.MWalletAuth`:
+  - `auth-config.js` — resolves and **validates** browser-safe configuration.
+    Accepts a **publishable key** (`sb_publishable_…`, current) or a legacy
+    **`anon`** JWT; **refuses** the secret key (`sb_secret_…`), the
+    `service_role` JWT, and any unrecognized/privileged key format — a refused
+    key leaves auth safely **unconfigured**, never `error`. The key value is
+    never logged.
+  - `auth-client.js` — lazily injects the vendored Supabase library and builds
+    the client (its own storage key, never near financial data).
+  - `auth.js` — explicit state model
+    (`unconfigured` / `initializing` / `signed_out` / `signed_in` / `error`),
+    session restoration, one controlled auth-event listener, an observable
+    `subscribe()` API, safe `diagnostics()` (key *family* only), and BP3
+    extension points (`signUp` / `signIn` / `resetPassword`).
+- **Configuration** is static-PWA friendly with no build step: `window`
+  override, **`localStorage["mwallet.auth.config"]`** (the recommended local-dev
+  path — set via `MWalletAuthConfigResolved.saveLocalConfig(url, key)` in the
+  console, no file or tracked `index.html` edit), or `DEPLOY_CONFIG` in
+  `auth-config.js` for the deployed build.
+- Auth initializes **detached** on `DOMContentLoaded`; the local financial app
+  renders synchronously and never waits on it. With no project configured
+  (the current default) the app runs exactly as before in **AUTH UNCONFIGURED**
+  mode and the Supabase library is never loaded.
+- Defined offline behaviour: restore from the stored session only, never delete
+  a session or any data on network failure, and reconcile **once** on reconnect
+  (no retry loops).
+- Settings → **System & Beta** gains a minimal, read-only **Accounts** row
+  ("Not configured" / "Ready" / "Signed in").
+- Vendored `js/vendor/supabase-js.min.js` (`@supabase/supabase-js` 2.112.4,
+  UMD) and added it plus the `js/auth/` modules to the service-worker
+  `APP_SHELL`. The service worker still ignores every cross-origin request, so
+  authentication traffic is never cached.
+- Added `tests/auth-architecture.test.js` (42 tests, mocked Supabase — no
+  network), including browser-key-validation hardening (publishable accepted,
+  `sb_secret_` / `service_role` / unknown formats refused, no key value in
+  state / diagnostics / errors / logs).
+- Service-worker cache `m-wallet-v19` → `m-wallet-v21`.
+- No financial logic, schema, or storage changes. No cloud tables. No account
+  UI (that is BP3).
+
+**Terminology:** "publishable key" is the current browser key; "anon key" is
+the legacy browser-safe equivalent; secret / `service_role` keys are
+**server-only** and forbidden in M-Wallet front-end source.
 
 ---
 

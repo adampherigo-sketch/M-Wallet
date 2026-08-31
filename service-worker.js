@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v19";
+const CACHE_NAME = "m-wallet-v21";
 
 
 /* =========================================================
@@ -38,6 +38,11 @@ const APP_SHELL = [
     "./css/zg9.css",
 
     "./js/app-version.js",
+
+    "./js/auth/auth-config.js",
+    "./js/auth/auth-client.js",
+    "./js/auth/auth.js",
+
     "./js/storage.js",
     "./js/nav.js",
     "./js/app.js",
@@ -52,6 +57,13 @@ const APP_SHELL = [
     "./js/m-cash/cash-calculator.js",
     "./js/m-cash/cash-savings.js",
     "./js/m-cash/cash.js",
+
+    /*
+        Vendored auth library. Precached so a future signed-in
+        build works offline, but only executed by auth-client.js
+        when a Supabase project is actually configured.
+    */
+    "./js/vendor/supabase-js.min.js",
 
     "./icons/m-wallet-icon-192.png",
     "./icons/m-wallet-icon-512.png",
@@ -170,6 +182,15 @@ self.addEventListener(
         const requestURL =
             new URL(event.request.url);
 
+        /*
+            Only same-origin app-shell requests are handled here.
+            Every cross-origin request is left entirely to the
+            browser — the service worker never inspects, caches,
+            or replays it. This is also what keeps authentication
+            traffic (Supabase token / session endpoints, always a
+            different origin) out of the cache: it is never seen
+            by this handler.
+        */
         if (
             requestURL.origin !==
             self.location.origin

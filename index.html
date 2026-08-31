@@ -2392,6 +2392,22 @@
                             </span>
                         </div>
 
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Accounts</strong>
+                                <small>
+                                    Sign-in and cloud backup are not part of this
+                                    build yet. M-Wallet runs entirely on this device.
+                                </small>
+                            </span>
+                            <span
+                                class="zg-set-row-value"
+                                id="settings-auth-status"
+                            >
+                                —
+                            </span>
+                        </div>
+
                         <div class="zg-set-identity">
                             <div>
                                 <span>Version</span>
@@ -2884,6 +2900,14 @@
 
     <script src="./js/app-version.js?v=1"></script>
 
+    <!-- Authentication architecture (BP2) — infrastructure only.
+         Loads before the financial engine, initializes detached,
+         and stays in "unconfigured" mode until a Supabase project
+         is wired up. The local app never waits on it. -->
+    <script src="./js/auth/auth-config.js?v=2"></script>
+    <script src="./js/auth/auth-client.js?v=2"></script>
+    <script src="./js/auth/auth.js?v=2"></script>
+
     <script src="./js/storage.js?v=7"></script>
 
     <script src="./js/nav.js?v=7"></script>
@@ -2900,7 +2924,7 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=2"></script>
+    <script src="./js/settings-ui.js?v=3"></script>
 
     <script src="./js/app.js?v=10"></script>
 
