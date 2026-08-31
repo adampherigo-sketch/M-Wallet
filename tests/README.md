@@ -363,6 +363,76 @@ choice of the permanent production RP ID — a hard release gate before BP13. Th
 passkey release gate ships OFF. See
 [`../docs/BP9-PASSKEYS.md`](../docs/BP9-PASSKEYS.md).
 
+## Account / privacy / recovery tests (BP10)
+
+BP10 turns Settings into an account-management centre. `helpers/account-harness.js`
+loads the real `js/account/account-controls.js` around the real `js/storage.js`
+engine with deterministic stand-ins for `MWalletAuth`, the BP4 owner record, BP5
+first-run, BP6 walkthrough, and BP8 sync state — **no network, no real Supabase
+client**.
+
+`account-controls.test.js` — `getSummary` / `diagnostics` expose booleans + the
+user-facing email only (never a user id, token, or `service_role`);
+`accountDeletionStatus` is honestly `available:false`; `changeEmail` delegates to
+`MWalletAuth.updateEmail` and never writes the wallet; `signOut` sends
+`scope:"local"`, `signOutEverywhere` sends `"global"`; the erase target list is
+computed from each module's own key export and excludes `mwallet.auth.config` /
+`.session`.
+
+`account-data-export.test.js` — the versioned wrapper (`formatVersion` separate
+from the wallet schema); `mWalletData` is **byte-identical** before and after;
+every auth / token / config / owner / setup / sync artifact is excluded; no
+`localStorage` write; JSON round-trips with no precision loss.
+
+`account-data-import.test.js` — `inspectImport` returns a counts-only preview and
+writes nothing; rejects bad JSON, wrong wrapper, future export version, missing /
+malformed wallet, `__proto__` keys, non-finite numbers, and `> 5 MiB`;
+`restoreWallet` needs `{ confirmed:true }`, replaces the wallet, never reads owner
+identity from the file, refuses on `owner_mismatch`; **a full export → erase →
+restore round-trip is deep-equal with a per-cent total check**. Failure-order
+tests: the BP8 sync metadata is reset **and verified gone before** the financial
+save (`sync_reset_failed` aborts with the old wallet byte-identical); an
+ownership-verification failure writes nothing at all; a `storage.save` failure
+after the sync reset leaves the old wallet authoritative with the stale baseline
+gone; a BP5 / UI re-resolution throw after a verified restore still returns
+`ok: true`; a matching verified BP4 owner record is reused, not rewritten.
+
+`account-data-erase.test.js` — the exact phrase is required (case/space
+tolerant); the wallet + every owner-bound sidecar is removed **and verified**;
+`localStorage.clear()` is never called; `mwallet.auth.config` and unrelated keys
+survive; the user is signed out once; the erase flow never refreshes the app or
+re-resolves BP4/BP5. Failure-order tests: a removal failure for the setup /
+walkthrough / sync / legacy-financial / ownership key each aborts with
+`erase_incomplete` + `walletPreserved: true` and **`mWalletData` intact**; a
+primary-key removal failure reports `erase_incomplete` without a success claim; a
+sign-out failure after a verified erase returns `erased_signout_failed`
+(`erased: true`) with the wallet still gone and **not recreated**.
+
+`account-ui.test.js` — the pure row/preview/erase-arm helpers; the change-email /
+restore-preview / erase dialogs; the restore preview is built with `textContent`
+(no HTML injection); Escape cancels non-destructively; the UI file references no
+financial storage, no Supabase client, and assigns no `innerHTML`.
+
+BP10 static wiring lives in `auth-architecture.test.js`: account files create no
+second Supabase client and use no `auth.admin` / `service_role` / `deleteUser`;
+`account-controls` changes email through `MWalletAuth.updateEmail`; `auth.js`
+gained `updateEmail` + scoped `signOut` with the sole `lib.createClient` still in
+`auth-client.js`; `index.html` loads the account bundle + `account.css` and drops
+the old `#export-data` / `#settings-import-*` / `#clear-data` buttons; the three
+dialogs are `role="dialog"` + `aria-modal`; `service-worker.js` precaches the
+bundle at `m-wallet-v29`; version is `0.9.0-beta.9`. Hardening statics: restore
+resets **and verifies** the sync metadata before the save; erase orders the
+primary financial key last, aborts before it on any failure, and never refreshes
+the app; the legacy `storage.exportData` / `importData` / `clearAllData` helpers
+are unreachable from `app.js`, `settings-ui.js`, and `account-ui.js`, and
+`storage.js` marks them deprecated.
+
+**Not run by `npm test`, and deferred to BP12:** a real email-change
+confirmation, a real `scope:"global"` sign-out, and a restore/erase pass on a
+real browser. Secure **account deletion** needs a trusted server-side path and is
+**not built** — a hard release gate before BP13. See
+[`../docs/BP10-ACCOUNT-PRIVACY-RECOVERY.md`](../docs/BP10-ACCOUNT-PRIVACY-RECOVERY.md).
+
 ## Running
 
 Node.js is required. From the repository root:

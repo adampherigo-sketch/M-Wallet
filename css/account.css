@@ -1,0 +1,221 @@
+/* =========================================================
+   M-WALLET — ACCOUNT / PRIVACY / RECOVERY  (BP10)
+
+   Styling for the Settings account-management sections and
+   the three BP10 dialogs (change email, restore preview,
+   erase-this-device). Leans on the shared Zevaryn Grid
+   tokens (.z-*), the auth dialog primitives (.mw-auth-*),
+   and the Settings row system (.zg-set-*); only the pieces
+   unique to BP10 live here.
+   ========================================================= */
+
+/* ---- Settings: account rows ------------------------------ */
+
+.mw-acct-row-value {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.mw-acct-row-value.is-verified { color: var(--z-good, #1a7f52); }
+.mw-acct-row-value.is-unverified { color: var(--z-warn, #9a6a00); }
+
+.mw-acct-note {
+    display: block;
+    margin-top: 4px;
+    line-height: 1.45;
+}
+
+.mw-acct-msg {
+    margin: 8px 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    background: var(--z-surface-2, #f1f1f4);
+    color: var(--z-text, #1c1c22);
+}
+
+.mw-acct-msg.is-success {
+    background: rgba(26, 127, 82, 0.13);
+    color: var(--z-good-ink, #0f5c3a);
+}
+
+.mw-acct-msg.is-error {
+    background: rgba(192, 57, 43, 0.13);
+    color: var(--z-bad-ink, #8e2418);
+}
+
+.mw-acct-msg[hidden] { display: none; }
+
+/* danger-tinted row (Erase wallet from this device) */
+.zg-set-row--danger .zg-set-row-text strong { color: var(--z-bad, #c0392b); }
+
+
+/* ---- dialogs ------------------------------------------- */
+
+.mw-acct-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.mw-acct-dialog[hidden] { display: none; }
+
+.mw-acct-dialog-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(12, 12, 16, 0.55);
+}
+
+.mw-acct-dialog-card {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    background: var(--z-surface, #fff);
+    color: var(--z-text, #1c1c22);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+}
+
+.mw-acct-dialog-title {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+    font-weight: 650;
+}
+
+.mw-acct-dialog-sub {
+    margin: 0 0 16px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--z-text-soft, #55555f);
+}
+
+.mw-acct-field {
+    display: block;
+    margin: 0 0 14px;
+}
+
+.mw-acct-field > span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.mw-acct-field input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--z-border, #d0d0d7);
+    border-radius: 10px;
+    font-size: 1rem;
+    background: var(--z-surface, #fff);
+    color: inherit;
+}
+
+.mw-acct-field input:focus-visible {
+    outline: 2px solid var(--z-focus, #3d5afe);
+    outline-offset: 1px;
+}
+
+/* restore preview: counts only, never raw JSON */
+.mw-acct-preview {
+    margin: 0 0 16px;
+    border: 1px solid var(--z-border, #d0d0d7);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.mw-acct-preview-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 14px;
+    font-size: 0.88rem;
+}
+
+.mw-acct-preview-row + .mw-acct-preview-row {
+    border-top: 1px solid var(--z-border, #d0d0d7);
+}
+
+.mw-acct-preview-row span:last-child {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.mw-acct-warn {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border-left: 4px solid var(--z-bad, #c0392b);
+    background: rgba(192, 57, 43, 0.10);
+    font-size: 0.86rem;
+    line-height: 1.5;
+}
+
+.mw-acct-warn strong { display: block; margin-bottom: 4px; }
+
+.mw-acct-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.mw-acct-dialog-actions .z-btn { min-height: 44px; }
+
+.mw-acct-dialog-msg {
+    margin: 0 0 12px;
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.mw-acct-dialog-msg.is-error { color: var(--z-bad-ink, #8e2418); }
+.mw-acct-dialog-msg.is-success { color: var(--z-good-ink, #0f5c3a); }
+.mw-acct-dialog-msg[hidden] { display: none; }
+
+.mw-acct-danger-btn {
+    background: var(--z-bad, #c0392b);
+    border-color: var(--z-bad, #c0392b);
+    color: #fff;
+}
+
+.mw-acct-danger-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* ---- dark mode --------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+    .mw-acct-dialog-card {
+        background: var(--z-surface, #1c1c22);
+        color: var(--z-text, #ececf1);
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    }
+    .mw-acct-field input {
+        background: var(--z-surface-2, #26262e);
+        border-color: var(--z-border, #3a3a44);
+    }
+    .mw-acct-msg { background: var(--z-surface-2, #26262e); color: var(--z-text, #ececf1); }
+}
+
+
+/* ---- reduced motion --------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .mw-acct-dialog,
+    .mw-acct-dialog * {
+        transition: none !important;
+        animation: none !important;
+    }
+}

@@ -700,7 +700,12 @@
 
     /* ---- actions ------------------------------------------- */
 
-    function signOut() {
+    /* opts.scope ∈ "local" | "global" | "others" (the vendored client's
+       enum). No scope -> the client default (global). Never touches
+       mWalletData / the owner record / setup / walkthrough / sync. */
+    function signOut(opts) {
+        var scope = opts && (opts.scope === "local" || opts.scope === "global" || opts.scope === "others")
+            ? opts.scope : null;
         if (!current.configured || !client) {
             /* nothing to sign out of; never touch financial data */
             if (current.configured) {
@@ -708,7 +713,7 @@
             }
             return Promise.resolve({ ok: true });
         }
-        return client.auth.signOut()
+        return client.auth.signOut(scope ? { scope: scope } : undefined)
             .then(function () {
                 patch({
                     status: STATE.SIGNED_OUT,
@@ -850,6 +855,44 @@
         });
     }
 
+    /* BP10 — change the signed-in user's email through the ONE existing
+       client. Supabase emails the NEW address to confirm; the session's
+       user does not reflect the change until then. Never touches
+       financial data; no second client. */
+    function updateEmail(newEmail) {
+        var e = validateEmail(newEmail);
+        if (!e.ok) { return Promise.resolve({ ok: false, code: "invalid_email", field: e.field, message: e.message }); }
+        if (current.recoveryMode === true) {
+            return Promise.resolve({ ok: false, code: "recovery_mode", message: "Finish resetting your password first." });
+        }
+        if (current.status !== STATE.SIGNED_IN) {
+            return Promise.resolve({ ok: false, code: "auth_required", message: "Sign in to change your email." });
+        }
+        var currentEmail = (current.user && current.user.email) ? String(current.user.email).toLowerCase() : null;
+        if (currentEmail && currentEmail === e.value) {
+            return Promise.resolve({ ok: false, code: "same_email", message: "That is already your email address." });
+        }
+        return withClient(function (c) {
+            if (!c.auth || typeof c.auth.updateUser !== "function") {
+                return { ok: false, code: "unsupported", message: "Changing your email isn't available right now." };
+            }
+            return c.auth.updateUser(
+                { email: e.value },
+                { emailRedirectTo: redirectUrl() }
+            ).then(function (res) {
+                if (res && res.error) {
+                    return { ok: false, code: "email_update_failed", message: mapError(res.error) };
+                }
+                debugLog("updateEmail: confirmation requested");
+                return {
+                    ok: true,
+                    verificationRequired: true,
+                    message: "Check your new email address to finish changing it."
+                };
+            });
+        });
+    }
+
     function resendVerification(email) {
         var e = validateEmail(email);
         if (!e.ok) { return Promise.resolve({ ok: false, code: "invalid_email", field: e.field, message: e.message }); }
@@ -931,6 +974,7 @@
         resetPassword: resetPassword,
         updatePassword: updatePassword,
         resendVerification: resendVerification,
+        updateEmail: updateEmail,
 
         /* pure helpers, exposed for the UI layer + tests */
         _internals: {
