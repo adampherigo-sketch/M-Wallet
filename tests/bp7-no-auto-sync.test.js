@@ -48,18 +48,34 @@ const STORE_REL = "js/cloud/cloud-financial-store.js";
 const STORE_SRC = fs.readFileSync(path.join(ROOT, STORE_REL), "utf8");
 const CODEC_SRC = fs.readFileSync(path.join(ROOT, "js/cloud/cloud-financial-codec.js"), "utf8");
 
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
 
-test("only cloud-financial-store.js ever names the wallet_documents table", () => {
-    const offenders = JS_FILES.filter((f) => f.path !== STORE_REL && /wallet_documents/.test(f.src));
+
+test("only cloud-financial-store.js ever names the wallet_documents table (in real code)", () => {
+    const offenders = JS_FILES
+        .filter((f) => f.path !== STORE_REL && /wallet_documents/.test(stripComments(f.src)));
     assert.deepEqual(offenders.map((f) => f.path), [], "no other runtime module references wallet_documents");
 });
 
-test("only the store + the Settings check reference the cloud store global", () => {
+test("the cloud store global is referenced only by the store, the BP8 sync engine, and Settings", () => {
     const refs = JS_FILES
         .filter((f) => /\bMWalletCloudFinancial\b/.test(f.src.replace(/MWalletCloudFinancialCodec/g, "")))
         .map((f) => f.path)
         .sort();
-    assert.deepEqual(refs, ["js/cloud/cloud-financial-store.js", "js/settings-ui.js"]);
+    assert.deepEqual(refs, [
+        "js/cloud/cloud-financial-store.js",
+        "js/settings-ui.js",
+        "js/sync/sync-engine.js"
+    ]);
+});
+
+test("the BP8 sync engine talks to the cloud ONLY through the store (no Supabase, no token)", () => {
+    const engine = stripComments(fs.readFileSync(path.join(ROOT, "js/sync/sync-engine.js"), "utf8"));
+    assert.ok(!/\.from\s*\(\s*["'`]wallet_documents/.test(engine), "no direct .from(\"wallet_documents\")");
+    assert.ok(!/createClient|new\s+SupabaseClient|_getClient\s*\(/.test(engine), "constructs / fetches no client");
+    assert.ok(!/access_token|refresh_token|Authorization|Bearer/.test(engine), "no token / auth header");
+    assert.ok(!/sb_secret_|service_role/.test(engine), "no privileged key");
+    assert.ok(/safeGlobal\(\s*["']MWalletCloudFinancial["']\s*\)/.test(engine), "uses the MWalletCloudFinancial store");
 });
 
 test("nothing subscribes to auth state changes to auto-pull cloud data", () => {

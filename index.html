@@ -224,6 +224,19 @@
         href="./css/walkthrough.css?v=1"
     >
 
+
+    <!-- =====================================================
+         LOCAL-FIRST SYNC (BP8)
+         Bootstrap gate #mw-sync-bootstrap + conflict overlay
+         #mw-sync-conflicts. Dormant while the sync release
+         gate is off (the committed default).
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/sync.css?v=1"
+    >
+
 </head>
 
 
@@ -2563,6 +2576,46 @@
                             <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
                         </button>
 
+                        <div class="zg-set-row zg-set-account" id="settings-sync-panel" hidden>
+                            <span class="zg-set-row-text">
+                                <strong>Cloud Sync</strong>
+                                <small id="settings-sync-note">
+                                    Your financial data remains local on this device. Cloud
+                                    synchronization stays off until pre-beta security
+                                    verification is complete.
+                                </small>
+                            </span>
+                            <span class="zg-set-row-value" id="settings-sync-status" role="status" aria-live="polite">—</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="settings-item zg-set-row"
+                            id="settings-sync-now-btn"
+                            data-set-action="sync-now"
+                            hidden
+                        >
+                            <span class="settings-item-content zg-set-row-text">
+                                <strong>Sync now</strong>
+                                <small>Reconcile this device with your cloud wallet.</small>
+                            </span>
+                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="settings-item zg-set-row"
+                            id="settings-sync-review-btn"
+                            data-set-action="sync-review"
+                            hidden
+                        >
+                            <span class="settings-item-content zg-set-row-text">
+                                <strong>Review sync conflicts</strong>
+                                <small>Choose which version to keep when data changed on two devices.</small>
+                            </span>
+                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
                         <div class="zg-set-identity">
                             <div>
                                 <span>Version</span>
@@ -3442,6 +3495,110 @@
 
 
     <!-- ========================================
+         LOCAL-FIRST SYNC — BOOTSTRAP GATE  (BP8)
+         Behaviour: js/sync/sync-ui.js
+         Engine:    js/sync/sync-engine.js
+         Styles:    css/sync.css (+ shared .mw-auth-* / .z-*)
+
+         Shown ONLY when the sync release gate is enabled AND this
+         is a fresh device — briefly, while the engine checks the
+         cloud for an existing wallet so BP5 never asks a returning
+         user to create a competing balance. Fully fail-open: a
+         missing / broken sync module never blocks a verified owner.
+    ========================================= -->
+
+    <div
+        id="mw-sync-bootstrap"
+        class="mw-auth-gate"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-sync-bootstrap-title"
+        aria-describedby="mw-sync-bootstrap-body"
+        hidden
+        aria-hidden="true"
+    >
+
+        <div class="mw-auth-card">
+
+            <img class="mw-auth-logo" src="./icons/m-wallet-icon-192.png" alt="">
+
+            <p class="mw-auth-brand">
+                M-Wallet
+                <span class="z-badge z-badge-violet">BETA</span>
+            </p>
+
+            <div class="mw-auth-spinner" aria-hidden="true"></div>
+
+            <h1 id="mw-sync-bootstrap-title" class="mw-auth-title" tabindex="-1">
+                Checking your cloud wallet
+            </h1>
+
+            <p id="mw-sync-bootstrap-body" class="mw-auth-sub" role="status" aria-live="polite">
+                One moment — making sure this device has your latest M-Wallet data.
+            </p>
+
+            <button type="button" class="z-btn z-btn-primary mw-auth-block" data-sync-action="bootstrap-retry" hidden>
+                Retry
+            </button>
+            <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-sync-action="bootstrap-offline" hidden>
+                Continue Offline
+            </button>
+
+            <p class="mw-migration-note">
+                M-Wallet has not backed up or synced your data. Local data on this
+                device remains the source of truth.
+            </p>
+
+        </div>
+    </div>
+
+
+
+    <!-- ========================================
+         LOCAL-FIRST SYNC — CONFLICT REVIEW  (BP8)
+         Shown from Settings when two devices changed the same
+         financial document. Never resolves silently; never dumps
+         raw JSON or an account id.
+    ========================================= -->
+
+    <div
+        id="mw-sync-conflicts"
+        class="mw-sync-conflicts"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-sync-conflicts-title"
+        aria-describedby="mw-sync-conflicts-desc"
+        hidden
+        aria-hidden="true"
+    >
+        <div class="mw-sync-conflicts-backdrop" data-sync-action="conflicts-close"></div>
+
+        <div class="mw-sync-conflicts-card">
+
+            <h2 id="mw-sync-conflicts-title" class="mw-auth-title" tabindex="-1">
+                Financial data needs your attention
+            </h2>
+            <p id="mw-sync-conflicts-desc" class="mw-auth-sub">
+                These items changed on this device and in the cloud. Nothing is
+                changed until you choose.
+            </p>
+
+            <p id="mw-sync-conflicts-empty" class="mw-auth-sub" hidden>
+                No conflicts right now.
+            </p>
+
+            <ul id="mw-sync-conflicts-list" class="mw-sync-conflicts-list" aria-live="polite"></ul>
+
+            <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-sync-action="conflicts-close">
+                Close
+            </button>
+
+        </div>
+    </div>
+
+
+
+    <!-- ========================================
          UNIVERSAL QUICK ADD
     ========================================= -->
 
@@ -3757,7 +3914,7 @@
     <script src="./js/auth/auth-config.js?v=2"></script>
     <script src="./js/auth/auth-client.js?v=2"></script>
     <script src="./js/auth/auth.js?v=3"></script>
-    <script src="./js/auth/auth-ui.js?v=5"></script>
+    <script src="./js/auth/auth-ui.js?v=6"></script>
 
     <!-- Local data ownership / existing-user migration (BP4).
          Loads after the auth layer it depends on, before the
@@ -3772,7 +3929,7 @@
          (registers a fail-open experience guard). Only a fresh
          verified owner sees it; it never blocks the app on
          failure and never writes mWalletData until Finish. -->
-    <script src="./js/setup/first-run-setup.js?v=1"></script>
+    <script src="./js/setup/first-run-setup.js?v=2"></script>
     <script src="./js/setup/setup-ui.js?v=1"></script>
 
     <!-- Guided app walkthrough (BP6). Loads after auth-ui (fail-open
@@ -3785,14 +3942,24 @@
     <script src="./js/walkthrough/walkthrough-ui.js?v=1"></script>
 
     <!-- Cloud financial data foundation (BP7). Loads after the auth
-         layer (reuses MWalletAuth._getClient()). BP7 builds the CLOUD
-         CAPABILITY only: the codec is pure, and the store makes ZERO
-         network calls on load / navigation / render. No financial data
-         syncs until BP8. -->
-    <script src="./js/cloud/cloud-financial-codec.js?v=1"></script>
-    <script src="./js/cloud/cloud-financial-store.js?v=1"></script>
+         layer (reuses MWalletAuth._getClient()). The codec is pure;
+         the store makes ZERO network calls on load / navigation /
+         render. -->
+    <script src="./js/cloud/cloud-financial-codec.js?v=2"></script>
+    <script src="./js/cloud/cloud-financial-store.js?v=2"></script>
 
-    <script src="./js/storage.js?v=7"></script>
+    <!-- Local-first sync engine (BP8). Built but OFF: the release
+         gate (sync-release.js) ships disabled, so the engine makes
+         ZERO cloud requests — no bootstrap check, no upload, no
+         download, no timers. A local save never depends on it.
+         BP12 flips the gate on after live security verification. -->
+    <script src="./js/sync/sync-release.js?v=1"></script>
+    <script src="./js/sync/sync-state.js?v=1"></script>
+    <script src="./js/sync/sync-planner.js?v=1"></script>
+    <script src="./js/sync/sync-engine.js?v=1"></script>
+    <script src="./js/sync/sync-ui.js?v=1"></script>
+
+    <script src="./js/storage.js?v=8"></script>
 
     <script src="./js/nav.js?v=7"></script>
 
@@ -3808,7 +3975,7 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=8"></script>
+    <script src="./js/settings-ui.js?v=9"></script>
 
     <script src="./js/app.js?v=10"></script>
 

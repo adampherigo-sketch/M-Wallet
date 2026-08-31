@@ -105,6 +105,18 @@ class El {
         this.childNodes.push(node);
         return node;
     }
+    removeChild(node) {
+        const i = this.childNodes.indexOf(node);
+        if (i !== -1) { this.childNodes.splice(i, 1); node.parentNode = null; }
+        return node;
+    }
+    replaceChildren(...nodes) {
+        this.childNodes.forEach((n) => { n.parentNode = null; });
+        this.childNodes = [];
+        this._text = "";
+        nodes.forEach((n) => this.appendChild(n));
+    }
+    get firstChild() { return this.childNodes[0] || null; }
     get children() { return this.childNodes.filter((n) => n instanceof El); }
 
     _descendants(acc) {

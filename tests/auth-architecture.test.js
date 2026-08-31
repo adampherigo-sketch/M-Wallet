@@ -1040,9 +1040,9 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 /* ---- static wiring checks ---------------------------- */
 
-test("service-worker precaches the auth + migration + setup + walkthrough + cloud modules and bumped the cache", () => {
+test("service-worker precaches the auth + migration + setup + walkthrough + cloud + sync modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v26"/.test(sw), "cache bumped to v26");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v27"/.test(sw), "cache bumped to v27");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1056,10 +1056,16 @@ test("service-worker precaches the auth + migration + setup + walkthrough + clou
         "./js/walkthrough/walkthrough-ui.js",
         "./js/cloud/cloud-financial-codec.js",
         "./js/cloud/cloud-financial-store.js",
+        "./js/sync/sync-release.js",
+        "./js/sync/sync-state.js",
+        "./js/sync/sync-planner.js",
+        "./js/sync/sync-engine.js",
+        "./js/sync/sync-ui.js",
         "./css/auth.css",
         "./css/migration.css",
         "./css/setup.css",
         "./css/walkthrough.css",
+        "./css/sync.css",
         "./js/vendor/supabase-js.min.js"
     ]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
@@ -1108,22 +1114,28 @@ test("index.html has the auth gateway markup + auth.css, and financial page mark
 
 test("changed modules are re-versioned in index.html", () => {
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.ok(/js\/auth\/auth-ui\.js\?v=5/.test(html), "auth-ui.js still ?v=5");
+    assert.ok(/js\/auth\/auth-ui\.js\?v=6/.test(html), "auth-ui.js bumped to ?v=6");
     assert.ok(/js\/auth\/auth\.js\?v=3/.test(html), "auth.js still ?v=3");
-    assert.ok(/js\/settings-ui\.js\?v=8/.test(html), "settings-ui.js bumped to ?v=8");
-    assert.ok(/js\/setup\/first-run-setup\.js\?v=\d+/.test(html), "first-run-setup.js has a ?v");
+    assert.ok(/js\/settings-ui\.js\?v=9/.test(html), "settings-ui.js bumped to ?v=9");
+    assert.ok(/js\/setup\/first-run-setup\.js\?v=2/.test(html), "first-run-setup.js bumped to ?v=2");
     assert.ok(/js\/setup\/setup-ui\.js\?v=\d+/.test(html), "setup-ui.js has a ?v");
     assert.ok(/js\/walkthrough\/guided-walkthrough\.js\?v=\d+/.test(html), "guided-walkthrough.js has a ?v");
     assert.ok(/js\/walkthrough\/walkthrough-ui\.js\?v=\d+/.test(html), "walkthrough-ui.js has a ?v");
-    assert.ok(/js\/cloud\/cloud-financial-codec\.js\?v=\d+/.test(html), "cloud-financial-codec.js has a ?v");
-    assert.ok(/js\/cloud\/cloud-financial-store\.js\?v=\d+/.test(html), "cloud-financial-store.js has a ?v");
+    assert.ok(/js\/cloud\/cloud-financial-codec\.js\?v=2/.test(html), "cloud-financial-codec.js bumped to ?v=2");
+    assert.ok(/js\/cloud\/cloud-financial-store\.js\?v=2/.test(html), "cloud-financial-store.js bumped to ?v=2");
+    assert.ok(/js\/sync\/sync-release\.js\?v=\d+/.test(html), "sync-release.js has a ?v");
+    assert.ok(/js\/sync\/sync-state\.js\?v=\d+/.test(html), "sync-state.js has a ?v");
+    assert.ok(/js\/sync\/sync-planner\.js\?v=\d+/.test(html), "sync-planner.js has a ?v");
+    assert.ok(/js\/sync\/sync-engine\.js\?v=\d+/.test(html), "sync-engine.js has a ?v");
+    assert.ok(/js\/sync\/sync-ui\.js\?v=\d+/.test(html), "sync-ui.js has a ?v");
+    assert.ok(/js\/storage\.js\?v=8/.test(html), "storage.js bumped to ?v=8");
 });
 
-test("app version bumped to 0.9.0-beta.6 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.7 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.6"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.6", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.7"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.7", "package.json");
 });
 
 test("BP4 migration modules load after auth, before the financial engine", () => {
@@ -1405,8 +1417,10 @@ test("BP7: the store is the ONLY module that queries wallet_documents, and never
     });
     for (const file of walk(path.join(ROOT, "js"))) {
         if (file.endsWith("js/cloud/cloud-financial-store.js")) { continue; }
-        const src = fs.readFileSync(file, "utf8");
-        assert.ok(!/wallet_documents/.test(src), path.relative(ROOT, file) + " must not name wallet_documents");
+        const src = fs.readFileSync(file, "utf8")
+            .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");   /* strip comments */
+        assert.ok(!/\.from\s*\(\s*["'`]wallet_documents/.test(src),
+            path.relative(ROOT, file) + " must not query wallet_documents directly");
     }
 });
 
@@ -1426,6 +1440,150 @@ test(".gitignore excludes the local auth config override + BP7 verifier env file
     assert.ok(gi.includes("js/auth/auth-config.local.js"));
     assert.ok(/^\.env$/m.test(gi) && /^\.env\./m.test(gi), ".env / .env.* ignored for the BP7 live RLS verifier");
     assert.ok(/!\.env\.example/.test(gi), ".env.example stays tracked");
+});
+
+/* =========================================================
+   BP8 — LOCAL-FIRST SYNC  (static / deployment)
+   ========================================================= */
+
+test("BP8: the sync release gate ships DISABLED and carries no credential", () => {
+    const src = fs.readFileSync(path.join(ROOT, "js/sync/sync-release.js"), "utf8");
+    assert.ok(/enabled:\s*false/.test(src), "committed default is enabled:false");
+    assert.ok(/verificationPhase:\s*["']BP12["']/.test(src), "points at BP12 verification");
+    assert.ok(!/sb_secret_|service_role|eyJ[A-Za-z0-9_-]{20,}\./.test(src), "no credential");
+    /* the only 'true' near enabled must be a test override, never the base */
+    assert.ok(!/BASE\s*=\s*\{[^}]*enabled:\s*true/.test(src), "BASE never enables sync");
+});
+
+test("BP8: a NORMAL browser build has NO way to enable sync (no public override, no runtime switch)", () => {
+    const src = fs.readFileSync(path.join(ROOT, "js/sync/sync-release.js"), "utf8");
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+
+    /* no query-string / localStorage / Settings / hostname switch */
+    assert.ok(!/location\.search|URLSearchParams|location\.hostname|localhost/.test(code), "no url / hostname switch");
+    assert.ok(!/localStorage|sessionStorage/.test(code), "no web-storage switch");
+
+    /* load it WITHOUT the pre-load test opt-in -> setOverride must not exist */
+    const prod = { window: {}, console };
+    prod.self = prod.window;
+    vm.createContext(prod);
+    vm.runInContext(src, prod, { filename: "sync-release.js" });
+    const R = prod.window.MWalletSyncRelease;
+    assert.equal(R.isEnabled(), false, "disabled by default");
+    assert.equal(typeof R.setOverride, "undefined", "no setOverride in a normal build");
+    assert.ok(!("__testEnv" in R), "not flagged as a test env");
+    /* even setting the flag AFTER load does nothing */
+    prod.window.__MWALLET_TEST_ENV__ = true;
+    assert.equal(typeof R.setOverride, "undefined", "the flag is read once, at load — too late now");
+    assert.equal(R.isEnabled(), false);
+
+    /* WITH the pre-load opt-in -> the test override is available */
+    const testEnv = { window: { __MWALLET_TEST_ENV__: true }, console, __MWALLET_TEST_ENV__: true };
+    testEnv.self = testEnv.window;
+    vm.createContext(testEnv);
+    vm.runInContext(src, testEnv, { filename: "sync-release.js" });
+    const RT = testEnv.window.MWalletSyncRelease;
+    assert.equal(typeof RT.setOverride, "function", "test harness can still enable the engine");
+    assert.equal(RT.isEnabled(), false, "still off until explicitly overridden");
+    RT.setOverride({ enabled: true });
+    assert.equal(RT.isEnabled(), true, "enabled test mode works");
+    RT.setOverride(null);
+    assert.equal(RT.isEnabled(), false);
+});
+
+test("BP8: no js/ file reads a sync-enable switch from url / localStorage / a setting", () => {
+    const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) { return walk(full); }
+        return e.isFile() && e.name.endsWith(".js") ? [full] : [];
+    });
+    for (const file of walk(path.join(ROOT, "js/sync"))) {
+        const src = fs.readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+        assert.ok(!/setOverride\s*\(\s*\{\s*enabled:\s*true/.test(src),
+            path.relative(ROOT, file) + " never turns sync on itself");
+    }
+});
+
+test("BP8: sync modules load after the cloud store, before the financial engine, sub-path safe", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const at = (n) => html.indexOf(n);
+    const storeAt = at("js/cloud/cloud-financial-store.js?v=");
+    const relAt = at("js/sync/sync-release.js?v=");
+    const stateAt = at("js/sync/sync-state.js?v=");
+    const planAt = at("js/sync/sync-planner.js?v=");
+    const engAt = at("js/sync/sync-engine.js?v=");
+    const uiAt = at("js/sync/sync-ui.js?v=");
+    const storageAt = at("js/storage.js?v=");
+    assert.ok(relAt > storeAt, "sync loads after the cloud store");
+    assert.ok(relAt < stateAt && stateAt < planAt && planAt < engAt && engAt < uiAt, "release -> state -> planner -> engine -> ui");
+    assert.ok(uiAt < storageAt, "sync loads before the financial engine");
+    assert.ok(!/["'(]\/js\/sync\//.test(html), "no root-absolute /js/sync/ URL in index.html");
+    const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
+    assert.ok(!/["']\/js\/sync\//.test(sw), "no root-absolute /js/sync/ URL in the service worker");
+});
+
+test("BP8: the pure modules make no network / storage / DOM access", () => {
+    for (const file of ["js/sync/sync-planner.js"]) {
+        let src = fs.readFileSync(path.join(ROOT, file), "utf8")
+            .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+        assert.ok(!/\bfetch\s*\(|XMLHttpRequest|WebSocket/.test(src), file + " no network");
+        assert.ok(!/localStorage\.|\.setItem\s*\(|\.getItem\s*\(/.test(src), file + " no storage");
+        assert.ok(!/document\.getElementById|addEventListener/.test(src), file + " no DOM");
+        assert.ok(!/\.from\s*\(\s*["'`]wallet_documents|createClient/.test(src), file + " no Supabase");
+    }
+});
+
+test("BP8: the sync engine + release + planner + state embed no credential and never log a payload", () => {
+    for (const file of ["js/sync/sync-release.js", "js/sync/sync-state.js", "js/sync/sync-planner.js",
+        "js/sync/sync-engine.js", "js/sync/sync-ui.js"]) {
+        const raw = fs.readFileSync(path.join(ROOT, file), "utf8");
+        const src = raw.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+        assert.ok(!/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\./.test(raw), file + " embeds no JWT");
+        assert.ok(!/sb_secret_[A-Za-z0-9]|service_role/.test(src), file + " no privileged key");
+        assert.ok(!/[a-z0-9]{20}\.supabase\.co/i.test(raw), file + " no project URL");
+        assert.ok(!/console\.(log|info|warn|error|debug)\s*\([^)]*(payload|balance|ownerUserId|access_token|refresh_token)/i.test(src),
+            file + " never logs a payload / owner id / token");
+    }
+});
+
+test("BP8: js/storage.js dispatches ONE post-save event and keeps its sync return contract", () => {
+    const src = fs.readFileSync(path.join(ROOT, "js/storage.js"), "utf8");
+    assert.ok(/mwallet:financial-saved/.test(src), "emits mwallet:financial-saved");
+    assert.ok(/detail:\s*\{\s*source:\s*["']local["']\s*\}/.test(src), "detail carries no financial payload");
+    assert.ok(/saveSilently/.test(src) && /_suppressFinancialSaved/.test(src), "load()'s normalization re-save is suppressed");
+    /* save() still returns a boolean synchronously (no async, no throw) */
+    assert.ok(/save\(data\)\s*\{[\s\S]*?return true;[\s\S]*?return false;/.test(src), "save() still returns true/false");
+    assert.ok(!/async\s+save\s*\(/.test(src), "save() is not async");
+});
+
+test("BP8: auth-ui gate order is ownership -> BOOTSTRAP -> setup -> walkthrough", () => {
+    const src = fs.readFileSync(path.join(ROOT, "js/auth/auth-ui.js"), "utf8");
+    const o = src.indexOf("ownershipReleased(lastSnapshot)");
+    const b = src.indexOf("bootstrapReleased(lastSnapshot)");
+    const s = src.indexOf("setupReleased(lastSnapshot)");
+    const w = src.indexOf("walkthroughReleased(lastSnapshot)");
+    assert.ok(o > 0 && b > 0 && s > 0 && w > 0, "all four gate checks present");
+    assert.ok(o < b && b < s && s < w, "BP8 bootstrap sits between BP4 ownership and BP5 setup");
+    /* bootstrap guard is fail-open like BP5/BP6 */
+    const rel = src.slice(src.indexOf("function bootstrapReleased"), src.indexOf("function setupReleased"));
+    assert.ok(/typeof bootstrapGuard !== "function"[^]{0,40}return true/.test(rel), "no guard -> release");
+    assert.ok(/catch \(e\) \{[\s\S]{0,30}return true/.test(rel), "throwing guard -> release");
+    assert.ok(/return result\.release !== false/.test(rel), "holds only on explicit release:false");
+});
+
+test("BP8: index.html has the bootstrap gate + conflict overlay markup, starting hidden", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.ok(/id="mw-sync-bootstrap"[\s\S]{0,200}\bhidden\b/.test(html), "#mw-sync-bootstrap starts hidden");
+    assert.ok(/id="mw-sync-conflicts"[\s\S]{0,200}\bhidden\b/.test(html), "#mw-sync-conflicts starts hidden");
+    assert.ok(/data-sync-action="bootstrap-retry"/.test(html) && /data-sync-action="bootstrap-offline"/.test(html));
+    assert.ok(/href="\.\/css\/sync\.css/.test(html), "sync.css linked");
+    /* financial pages untouched */
+    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+        assert.ok(html.includes('id="' + p + '"'), p + " intact");
+    }
+    /* the Settings sync row never says "backed up" */
+    assert.ok(/id="settings-sync-panel"/.test(html));
+    assert.ok(!/Backed up|backed up/.test(html.slice(html.indexOf("settings-sync-panel"), html.indexOf("settings-sync-panel") + 600)));
 });
 
 test("no auth source file contains a hard-coded credential or logs a session", () => {

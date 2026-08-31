@@ -1,0 +1,130 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   BP8 — Local-first sync
+
+     #mw-sync-bootstrap  — fresh-device cloud-restore gate
+     #mw-sync-conflicts  — conflict review overlay
+
+   Both reuse the BP3/BP4 gateway shell (.mw-auth-gate /
+   .mw-auth-card / .mw-auth-*) and the global .z-* primitives.
+   Both are dormant while the sync release gate is off (the
+   committed BP8 default).
+   ========================================================= */
+
+#mw-sync-bootstrap.mw-auth-gate {
+    z-index: 948; /* below the BP4 ownership gate (950), above BP5 setup (940) */
+}
+
+#mw-sync-bootstrap .mw-auth-card {
+    max-width: 420px;
+    text-align: center;
+}
+
+#mw-sync-bootstrap[hidden] {
+    display: none;
+}
+
+
+/* ---- conflict review overlay ------------------------------ */
+
+.mw-sync-conflicts {
+    position: fixed;
+    inset: 0;
+    z-index: 990; /* below the BP6 walkthrough (1000), above the app */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.mw-sync-conflicts[hidden] {
+    display: none;
+}
+
+.mw-sync-conflicts-backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--z-overlay, rgba(12, 14, 22, 0.62));
+    backdrop-filter: blur(2px);
+}
+
+.mw-sync-conflicts-card {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    max-height: 84vh;
+    overflow-y: auto;
+    background: var(--z-surface, #fff);
+    color: var(--z-text, #12131a);
+    border: 1px solid var(--z-border, rgba(20, 22, 34, 0.12));
+    border-radius: var(--z-radius-lg, 16px);
+    box-shadow: var(--z-shadow-lg, 0 24px 60px rgba(8, 10, 20, 0.28));
+    padding: 22px;
+}
+
+.mw-sync-conflicts-list {
+    list-style: none;
+    margin: 14px 0 18px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mw-sync-conflict {
+    border: 1px solid var(--z-border, rgba(20, 22, 34, 0.12));
+    border-radius: var(--z-radius, 12px);
+    padding: 14px;
+    background: var(--z-surface-muted, rgba(20, 22, 34, 0.03));
+}
+
+.mw-sync-conflict strong {
+    display: block;
+    font-size: 0.98rem;
+    margin-bottom: 4px;
+}
+
+.mw-sync-conflict p {
+    margin: 0 0 10px;
+    font-size: 0.88rem;
+    color: var(--z-text-muted, rgba(20, 22, 34, 0.66));
+}
+
+.mw-sync-conflict-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mw-sync-conflict-btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+    min-height: 44px;              /* touch target */
+    font-size: 0.85rem;
+}
+
+.mw-sync-conflicts [data-sync-action="conflicts-close"] {
+    min-height: 44px;
+}
+
+#mw-sync-bootstrap [data-sync-action] {
+    min-height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mw-sync-conflicts-backdrop {
+        backdrop-filter: none;
+    }
+    .mw-sync-conflicts-card,
+    #mw-sync-bootstrap .mw-auth-card {
+        transition: none;
+        animation: none;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .mw-sync-conflicts-card {
+        background: var(--z-surface, #16181f);
+        color: var(--z-text, #f4f5f8);
+    }
+}

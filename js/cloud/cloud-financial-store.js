@@ -50,7 +50,7 @@
     var ERROR_CODES = [
         "unconfigured", "signed_out", "client_unavailable", "schema_missing",
         "network_error", "forbidden", "invalid_document", "document_too_large",
-        "not_found", "revision_conflict", "write_failed", "read_failed"
+        "not_found", "revision_conflict", "duplicate_document", "write_failed", "read_failed"
     ];
 
     var lastCheck = null;   /* { ok, code, at } — safe summary of the last checkAvailability() */
@@ -124,7 +124,10 @@
             return "schema_missing";
         }
         if (code === "23514" || msg.indexOf("violates check constraint") !== -1) { return "invalid_document"; }
-        if (code === "23505" || msg.indexOf("duplicate key") !== -1) { return "write_failed"; }
+        /* a UNIQUE(user_id, document_type, document_key) collision — normal
+           during a first-sync create race between two devices. The caller
+           re-fetches the now-existing row and reconciles. */
+        if (code === "23505" || msg.indexOf("duplicate key") !== -1) { return "duplicate_document"; }
         if (msg.indexOf("failed to fetch") !== -1 || msg.indexOf("networkerror") !== -1 || err.name === "TypeError") {
             return "network_error";
         }
