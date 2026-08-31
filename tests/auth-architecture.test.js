@@ -1040,9 +1040,9 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 /* ---- static wiring checks ---------------------------- */
 
-test("service-worker precaches the auth + migration modules and bumped the cache", () => {
+test("service-worker precaches the auth + migration + setup modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v23"/.test(sw), "cache bumped to v23");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v24"/.test(sw), "cache bumped to v24");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1050,8 +1050,11 @@ test("service-worker precaches the auth + migration modules and bumped the cache
         "./js/auth/auth-ui.js",
         "./js/migration/local-user-migration.js",
         "./js/migration/migration-ui.js",
+        "./js/setup/first-run-setup.js",
+        "./js/setup/setup-ui.js",
         "./css/auth.css",
         "./css/migration.css",
+        "./css/setup.css",
         "./js/vendor/supabase-js.min.js"
     ]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
@@ -1098,18 +1101,20 @@ test("index.html has the auth gateway markup + auth.css, and financial page mark
     assert.ok(html.includes('autocomplete="email"'), "email autocomplete");
 });
 
-test("auth-ui.js is version-bumped and auth.js re-versioned in index.html", () => {
+test("changed modules are re-versioned in index.html", () => {
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.ok(/js\/auth\/auth-ui\.js\?v=\d+/.test(html), "auth-ui.js has a cache-busting ?v");
-    assert.ok(/js\/auth\/auth\.js\?v=3/.test(html), "auth.js bumped to ?v=3");
-    assert.ok(/js\/settings-ui\.js\?v=5/.test(html), "settings-ui.js bumped to ?v=5");
+    assert.ok(/js\/auth\/auth-ui\.js\?v=4/.test(html), "auth-ui.js bumped to ?v=4");
+    assert.ok(/js\/auth\/auth\.js\?v=3/.test(html), "auth.js still ?v=3");
+    assert.ok(/js\/settings-ui\.js\?v=6/.test(html), "settings-ui.js bumped to ?v=6");
+    assert.ok(/js\/setup\/first-run-setup\.js\?v=\d+/.test(html), "first-run-setup.js has a ?v");
+    assert.ok(/js\/setup\/setup-ui\.js\?v=\d+/.test(html), "setup-ui.js has a ?v");
 });
 
-test("app version bumped to 0.9.0-beta.3 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.4 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.3"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.3", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.4"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.4", "package.json");
 });
 
 test("BP4 migration modules load after auth, before the financial engine", () => {
@@ -1172,6 +1177,80 @@ test("no absolute-root asset URLs regressed (GitHub Pages /M-Wallet/ sub-path sa
     /* every migration/auth/css asset ref must be relative (./…), never /… */
     assert.ok(!/(src|href)="\/(js|css|icons)\//.test(html), "index.html uses relative asset URLs");
     assert.ok(!/"\/(js|css|icons)\//.test(sw), "service-worker APP_SHELL uses relative URLs");
+});
+
+test("BP5 first-run: setup loads after BP4, gate markup present, financial pages intact", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const at = (needle) => html.indexOf(needle);
+
+    /* load order: auth-ui -> migration -> setup -> storage */
+    const authUiAt = at("js/auth/auth-ui.js?v=");
+    const migAt = at("js/migration/migration-ui.js?v=");
+    const setupSvcAt = at("js/setup/first-run-setup.js?v=");
+    const setupUiAt = at("js/setup/setup-ui.js?v=");
+    const storageAt = at("js/storage.js?v=");
+    assert.ok(setupSvcAt > 0 && setupUiAt > 0, "setup scripts present");
+    assert.ok(authUiAt < setupSvcAt && migAt < setupSvcAt, "setup loads after auth-ui + migration");
+    assert.ok(setupSvcAt < setupUiAt, "setup service before setup UI");
+    assert.ok(setupUiAt < storageAt, "setup loads before the financial engine");
+
+    /* gate markup — starts hidden, all 4 steps + error screen */
+    assert.ok(/href="\.\/css\/setup\.css/.test(html), "setup.css linked");
+    assert.ok(/id="mw-setup-gate"/.test(html), "#mw-setup-gate present");
+    assert.ok(/id="mw-setup-gate"[\s\S]{0,220}\bhidden\b/.test(html), "#mw-setup-gate starts hidden");
+    for (const s of ["1", "2", "3", "4", "error"]) {
+        assert.ok(html.includes('data-setup-step="' + s + '"'), "setup step " + s);
+    }
+    /* NO "restart setup" control in BP5 */
+    assert.ok(!/data-setup-action="(restart|reset)"/.test(html), "no restart/reset setup action");
+    /* review values are rendered into spans (filled with textContent, never innerHTML) */
+    assert.ok(html.includes('data-setup-review="review-checking-balance"'), "review slot present");
+
+    /* the setup error screen must not make a claim that is false when a
+       financial write succeeded but the completion metadata failed */
+    const errStart = html.indexOf('data-setup-step="error"');
+    const errSection = errStart >= 0 ? html.slice(errStart, html.indexOf("</section>", errStart) + 10) : "";
+    assert.ok(errSection.length > 0, "error section found");
+    assert.ok(!/your data has not been changed|nothing was saved|no changes were made/i.test(errSection),
+        "error screen makes no false 'data unchanged' claim");
+    assert.ok(/data is safe|Retry/i.test(errSection), "error screen still reassures + offers retry");
+
+    /* financial pages untouched */
+    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+        assert.ok(html.includes('id="' + p + '"'), p + " markup intact");
+    }
+});
+
+test("BP5 fail-open: auth-ui setup guard holds ONLY on explicit { release: false }, and setup source is local-only", () => {
+    const authUi = fs.readFileSync(path.join(ROOT, "js/auth/auth-ui.js"), "utf8");
+    const setup = fs.readFileSync(path.join(ROOT, "js/setup/first-run-setup.js"), "utf8");
+    const setupUi = fs.readFileSync(path.join(ROOT, "js/setup/setup-ui.js"), "utf8");
+
+    /* auth-ui: BP5 gate consulted only AFTER ownershipReleased passes */
+    assert.ok(/if \(!ownershipReleased\(lastSnapshot\)\)/.test(authUi), "ownership checked first");
+    assert.ok(/setupReleased/.test(authUi) && /FAIL[- ]OPEN/i.test(authUi), "fail-open setup logic present");
+    assert.ok(/return result\.release !== false/.test(authUi), "setup guard holds only on explicit release:false");
+
+    /* the setup layer makes ZERO network / cloud calls */
+    for (const [label, src] of [["first-run-setup.js", setup], ["setup-ui.js", setupUi]]) {
+        assert.ok(!/\bfetch\s*\(/.test(src), label + " has no fetch()");
+        assert.ok(!/XMLHttpRequest/.test(src), label + " has no XMLHttpRequest");
+        assert.ok(!/\.from\s*\(/.test(src) || /Array\.prototype|\.slice\.call/.test(src), label + " no Supabase .from()");
+        assert.ok(!/createClient|supabase\./.test(src), label + " no Supabase client use");
+    }
+
+    /* setup keys are the documented local metadata keys */
+    assert.ok(/mwallet\.setup\.v1/.test(setup), "setup completion key");
+    assert.ok(/mwallet\.setup\.draft\.v1/.test(setup), "setup draft key");
+
+    /* balance-only workspaces auto-skip: no "balance signals don't count"
+       exception; the checking opening balance goes to the CURRENT month */
+    assert.ok(!/BALANCE_ONLY_SIGNALS|hasEstablishedActivity/.test(setup), "no balance-only exception");
+    assert.ok(/hasEstablishedBalances|establishedFinancialState/.test(setup), "established-state check present");
+    assert.ok(/getCurrentMonthKey/.test(setup), "opening balance targets the current calendar month");
+
+    /* a failed 'existing' metadata write must NOT gate a verified owner */
+    assert.ok(/fail[- ]?open/i.test(setup), "existing-user metadata failure fails open");
 });
 
 test(".gitignore excludes the local auth config override", () => {

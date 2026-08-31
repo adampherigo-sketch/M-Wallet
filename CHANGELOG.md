@@ -11,6 +11,108 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP5 — First-run setup wizard (`0.9.0-beta.3` → `0.9.0-beta.4`)
+
+A short first-run experience for a **genuinely new** authenticated owner, shown
+**only after BP4 has positively verified local ownership**. BP4 stays the
+security gate; **BP5 is an experience gate that fails _open_** — a
+missing/throwing/malformed setup guard, or a setup module that never loads,
+never locks a verified owner out of their own app.
+
+- **Setup service** — new `js/setup/first-run-setup.js`
+  (`window.MWalletFirstRun`): state model
+  (`inactive` / `checking` / `required` / `saving` / `complete` / `existing` /
+  `error`), an owner-bound draft, integer-cent money parsing (rejects `NaN` /
+  `Infinity` / scientific / >2dp / oversize), and a guarded **Finish**
+  transaction. Actions: `initialize`, `getState`, `getStatus`, `getProgress`,
+  `getDraftValues`, `subscribe`, `updateDraft`, `validateStep`, `nextStep`,
+  `previousStep`, `goToStep`, `finish`, `retry`, `diagnostics`.
+- **Wizard UI** — new `js/setup/setup-ui.js` (`window.MWalletSetupUI`) +
+  `css/setup.css` + `#mw-setup-gate` markup: **Welcome → Your accounts →
+  Basic preferences → Review**, plus a Save-error screen (Retry / Sign Out).
+  Every user-entered value is rendered with `textContent` / `value` — **never
+  `innerHTML`**. No "restart" / "reset" / "start over" action.
+- **Existing users auto-skip** — the wizard is skipped (a `source: "existing"`
+  record written, established values never touched) whenever there is **any** BP4
+  meaningful signal **or** a non-zero balance on its own: a non-zero checking
+  balance, a non-zero savings balance, or a non-zero current-month
+  `startingBalance` each count as established data by themselves — no income /
+  bills / transactions required. There is no "balance signals don't count"
+  exception. A `$2,850` checking balance (and nothing else) opens straight to the
+  app, unchanged. A workspace that becomes established mid-wizard is detected
+  again at Finish and left intact. If BP5's own `"existing"` metadata write
+  fails, the verified owner **still** reaches their wallet — BP5 is a fail-open
+  experience layer; BP4 stays the security gate.
+- **Finish writes once, narrowly** — through the canonical `storage.js`, to
+  **only**: `accounts.checking.name`, `accounts.savings.name` / `.balance`
+  (savings is authoritative for display), `settings.firstDayOfWeek`, and the
+  **current calendar month's `startingBalance`** — the checking opening balance
+  the dashboard and Budget page actually display (the app shows a *derived*
+  checking figure, not `accounts.checking.balance`). The starting balance is
+  applied via `storage.setStartingBalance(currentMonthKey)` — the current month
+  from `storage.getCurrentMonthKey()`, **never** an arbitrary month the Budget
+  page happens to have selected — and that API also re-syncs the
+  `accounts.checking.balance` cache. *(This narrowly widens the original BP5.x
+  field list by one — `months[current].startingBalance` — after verification
+  showed a checking balance written only to `accounts.checking.balance` never
+  surfaces anywhere in the app.)* No activity is created: the month keeps empty
+  `bills` / `paychecks` / `expenses` / `transactions` / `savingsDeposits` arrays
+  and blank notes. Everything else in `mWalletData` — income, expenses, savings
+  goals/transfers, M-Cash, categories, currency, other months — stays identical.
+  BP5 **never** creates income, bills, expenses, transactions, savings
+  goals/transfers, M-Cash entries, categories, or recurrence records, and makes
+  **zero** network / cloud calls. Draft cents are converted to clean 2-dp dollar
+  numbers (no float dust); the save is verified by reload; a failed save ⇒
+  *error* with the draft kept for retry (retry is idempotent — the opening
+  balance is never applied twice); a metadata-write failure after a good save ⇒
+  *error*, and retry writes only the metadata. An interrupted Finish that
+  survives a reload resumes (not reclassified as "existing") via an
+  `applyStarted` marker on the kept draft.
+- **Accurate error copy** — the save-error screen never claims "your data has
+  not been changed" (false when a financial write succeeded but the completion
+  metadata failed). Its static copy — *"Your M-Wallet data is safe. Retry to
+  continue setup from where it stopped."* — is truthful for every error path,
+  and each error code carries its own accurate message (`save_failed`,
+  `starting_balance_failed` "we saved your account details but couldn't finish",
+  `meta_write_failed` "your setup is saved — we just couldn't record that it
+  finished", etc.).
+- **Metadata keys** (local only, never uploaded) — `mwallet.setup.v1`
+  (`{ schemaVersion, ownerUserId, status, completedAt, source }`) and
+  `mwallet.setup.draft.v1` (`{ schemaVersion, ownerUserId, step, values,
+  updatedAt }`). Identity is the **Supabase user id** (never the email). A draft
+  bound to a different owner is ignored; `diagnostics()` exposes no id, no draft
+  values, no financial contents.
+- **Gate order** — auth configured → initialized → signed in → password
+  recovery → **BP4 ownership verified** → **BP5 setup decision** → app revealed.
+  `js/auth/auth-ui.js` remains the single owner of the financial app root's
+  `inert` / `aria-hidden` state; it holds the app for setup **only** on an
+  explicit `{ release: false }` from a working setup guard, and reveals the
+  verified owner's app on anything else (no guard / throw / malformed). The
+  service also subscribes to `MWalletLocalMigration` so a BP4 transition (a user
+  clicking *Keep & Protect My Data*: `needs_claim → owned`) re-resolves BP5
+  immediately, without a reload.
+- **Settings → System & Beta** gains a **First-Run Setup** row — "complete" —
+  for a signed-in owner whose setup is done. It exposes no id and no metadata.
+- **Service worker** — `first-run-setup.js`, `setup-ui.js`, `setup.css` added to
+  `APP_SHELL`; cache `m-wallet-v23` → `m-wallet-v24`. Supabase responses are
+  still never cached.
+- **Tests** — `tests/first-run-setup.test.js` (47 cases: fresh detection,
+  existing auto-skip incl. balance-only workspaces (checking-only / savings-only /
+  startingBalance-only), BP4 `needs_claim → owned` mid-session flip, and
+  metadata-failure fail-open, owner-bound draft,
+  navigation, the Finish deep-equal + current-month targeting + idempotency +
+  storage / partial-apply / interrupted-and-reloaded paths, sign-out mid-wizard,
+  BP4 coordination, recovery precedence, diagnostics) and `tests/setup-ui.test.js`
+  (20 cases: `decideScreen` / `progressModel`, the DOM layer, XSS-safe rendering,
+  submit-vs-click, error-copy-never-false-claim, and a real `auth-ui` +
+  `first-run-setup` + `setup-ui` integration proving the two-stage gate, the
+  no-double-advance fix and the fail-open behaviour). The dom-stub gained
+  descendant / compound / `:checked` selector support. Suite: **288 → 356**, all
+  green; every BP2/BP3 auth test and BP4 fail-closed test stays green.
+- The **live BP3 Supabase email-flow verification** and the **live BP4
+  multi-account ownership verification** both **remain pending** — not completed
+  by BP5.
+
 ### BP4 — Existing local user migration + local data ownership (`0.9.0-beta.2` → `0.9.0-beta.3`)
 
 A **non-destructive local ownership** step so that adding accounts never

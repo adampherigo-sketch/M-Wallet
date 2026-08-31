@@ -1,0 +1,255 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   BP5 — First-run setup wizard  (#mw-setup-gate)
+
+   Shown to a genuinely fresh authenticated owner AFTER BP4
+   ownership is positively verified. Reuses the BP3/BP4 gateway
+   shell (.mw-auth-gate / .mw-auth-card / .mw-auth-*) and the
+   global .z-* primitives; this sheet adds the wizard-specific
+   progress, field rows and review layout.
+   ========================================================= */
+
+#mw-setup-gate.mw-auth-gate {
+    z-index: 940; /* below the BP4 ownership gate (950), above nothing */
+    align-items: flex-start;
+}
+
+#mw-setup-gate .mw-auth-card {
+    max-width: 440px;
+}
+
+#mw-setup-gate [data-setup-step][hidden] {
+    display: none;
+}
+
+
+/* ---- progress ----------------------------------------- */
+
+.mw-setup-progress {
+    display: flex;
+    gap: 6px;
+
+    margin: 0 0 22px;
+    padding: 0;
+    list-style: none;
+}
+
+.mw-setup-progress li {
+    flex: 1 1 0;
+    height: 4px;
+
+    border-radius: 999px;
+    background: var(--z-border);
+
+    transition: background var(--transition);
+}
+
+.mw-setup-progress li[data-state="done"] {
+    background: var(--z-teal);
+}
+
+.mw-setup-progress li[data-state="current"] {
+    background: var(--z-violet);
+}
+
+.mw-setup-step-count {
+    display: block;
+    margin: 0 0 6px;
+
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--z-text-muted);
+}
+
+
+/* ---- field rows -------------------------------------- */
+
+.mw-setup-account {
+    margin-bottom: 20px;
+    padding: 16px 16px 4px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+
+    background: var(--z-bg-secondary);
+}
+
+.mw-setup-account-title {
+    margin: 0 0 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--z-text);
+}
+
+.mw-setup-money {
+    position: relative;
+}
+
+.mw-setup-money .mw-setup-currency {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--z-text-secondary);
+
+    pointer-events: none;
+}
+
+.mw-setup-money .z-input {
+    padding-left: 26px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* ---- preferences ------------------------------------ */
+
+.mw-setup-choice {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.mw-setup-choice label {
+    flex: 1 1 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    min-height: 46px;
+    padding: 10px 12px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-sm);
+
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--z-text-secondary);
+
+    cursor: pointer;
+    transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+
+.mw-setup-choice input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.mw-setup-choice input:checked + span,
+.mw-setup-choice label:has(input:checked) {
+    border-color: var(--z-violet);
+    color: var(--z-text);
+    background: var(--z-violet-soft);
+}
+
+.mw-setup-choice input:focus-visible + span,
+.mw-setup-choice label:has(input:focus-visible) {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+}
+
+.mw-setup-readonly {
+    margin-top: 14px;
+    padding: 12px 13px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-sm);
+
+    font-size: 0.85rem;
+    color: var(--z-text-secondary);
+
+    background: var(--z-bg-secondary);
+}
+
+.mw-setup-readonly strong {
+    color: var(--z-text);
+}
+
+
+/* ---- review ---------------------------------------- */
+
+.mw-setup-review {
+    margin: 0 0 20px;
+    padding: 0;
+    list-style: none;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-md);
+    overflow: hidden;
+}
+
+.mw-setup-review li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+
+    padding: 13px 15px;
+
+    border-top: 1px solid var(--z-border-soft);
+}
+
+.mw-setup-review li:first-child {
+    border-top: 0;
+}
+
+.mw-setup-review .mw-setup-review-label {
+    font-size: 0.8rem;
+    color: var(--z-text-secondary);
+}
+
+.mw-setup-review .mw-setup-review-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--z-text);
+    font-variant-numeric: tabular-nums;
+
+    text-align: right;
+    word-break: break-word;
+}
+
+
+/* ---- footer buttons ------------------------------- */
+
+.mw-setup-nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.mw-setup-nav .z-btn {
+    flex: 1 1 0;
+}
+
+.mw-setup-later {
+    margin: 16px 0 0;
+    text-align: center;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--z-text-muted);
+}
+
+
+@media (max-width: 380px) {
+    #mw-setup-gate .mw-auth-card {
+        padding: 24px 18px 20px;
+    }
+    .mw-setup-choice {
+        flex-direction: column;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mw-setup-progress li {
+        transition: none;
+    }
+}

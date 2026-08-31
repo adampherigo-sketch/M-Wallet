@@ -2,10 +2,11 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.3`.** M-Wallet is a pre‑release build.
-> It is **not production‑ready**. Accounts, sign-in, and non-destructive local
-> data ownership now exist (when a Supabase project is configured); cloud
-> backup, sync, and recovery of financial data are still being built. See
+> **Status: Beta Preparation — `0.9.0-beta.4`.** M-Wallet is a pre‑release build.
+> It is **not production‑ready**. Accounts, sign-in, non-destructive local
+> data ownership, and a first‑run setup wizard for new owners now exist (when a
+> Supabase project is configured); cloud backup, sync, and recovery of financial
+> data are still being built. See
 > [Early Beta data warning](#early-beta-data-warning).
 
 ---
@@ -79,7 +80,8 @@ M-Wallet/
 │   ├── settings.css        ZG8   (scoped #settings-page)
 │   ├── zg9.css             ZG9 — loaded last; responsive + a11y overrides
 │   ├── auth.css            BP3 — account gateway (scoped .mw-auth-*)
-│   └── migration.css       BP4 — local data ownership gateway
+│   ├── migration.css       BP4 — local data ownership gateway
+│   └── setup.css           BP5 — first-run setup wizard
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -99,6 +101,9 @@ M-Wallet/
 │   ├── migration/          MWalletLocalMigration — local data ownership (BP4)
 │   │   ├── local-user-migration.js  ownership state + meaningful-data detector
 │   │   └── migration-ui.js          the #mw-migration-gate screens
+│   ├── setup/              MWalletFirstRun — first-run setup wizard (BP5)
+│   │   ├── first-run-setup.js       setup state + draft + the Finish transaction
+│   │   └── setup-ui.js              the #mw-setup-gate wizard screens
 │   ├── vendor/
 │   │   └── supabase-js.min.js   vendored @supabase/supabase-js (UMD, pinned)
 │   └── m-cash/
@@ -174,12 +179,18 @@ The suites live in `tests/` (unit + storage‑harness) and `tests/m-cash/`, plus
 covered by `tests/auth-architecture.test.js`, `tests/auth-ui.test.js`, and
 `tests/auth-data-safety.test.js`; local data ownership (BP4) by
 `tests/local-user-migration.test.js`, `tests/migration-ui.test.js`, and
-`tests/fail-closed-ownership.test.js` — all with a stubbed Supabase library and a
-small DOM stub (`tests/helpers/dom-stub.js`); **no network, no real project**.
+`tests/fail-closed-ownership.test.js`; the first-run setup wizard (BP5) by
+`tests/first-run-setup.test.js` and `tests/setup-ui.test.js` — all with a
+stubbed Supabase library and a small DOM stub (`tests/helpers/dom-stub.js`);
+**no network, no real project**.
 The migration tests build realistic `mWalletData` with the real `storage.js` and
 assert the migration layer makes **zero** writes to it; the fail-closed suite
 proves the financial app stays blocked when the ownership guard is missing,
-throws, or returns a malformed result. See `tests/README.md`.
+throws, or returns a malformed result. The setup tests run Finish against the
+real `storage.js` and assert **only** the five allowed fields change (everything
+else deep-equal), that an existing owner is never re-asked for balances, and
+that a fresh owner is held for setup while a broken setup module fails **open**.
+See `tests/README.md`.
 
 ---
 
@@ -281,6 +292,42 @@ back up, or synchronize any financial data** — it stays on the device.
 service; `js/migration/migration-ui.js` + `css/migration.css` render the
 `#mw-migration-gate` screens.
 
+### First-run setup wizard (BP5)
+
+After BP4 has **positively verified** local ownership, a genuinely **new**
+owner (no meaningful data, no completion record) sees a short four-step wizard —
+Welcome → account balances → basic preferences → Review — before the app opens.
+On **Finish** it writes, once, through the canonical `storage.js` and only to
+`accounts.checking.name`, `accounts.savings.name` / `.balance`,
+`settings.firstDayOfWeek`, and the **current calendar month's starting balance**
+— the checking opening balance the dashboard and Budget page actually show (the
+app displays a derived checking figure, not `accounts.checking.balance`; the
+starting balance is set via `storage.setStartingBalance(currentMonthKey)`, which
+re-syncs that cache, and always targets `storage.getCurrentMonthKey()` — never a
+month the Budget page happens to have selected). It **never** creates income,
+bills, transactions, savings goals, M-Cash entries, or any month activity, and
+**makes no network calls**. The save-error screen never claims data is
+unchanged — its wording ("Your M-Wallet data is safe. Retry to continue setup
+from where it stopped.") is truthful whether nothing was written or the accounts
+saved and only the completion record failed; retry is idempotent.
+
+An **existing** owner **auto-skips**: any BP4 meaningful signal *or* a non-zero
+balance on its own — a checking balance, a savings balance, or a current-month
+starting balance — counts as established data, no income/bills/transactions
+required. The wizard never asks anyone to re-enter balances and never overwrites
+established values (a `$2,850` checking balance is never reset to `$0` by a
+missing setup record). If BP5's own convenience metadata can't be written, the
+verified owner still reaches their wallet. Wizard progress is kept in an
+owner-bound local draft (`mwallet.setup.draft.v1`); completion is recorded in
+`mwallet.setup.v1` as `{ schemaVersion, ownerUserId, status, completedAt,
+source }` — the Supabase user id, never the email; no financial values.
+
+**BP4 stays the security gate; BP5 is an experience gate that fails *open*.** A
+missing, throwing, or malformed setup guard, or a setup module that never loads,
+never locks a verified owner out of their own app. `js/setup/first-run-setup.js`
+(`window.MWalletFirstRun`) is the service; `js/setup/setup-ui.js` +
+`css/setup.css` render the `#mw-setup-gate` screens.
+
 **Fail-closed.** The financial app root's `inert` / `aria-hidden` state has a
 single owner, `js/auth/auth-ui.js`. For a configured, signed-in user the
 **default is DENY** — the app is revealed **only** when the ownership guard the
@@ -312,11 +359,13 @@ financial application.
   financial app `inert`); signed-in hands off to the BP4 ownership check (see
   *Local data ownership*) before the app opens; **unconfigured never shows it**.
   The financial DOM and data are never removed — only covered.
-- **Gate order (fail-closed)** — auth configured? → auth initialized? → signed
-  in? → password recovery? → **local ownership positively verified?** → only then
-  is the financial app revealed. A valid login alone never bypasses an owner
-  mismatch, and a missing/broken ownership check never defaults to allowing
-  access (see *Local data ownership → Fail-closed*).
+- **Gate order** — auth configured? → auth initialized? → signed in? → password
+  recovery? → **local ownership positively verified?** (BP4, *fail-closed*) →
+  **first-run setup decision** (BP5, *fail-open*) → only then is the financial
+  app revealed. A valid login alone never bypasses an owner mismatch, and a
+  missing/broken ownership check never defaults to allowing access; a
+  missing/broken setup check, by contrast, never keeps a verified owner out (see
+  *Local data ownership → Fail-closed* and *First-run setup wizard*).
 - **Explicit state model** — `unconfigured` → `initializing` →
   `signed_out` / `signed_in` / `error` (+ a `recoveryMode` flag for the
   password-reset return). Only `signed_in` means authenticated. A refused
@@ -416,10 +465,10 @@ overhaul, and is now in **Beta Preparation** — a sequence of phases (BP0–BP1
 focused on making it safe, understandable, recoverable, secure, testable, and
 multi‑device before real testers use it. Done so far: a versioned beta build
 (BP1), the authentication architecture (BP2), the account UI + session
-experience (BP3), and non-destructive local existing-user data ownership (BP4).
-Still planned: a first‑run setup wizard, a guided walkthrough, row‑level‑secured
-cloud data, a local‑first sync engine, passkeys, account/privacy/recovery
-controls, and a beta feedback system.
+experience (BP3), non-destructive local existing-user data ownership (BP4), and
+a first‑run setup wizard for genuinely new owners (BP5). Still planned: a guided
+walkthrough, row‑level‑secured cloud data, a local‑first sync engine, passkeys,
+account/privacy/recovery controls, and a beta feedback system.
 
 It is **not production‑ready** and should not be treated as a finished product.
 

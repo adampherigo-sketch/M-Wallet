@@ -52,6 +52,26 @@
    the fallback ("Local data protection couldn't be verified"
    + Retry / Sign Out) — never a blank screen, never the
    financial app.
+
+   ---------------------------------------------------------
+   BP5 FIRST-RUN SETUP GATE (experience gate — FAIL OPEN)
+
+   AFTER BP4 ownership is positively verified, this module also
+   consults an optional first-run setup guard:
+
+     setSetupGuard(fn): the first-run-setup layer registers
+     fn(authSnapshot) -> { release: boolean }. It returns
+     { release: false } ONLY while a fresh verified owner still
+     needs the setup wizard.
+
+     setSetupScreenActive(bool): the setup UI calls this while
+     it is presenting the wizard.
+
+   BP5 is NOT a security gate — BP4 already protects the data —
+   so a missing / throwing / malformed setup guard FAILS OPEN
+   (the verified owner is never locked out of their own app).
+   Only an explicit { release: false } from a working guard
+   holds the app for setup.
    ========================================================= */
 
 (function (global) {
@@ -73,6 +93,12 @@
        / error). When false and the app is held for ownership,
        this module shows its own fallback view. */
     var ownershipScreenActive = false;
+
+    /* BP5 first-run setup guard — fail-open. fn(authSnapshot) ->
+       { release: boolean }. Holds the app for setup ONLY on an
+       explicit { release: false }. */
+    var setupGuard = null;
+    var setupScreenActive = false;
 
 
     /* =====================================================
@@ -306,6 +332,14 @@
         ownershipScreenActive = active === true;
     }
 
+    function setSetupGuard(fn) {
+        setupGuard = (typeof fn === "function") ? fn : null;
+    }
+
+    function setSetupScreenActive(active) {
+        setupScreenActive = active === true;
+    }
+
     /* FAIL-CLOSED. Returns true ONLY when the guard exists, does
        not throw, returns a plain object, and result.release is
        exactly the boolean true. Every other outcome -> false
@@ -321,6 +355,22 @@
         }
         if (!result || typeof result !== "object") { return false; }
         return result.release === true;
+    }
+
+    /* FAIL-OPEN. BP5 is an experience gate, not a security gate
+       (BP4 already protected the data). Returns false (hold for
+       setup) ONLY when a working guard explicitly says
+       { release: false }. No guard / throw / malformed -> true. */
+    function setupReleased(authSnap) {
+        if (typeof setupGuard !== "function") { return true; }
+        var result;
+        try {
+            result = setupGuard(authSnap);
+        } catch (e) {
+            return true;
+        }
+        if (!result || typeof result !== "object") { return true; }
+        return result.release !== false;
     }
 
     function hideAllViews() {
@@ -347,6 +397,20 @@
         }
     }
 
+    /* App held for first-run setup (BP5). The setup UI presents
+       #mw-setup-gate; auth-ui just keeps the app root inert. If
+       the setup UI is not presenting (guard holds but UI failed
+       or a transient), FAIL OPEN — reveal the verified owner's
+       app rather than trap them behind broken onboarding. */
+    function holdForSetup() {
+        if (setupScreenActive) {
+            hideAllViews();
+            applyVisible(false, { keepAppGated: true });
+        } else {
+            applyVisible(false);
+        }
+    }
+
     /* Render from an auth snapshot. */
     function renderState(snapshot) {
         lastSnapshot = snapshot || (global.MWalletAuth && global.MWalletAuth.getState());
@@ -365,11 +429,17 @@
                 /* BP4: FAIL CLOSED. Signed in is not enough — the
                    financial app is revealed ONLY on an explicit
                    ownership release. */
-                if (ownershipReleased(lastSnapshot)) {
-                    applyVisible(false);
+                if (!ownershipReleased(lastSnapshot)) {
+                    holdForOwnership();
                     return;
                 }
-                holdForOwnership();
+                /* BP5: ownership verified -> only a fresh owner who
+                   still needs the first-run wizard is held here. */
+                if (!setupReleased(lastSnapshot)) {
+                    holdForSetup();
+                    return;
+                }
+                applyVisible(false);
                 return;
             }
             /* any other non-visible path (defensive) -> reveal */
@@ -686,7 +756,11 @@
 
         /* BP4 coordination */
         setPostAuthGuard: setPostAuthGuard,
-        setOwnershipScreenActive: setOwnershipScreenActive
+        setOwnershipScreenActive: setOwnershipScreenActive,
+
+        /* BP5 coordination */
+        setSetupGuard: setSetupGuard,
+        setSetupScreenActive: setSetupScreenActive
     };
 
 

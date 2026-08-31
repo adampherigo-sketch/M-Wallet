@@ -202,6 +202,17 @@
         href="./css/migration.css?v=1"
     >
 
+
+    <!-- =====================================================
+         FIRST-RUN SETUP WIZARD (BP5)
+         Reuses the gateway shell; adds #mw-setup-gate.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/setup.css?v=1"
+    >
+
 </head>
 
 
@@ -2481,6 +2492,14 @@
                             <span class="zg-set-row-value" id="settings-local-data-status">—</span>
                         </div>
 
+                        <div class="zg-set-row zg-set-account" id="settings-first-run-panel" hidden>
+                            <span class="zg-set-row-text">
+                                <strong>First-Run Setup</strong>
+                                <small>Your initial M-Wallet setup is complete.</small>
+                            </span>
+                            <span class="zg-set-row-value" id="settings-first-run-status">—</span>
+                        </div>
+
                         <div class="zg-set-identity">
                             <div>
                                 <span>Version</span>
@@ -3096,6 +3115,206 @@
 
 
     <!-- ========================================
+         FIRST-RUN SETUP WIZARD  (BP5)
+         Behaviour: js/setup/setup-ui.js
+         Service:   js/setup/first-run-setup.js
+         Styles:    css/setup.css (+ shared .mw-auth-* / .z-*)
+
+         Shown ONLY to a genuinely fresh authenticated owner
+         AFTER BP4 has positively verified local ownership.
+         Existing / legacy users auto-skip. Values are written
+         to a local draft as the user types; mWalletData is
+         touched only once, on Finish.
+    ========================================= -->
+
+    <div
+        id="mw-setup-gate"
+        class="mw-auth-gate"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-setup-heading"
+        hidden
+        aria-hidden="true"
+    >
+
+        <div class="mw-auth-card">
+
+            <img class="mw-auth-logo" src="./icons/m-wallet-icon-192.png" alt="">
+            <p class="mw-auth-brand">
+                M-Wallet
+                <span class="z-badge z-badge-violet">BETA</span>
+            </p>
+
+            <span class="mw-setup-step-count" data-setup-step-count aria-hidden="true">Step 1 of 4</span>
+            <ol class="mw-setup-progress" data-setup-progress aria-label="Setup progress">
+                <li data-state="current"></li>
+                <li data-state="todo"></li>
+                <li data-state="todo"></li>
+                <li data-state="todo"></li>
+            </ol>
+
+
+            <!-- STEP 1 - WELCOME -->
+            <section data-setup-step="1" hidden>
+                <h1 id="mw-setup-heading" class="mw-auth-title" tabindex="-1">Welcome to M-Wallet</h1>
+                <p class="mw-auth-sub">
+                    M-Wallet helps you keep track of your money in one place. Your
+                    financial data is stored locally on this device &mdash; cloud
+                    backup and sync aren&rsquo;t active yet. Setup takes only a moment.
+                </p>
+                <div class="mw-auth-msg" data-setup-msg role="alert" aria-live="assertive" hidden></div>
+                <button type="button" class="z-btn z-btn-primary mw-auth-block" data-setup-action="start">
+                    Start Setup
+                </button>
+            </section>
+
+
+            <!-- STEP 2 - YOUR ACCOUNTS -->
+            <section data-setup-step="2" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">Start with what you have today</h1>
+                <p class="mw-auth-sub">
+                    Enter the current balance of each account. If an account is empty,
+                    leave it at $0.00.
+                </p>
+
+                <form data-setup-form="2" novalidate>
+                    <div class="mw-auth-msg" data-setup-msg role="alert" aria-live="assertive" hidden></div>
+
+                    <div class="mw-setup-account">
+                        <p class="mw-setup-account-title">Checking</p>
+                        <div class="z-field">
+                            <label class="z-label" for="mw-setup-checking-name">Account name</label>
+                            <input class="z-input" id="mw-setup-checking-name" data-setup-field="checkingName"
+                                   type="text" maxlength="40" autocomplete="off" autocapitalize="words"
+                                   inputmode="text" value="Checking">
+                        </div>
+                        <div class="z-field">
+                            <label class="z-label" for="mw-setup-checking-balance">Current balance</label>
+                            <div class="mw-setup-money">
+                                <span class="mw-setup-currency" aria-hidden="true">$</span>
+                                <input class="z-input" id="mw-setup-checking-balance" data-setup-field="checkingBalance"
+                                       type="text" inputmode="decimal" autocomplete="off"
+                                       aria-describedby="mw-setup-checking-hint" value="0.00">
+                            </div>
+                            <p class="mw-auth-reqs" id="mw-setup-checking-hint">Checking can be negative if you&rsquo;re overdrawn.</p>
+                        </div>
+                    </div>
+
+                    <div class="mw-setup-account">
+                        <p class="mw-setup-account-title">Savings</p>
+                        <div class="z-field">
+                            <label class="z-label" for="mw-setup-savings-name">Account name</label>
+                            <input class="z-input" id="mw-setup-savings-name" data-setup-field="savingsName"
+                                   type="text" maxlength="40" autocomplete="off" autocapitalize="words"
+                                   inputmode="text" value="Savings">
+                        </div>
+                        <div class="z-field">
+                            <label class="z-label" for="mw-setup-savings-balance">Current balance</label>
+                            <div class="mw-setup-money">
+                                <span class="mw-setup-currency" aria-hidden="true">$</span>
+                                <input class="z-input" id="mw-setup-savings-balance" data-setup-field="savingsBalance"
+                                       type="text" inputmode="decimal" autocomplete="off" value="0.00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mw-setup-nav">
+                        <button type="button" class="z-btn z-btn-secondary" data-setup-action="back">Back</button>
+                        <button type="submit" class="z-btn z-btn-primary" data-setup-action="continue">Continue</button>
+                    </div>
+                </form>
+            </section>
+
+
+            <!-- STEP 3 - BASIC PREFERENCES -->
+            <section data-setup-step="3" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">Make M-Wallet fit your routine</h1>
+                <p class="mw-auth-sub">You can change these settings later in M-Wallet.</p>
+
+                <form data-setup-form="3" novalidate>
+                    <div class="mw-auth-msg" data-setup-msg role="alert" aria-live="assertive" hidden></div>
+
+                    <div class="z-field">
+                        <span class="z-label" id="mw-setup-firstday-label">First day of the week</span>
+                        <div class="mw-setup-choice" role="radiogroup" aria-labelledby="mw-setup-firstday-label">
+                            <label>
+                                <input type="radio" name="firstDayOfWeek" data-setup-field="firstDayOfWeek" value="sunday" checked>
+                                <span>Sunday</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="firstDayOfWeek" data-setup-field="firstDayOfWeek" value="monday">
+                                <span>Monday</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <p class="mw-setup-readonly">
+                        <strong>Currency</strong><br>
+                        USD &mdash; US Dollar. M-Wallet supports US Dollars in this build.
+                    </p>
+
+                    <div class="mw-setup-nav">
+                        <button type="button" class="z-btn z-btn-secondary" data-setup-action="back">Back</button>
+                        <button type="submit" class="z-btn z-btn-primary" data-setup-action="continue">Continue</button>
+                    </div>
+                </form>
+            </section>
+
+
+            <!-- STEP 4 - REVIEW -->
+            <section data-setup-step="4" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">You&rsquo;re ready to start</h1>
+                <p class="mw-auth-sub">Here&rsquo;s what you entered. You can change these settings later in M-Wallet.</p>
+
+                <form data-setup-form="4" novalidate>
+                    <div class="mw-auth-msg" data-setup-msg role="alert" aria-live="assertive" hidden></div>
+
+                    <ul class="mw-setup-review">
+                        <li>
+                            <span class="mw-setup-review-label" data-setup-review="review-checking-name">Checking</span>
+                            <span class="mw-setup-review-value" data-setup-review="review-checking-balance">$0.00</span>
+                        </li>
+                        <li>
+                            <span class="mw-setup-review-label" data-setup-review="review-savings-name">Savings</span>
+                            <span class="mw-setup-review-value" data-setup-review="review-savings-balance">$0.00</span>
+                        </li>
+                        <li>
+                            <span class="mw-setup-review-label">Week starts on</span>
+                            <span class="mw-setup-review-value" data-setup-review="review-first-day">Sunday</span>
+                        </li>
+                    </ul>
+
+                    <div class="mw-setup-nav">
+                        <button type="button" class="z-btn z-btn-secondary" data-setup-action="back">Back</button>
+                        <button type="submit" class="z-btn z-btn-primary" data-setup-action="finish">Finish Setup</button>
+                    </div>
+                </form>
+
+                <p class="mw-setup-later">
+                    Nothing is uploaded. Your data stays on this device.
+                </p>
+            </section>
+
+
+            <!-- SAVE ERROR -->
+            <section data-setup-step="error" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">Setup couldn&rsquo;t be completed</h1>
+                <p class="mw-auth-sub">
+                    Your M-Wallet data is safe. Retry to continue setup from where it
+                    stopped, or sign out and come back.
+                </p>
+                <div class="mw-auth-msg is-error" data-setup-msg role="alert" aria-live="assertive" hidden></div>
+
+                <button type="button" class="z-btn z-btn-primary mw-auth-block" data-setup-action="retry">Retry</button>
+                <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-setup-action="sign-out">Sign Out</button>
+            </section>
+
+        </div>
+    </div>
+
+
+
+    <!-- ========================================
          UNIVERSAL QUICK ADD
     ========================================= -->
 
@@ -3411,7 +3630,7 @@
     <script src="./js/auth/auth-config.js?v=2"></script>
     <script src="./js/auth/auth-client.js?v=2"></script>
     <script src="./js/auth/auth.js?v=3"></script>
-    <script src="./js/auth/auth-ui.js?v=3"></script>
+    <script src="./js/auth/auth-ui.js?v=4"></script>
 
     <!-- Local data ownership / existing-user migration (BP4).
          Loads after the auth layer it depends on, before the
@@ -3420,6 +3639,14 @@
          financial UI. Never rewrites mWalletData. -->
     <script src="./js/migration/local-user-migration.js?v=2"></script>
     <script src="./js/migration/migration-ui.js?v=2"></script>
+
+    <!-- First-run setup wizard (BP5). Loads after BP4 (needs the
+         ownership status + meaningful-data detector) and auth-ui
+         (registers a fail-open experience guard). Only a fresh
+         verified owner sees it; it never blocks the app on
+         failure and never writes mWalletData until Finish. -->
+    <script src="./js/setup/first-run-setup.js?v=1"></script>
+    <script src="./js/setup/setup-ui.js?v=1"></script>
 
     <script src="./js/storage.js?v=7"></script>
 
@@ -3437,7 +3664,7 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=5"></script>
+    <script src="./js/settings-ui.js?v=6"></script>
 
     <script src="./js/app.js?v=10"></script>
 
