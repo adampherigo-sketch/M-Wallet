@@ -183,7 +183,7 @@ function buildAuthDom() {
     gate.hidden = true;
     doc.body.appendChild(gate);
 
-    const views = ["loading", "welcome", "signup", "signin", "verify", "forgot", "recovery"];
+    const views = ["loading", "welcome", "signup", "signin", "verify", "forgot", "recovery", "ownership-hold"];
     views.forEach((name) => {
         const section = doc.createElement("section");
         section.setAttribute("data-auth-view", name);
@@ -198,6 +198,15 @@ function buildAuthDom() {
         msg.setAttribute("data-auth-msg", name);
         msg.hidden = true;
         section.appendChild(msg);
+
+        if (name === "ownership-hold") {
+            ["ownership-retry", "ownership-signout"].forEach((action) => {
+                const b = doc.createElement("button");
+                b.setAttribute("data-auth-action", action);
+                b.textContent = action;
+                section.appendChild(b);
+            });
+        }
 
         if (name === "verify") {
             const email = doc.createElement("strong");
@@ -236,17 +245,83 @@ function buildAuthDom() {
         });
     });
 
+    /* BP4 — the #mw-migration-gate lives alongside #mw-auth-gate */
+    const migrationGate = buildMigrationGateInto(doc);
+
     return {
         document: doc,
         gate,
         app,
+        migrationGate,
         view(name) { return gate.querySelector('[data-auth-view="' + name + '"]'); },
         msg(name) { return gate.querySelector('[data-auth-msg="' + name + '"]'); },
         form(name) { return gate.querySelector('[data-auth-form="' + name + '"]'); },
         input(formName, field) {
             return gate.querySelector('[data-auth-form="' + formName + '"]').querySelector('[name="' + field + '"]');
+        },
+        migrationScreen(name) {
+            return migrationGate.querySelector('[data-migration-screen="' + name + '"]');
+        },
+        migrationAction(name) {
+            return migrationGate.querySelector('[data-migration-action="' + name + '"]');
         }
     };
 }
 
-module.exports = { Doc, El, buildAuthDom };
+const MIGRATION_SCREENS = ["checking", "needs_claim", "owner_mismatch", "error"];
+
+function buildMigrationGateInto(doc) {
+    const gate = doc.createElement("div");
+    gate.setAttribute("id", "mw-migration-gate");
+    gate.setAttribute("class", "mw-auth-gate");
+    gate.hidden = true;
+    doc.body.appendChild(gate);
+
+    MIGRATION_SCREENS.forEach((name) => {
+        const section = doc.createElement("section");
+        section.setAttribute("data-migration-screen", name);
+        section.hidden = true;
+        gate.appendChild(section);
+
+        const h1 = doc.createElement("h1");
+        h1.textContent = name;
+        section.appendChild(h1);
+
+        const msg = doc.createElement("div");
+        msg.setAttribute("data-migration-msg", "");
+        msg.hidden = true;
+        section.appendChild(msg);
+
+        const actions =
+            name === "needs_claim" ? ["claim", "sign-out"]
+                : name === "owner_mismatch" ? ["sign-out"]
+                    : name === "error" ? ["retry", "sign-out"]
+                        : [];
+        actions.forEach((action) => {
+            const button = doc.createElement("button");
+            button.setAttribute("data-migration-action", action);
+            button.textContent = action;
+            section.appendChild(button);
+        });
+    });
+
+    return gate;
+}
+
+/* migration-only DOM (has .app + #mw-migration-gate, no auth gate) */
+function buildMigrationDom() {
+    const doc = new Doc();
+    const app = doc.createElement("div");
+    app.setAttribute("class", "app");
+    doc.body.appendChild(app);
+    const migrationGate = buildMigrationGateInto(doc);
+    return {
+        document: doc,
+        app,
+        migrationGate,
+        screen(name) { return migrationGate.querySelector('[data-migration-screen="' + name + '"]'); },
+        action(name) { return migrationGate.querySelector('[data-migration-action="' + name + '"]'); }
+    };
+}
+
+module.exports = { Doc, El, buildAuthDom, buildMigrationDom };

@@ -26,14 +26,53 @@
 
    The markup lives in index.html (#mw-auth-gate); this module
    only toggles and fills it. Styling: css/auth.css.
+
+   ---------------------------------------------------------
+   BP4 FAIL-CLOSED OWNERSHIP GATE
+
+   This module is the SINGLE owner of the financial app root's
+   inert / aria-hidden state. When Supabase auth is configured
+   and the user is SIGNED IN, the default is DENY:
+
+     - the app root stays inert + aria-hidden
+     - it is revealed ONLY when the ownership guard returns
+       exactly { release: true }
+     - a missing guard, a throwing guard, an undefined result,
+       or any malformed result => STILL BLOCKED
+
+   setPostAuthGuard(fn): the local-user-migration layer
+   registers fn(authSnapshot) -> { release: boolean }. It must
+   return { release: true } only once local ownership is
+   positively verified (owned / fresh_claimed).
+
+   setOwnershipScreenActive(bool): the migration UI calls this
+   to say "I am presenting the ownership screen" so this module
+   suppresses its own built-in fallback view. If the migration
+   UI never loads, that flag stays false and this module shows
+   the fallback ("Local data protection couldn't be verified"
+   + Retry / Sign Out) — never a blank screen, never the
+   financial app.
    ========================================================= */
 
 (function (global) {
 
     var GATE_ID = "mw-auth-gate";
-    var VIEWS = ["loading", "welcome", "signup", "signin", "verify", "forgot", "recovery"];
+    var VIEWS = ["loading", "welcome", "signup", "signin", "verify", "forgot", "recovery", "ownership-hold"];
 
     var GENERIC_ERROR = "Something went wrong. Please try again.";
+
+    /* BP4 fail-closed ownership guard.
+       fn(authSnapshot) -> { release: boolean }. Access to the
+       financial app is granted ONLY when the guard exists, does
+       not throw, returns a plain object, and result.release is
+       the boolean true. Anything else keeps the app blocked. */
+    var postAuthGuard = null;
+
+    /* set true by the migration UI while it is presenting an
+       ownership screen (needs_claim / owner_mismatch / checking
+       / error). When false and the app is held for ownership,
+       this module shows its own fallback view. */
+    var ownershipScreenActive = false;
 
 
     /* =====================================================
@@ -229,31 +268,83 @@
         showView(view || "welcome");
     }
 
-    function applyVisible(visible) {
+    /* Manage the auth gate element and — as the single owner of it —
+       the financial app root's inert/hidden state.
+         visible=true            -> auth gate shown, app gated
+         visible=false           -> auth gate hidden, app revealed
+         visible=false + keepAppGated -> auth gate hidden, app STILL
+                                         gated (another gate is up) */
+    function applyVisible(visible, opts) {
         if (!gateEl) { return; }
-        var changing = gateEl.hidden === visible; /* hidden===visible means state flips */
-        if (visible) {
-            gateEl.hidden = false;
-            gateEl.setAttribute("aria-hidden", "false");
-            if (appEl) {
+        opts = opts || {};
+        var appGated = visible === true || opts.keepAppGated === true;
+        var changing = gateEl.hidden === visible;
+
+        gateEl.hidden = !visible;
+        gateEl.setAttribute("aria-hidden", visible ? "false" : "true");
+
+        if (appEl) {
+            if (appGated) {
                 appEl.setAttribute("aria-hidden", "true");
                 try { appEl.inert = true; } catch (e) { /* older browsers */ }
-            }
-            if (doc.body && doc.body.classList) {
-                doc.body.classList.add("mw-auth-locked");
-            }
-        } else {
-            gateEl.hidden = true;
-            gateEl.setAttribute("aria-hidden", "true");
-            if (appEl) {
+            } else {
                 appEl.removeAttribute("aria-hidden");
                 try { appEl.inert = false; } catch (e) { /* older browsers */ }
             }
-            if (doc.body && doc.body.classList) {
-                doc.body.classList.remove("mw-auth-locked");
-            }
+        }
+        if (doc.body && doc.body.classList) {
+            doc.body.classList.toggle("mw-auth-locked", appGated);
         }
         return changing;
+    }
+
+    function setPostAuthGuard(fn) {
+        postAuthGuard = (typeof fn === "function") ? fn : null;
+    }
+
+    function setOwnershipScreenActive(active) {
+        ownershipScreenActive = active === true;
+    }
+
+    /* FAIL-CLOSED. Returns true ONLY when the guard exists, does
+       not throw, returns a plain object, and result.release is
+       exactly the boolean true. Every other outcome -> false
+       (blocked): no guard, throw, undefined/null, non-object,
+       missing/!== true release. */
+    function ownershipReleased(authSnap) {
+        if (typeof postAuthGuard !== "function") { return false; }
+        var result;
+        try {
+            result = postAuthGuard(authSnap);
+        } catch (e) {
+            return false;
+        }
+        if (!result || typeof result !== "object") { return false; }
+        return result.release === true;
+    }
+
+    function hideAllViews() {
+        VIEWS.forEach(function (v) {
+            var el = viewEl(v);
+            if (el) { el.hidden = true; }
+        });
+        currentView = null;
+    }
+
+    /* App held for ownership. Migration UI presents its own
+       screen when it can; otherwise show the built-in fallback.
+       The financial app root stays inert + aria-hidden either
+       way. */
+    function holdForOwnership() {
+        if (ownershipScreenActive) {
+            /* migration UI is presenting -> hide our gate + every
+               view (incl. the fallback), keep the app gated */
+            hideAllViews();
+            applyVisible(false, { keepAppGated: true });
+        } else {
+            applyVisible(true);
+            showView("ownership-hold");
+        }
     }
 
     /* Render from an auth snapshot. */
@@ -264,6 +355,24 @@
         var decision = decideGate(lastSnapshot);
 
         if (!decision.visible) {
+            /* auth alone would reveal the app */
+            if (lastSnapshot.configured !== true) {
+                /* unconfigured -> local developer mode, never gated */
+                applyVisible(false);
+                return;
+            }
+            if (lastSnapshot.status === "signed_in") {
+                /* BP4: FAIL CLOSED. Signed in is not enough — the
+                   financial app is revealed ONLY on an explicit
+                   ownership release. */
+                if (ownershipReleased(lastSnapshot)) {
+                    applyVisible(false);
+                    return;
+                }
+                holdForOwnership();
+                return;
+            }
+            /* any other non-visible path (defensive) -> reveal */
             applyVisible(false);
             return;
         }
@@ -477,6 +586,8 @@
         if (action === "go-forgot") { clearMessages(); showView("forgot"); return; }
         if (action === "go-welcome") { clearMessages(); showView("welcome"); return; }
         if (action === "resend") { handleResend(); return; }
+        if (action === "ownership-signout") { handleOwnershipSignOut(); return; }
+        if (action === "ownership-retry") { handleOwnershipRetry(trigger); return; }
         if (action === "retry") {
             trigger.hidden = true;
             setMessage("welcome", "");
@@ -495,6 +606,39 @@
                 }
             }
             return;
+        }
+    }
+
+    /* built-in fallback actions — must work even when the
+       migration module never loaded */
+    function handleOwnershipSignOut() {
+        var a = auth();
+        if (a && typeof a.signOut === "function") {
+            a.signOut().then(function () { renderState(); }).catch(function () { renderState(); });
+        }
+    }
+
+    function handleOwnershipRetry(trigger) {
+        if (trigger) { trigger.disabled = true; }
+        setMessage("ownership-hold", "");
+        var migration = global.MWalletLocalMigration;
+        var done = function () {
+            if (trigger) { trigger.disabled = false; }
+            renderState();
+            if (typeof gateEl !== "undefined" && gateEl && !gateEl.hidden && currentView === "ownership-hold") {
+                setMessage("ownership-hold", "Local data protection still couldn't be verified.", "error");
+            }
+        };
+        if (migration && typeof migration.ensureOwnership === "function") {
+            Promise.resolve()
+                .then(function () { return migration.ensureOwnership(); })
+                .then(done, done);
+        } else if (typeof global.location !== "undefined" && global.location && typeof global.location.reload === "function") {
+            /* migration subsystem is entirely absent — a reload is
+               the only recovery path */
+            global.location.reload();
+        } else {
+            done();
         }
     }
 
@@ -538,7 +682,11 @@
         init: init,
         open: open,
         renderState: renderState,
-        showView: showView
+        showView: showView,
+
+        /* BP4 coordination */
+        setPostAuthGuard: setPostAuthGuard,
+        setOwnershipScreenActive: setOwnershipScreenActive
     };
 
 
