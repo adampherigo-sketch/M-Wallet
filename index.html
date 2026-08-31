@@ -249,6 +249,18 @@
         href="./css/sync.css?v=1"
     >
 
+
+    <!-- =====================================================
+         ACCOUNT / PRIVACY / RECOVERY CONTROLS (BP10)
+         Settings account-management sections + the change-email,
+         restore-backup, and erase-this-device dialogs.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/account.css?v=1"
+    >
+
 </head>
 
 
@@ -2336,28 +2348,173 @@
                     </section>
 
 
-                    <!-- ============ DATA & STORAGE ============ -->
+                    <!-- ============ ACCOUNT (BP10) ============ -->
 
                     <section
                         class="zg-set-section"
-                        aria-labelledby="zg-set-data-label"
+                        aria-labelledby="zg-set-account-label"
                     >
 
                         <div class="zg-set-section-head">
-                            <span class="z-eyebrow" id="zg-set-data-label">
-                                Data &amp; Storage
+                            <span class="z-eyebrow" id="zg-set-account-label">
+                                Account
                             </span>
-                            <p>Back up, restore, and review the data stored on this device.</p>
+                            <p>
+                                Your account signs you in. In this build it never
+                                uploads or changes your financial data.
+                            </p>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Status</strong>
+                                <small id="mw-acct-email" class="mw-acct-note">Not signed in</small>
+                            </span>
+                            <span class="zg-set-row-value" id="mw-acct-status" role="status" aria-live="polite">—</span>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Email verification</strong>
+                                <small>A verified email lets you recover your account by email.</small>
+                            </span>
+                            <span class="zg-set-row-value mw-acct-row-value" id="mw-acct-verified">—</span>
                         </div>
 
                         <button
                             type="button"
                             class="zg-set-row zg-set-row--link"
-                            id="export-data"
+                            id="mw-acct-change-email-btn"
+                            data-acct-action="change-email"
+                            hidden
                         >
                             <span class="zg-set-row-text">
-                                <strong>Export M-Wallet Data</strong>
-                                <small>Download a JSON backup of everything stored in M-Wallet.</small>
+                                <strong>Change email</strong>
+                                <small>We email your new address a link to confirm the change.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="mw-acct-change-password-btn"
+                            data-acct-action="change-password"
+                            hidden
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Change password</strong>
+                                <small>Email yourself a link to choose a new password.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="mw-acct-signout-btn"
+                            data-acct-action="sign-out"
+                            hidden
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Sign out</strong>
+                                <small>End this session on this device. Your local wallet stays exactly as it is.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="mw-acct-signout-all-btn"
+                            data-acct-action="sign-out-all"
+                            hidden
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Sign out of all devices</strong>
+                                <small>Ends every M-Wallet session for this account. Local wallets are not changed.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
+                        <p class="mw-acct-msg" id="mw-acct-msg" role="status" aria-live="polite" hidden></p>
+
+                    </section>
+
+
+                    <!-- ============ SECURITY & RECOVERY (BP10) ============ -->
+
+                    <section
+                        class="zg-set-section"
+                        aria-labelledby="zg-set-security-label"
+                    >
+
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-security-label">
+                                Security &amp; Recovery
+                            </span>
+                            <p>How you sign in and how you get back in if you're locked out.</p>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Sign-in method</strong>
+                                <small>Email and password.</small>
+                            </span>
+                            <span class="zg-set-row-value" id="mw-acct-password-status">—</span>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Passkeys</strong>
+                                <small>
+                                    Passkeys are being finished for a later beta. Manage them from
+                                    the Passkeys panel under System &amp; Beta when they're active.
+                                </small>
+                            </span>
+                            <span class="zg-set-row-value" id="mw-acct-passkey-status" role="status" aria-live="polite">—</span>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Account recovery</strong>
+                                <small>
+                                    If you forget your password, use “Change password” above (or the
+                                    Forgot-password link on the sign-in screen) to get a reset link by
+                                    email. Keep a current wallet backup as well — see My Data below.
+                                </small>
+                            </span>
+                        </div>
+
+                    </section>
+
+
+                    <!-- ============ MY DATA (BP10) ============ -->
+
+                    <section
+                        class="zg-set-section"
+                        aria-labelledby="zg-set-mydata-label"
+                    >
+
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-mydata-label">
+                                My Data
+                            </span>
+                            <p>Back up, restore, and review the wallet stored on this device.</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="mw-acct-export-btn"
+                            data-acct-action="export"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Export wallet backup</strong>
+                                <small>
+                                    Download a JSON file of your wallet. It is <strong>not encrypted</strong> —
+                                    store it somewhere private. It contains no account password or sign-in token.
+                                </small>
                             </span>
                             <span class="zg-set-row-go" aria-hidden="true">↓</span>
                         </button>
@@ -2365,36 +2522,119 @@
                         <button
                             type="button"
                             class="zg-set-row zg-set-row--link"
-                            id="settings-import-trigger"
+                            id="mw-acct-restore-btn"
+                            data-acct-action="restore"
                         >
                             <span class="zg-set-row-text">
-                                <strong>Import M-Wallet Data</strong>
-                                <small>Replace all current data with a previously exported backup file.</small>
+                                <strong>Restore from a backup</strong>
+                                <small>
+                                    Replace this device's wallet with the contents of a backup file.
+                                    You'll see a summary and confirm before anything changes.
+                                </small>
                             </span>
                             <span class="zg-set-row-go" aria-hidden="true">↑</span>
                         </button>
 
                         <input
                             type="file"
-                            id="settings-import-input"
+                            id="mw-acct-restore-input"
                             accept="application/json,.json"
                             hidden
                         >
 
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link zg-set-row--danger"
+                            id="mw-acct-erase-btn"
+                            data-acct-action="erase"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Erase wallet from this device</strong>
+                                <small>
+                                    Removes this device's wallet and setup state. Cloud sync is off, so
+                                    this may destroy your only copy — export a backup first.
+                                </small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">×</span>
+                        </button>
+
                         <div class="zg-set-row">
                             <span class="zg-set-row-text">
-                                <strong>Local Storage</strong>
+                                <strong>Local storage</strong>
                                 <small>
                                     M-Wallet data is stored only in this browser, on this device.
                                     Clearing site data removes it.
                                 </small>
                             </span>
-                            <span
-                                class="zg-set-row-value"
-                                id="settings-storage-info"
-                            >
-                                —
+                            <span class="zg-set-row-value" id="settings-storage-info">—</span>
+                        </div>
+
+                        <p class="mw-acct-msg" id="mw-acct-data-msg" role="status" aria-live="polite" hidden></p>
+
+                    </section>
+
+
+                    <!-- ============ PRIVACY (BP10) ============ -->
+
+                    <section
+                        class="zg-set-section"
+                        aria-labelledby="zg-set-privacy-label"
+                    >
+
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-privacy-label">
+                                Privacy
                             </span>
+                            <p>What M-Wallet stores, where it lives, and what it does not do.</p>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Where your financial data lives</strong>
+                                <small>
+                                    Your wallet is stored locally in this browser. Cloud sync is
+                                    built but stays off until pre-beta security verification is
+                                    complete, so nothing financial is uploaded in this build.
+                                </small>
+                            </span>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Encryption</strong>
+                                <small>
+                                    When cloud sync is enabled later, data is protected in transit
+                                    and by database row-level security so one account cannot read
+                                    another's rows. That is <strong>not</strong> end-to-end
+                                    encryption — the hosting provider can technically access stored
+                                    rows. Treat exported backups as unencrypted.
+                                </small>
+                            </span>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Analytics &amp; trackers</strong>
+                                <small>
+                                    M-Wallet currently does not include analytics or advertising
+                                    trackers. The Reports screen is calculated on your device from
+                                    your own data and is never transmitted.
+                                </small>
+                            </span>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Delete account</strong>
+                                <small>
+                                    Secure account deletion needs a trusted server-side operation.
+                                    Putting administrator credentials in the browser would be
+                                    insecure, so it is intentionally not built into this app yet.
+                                    Use “Erase wallet from this device” above to remove local data,
+                                    and “Sign out of all devices” to end every session.
+                                </small>
+                            </span>
+                            <span class="zg-set-row-value" id="mw-acct-deletion-status">Not available in beta</span>
                         </div>
 
                     </section>
@@ -2688,36 +2928,11 @@
                     </section>
 
 
-                    <!-- ============ DANGER ZONE ============ -->
-
-                    <section
-                        class="zg-set-section zg-set-section--danger"
-                        aria-labelledby="zg-set-danger-label"
-                    >
-
-                        <div class="zg-set-section-head">
-                            <span class="z-eyebrow" id="zg-set-danger-label">
-                                Danger Zone
-                            </span>
-                            <p>These actions permanently change local data.</p>
-                        </div>
-
-                        <button
-                            type="button"
-                            class="settings-item danger-settings-item zg-set-row zg-set-row--danger"
-                            id="clear-data"
-                        >
-                            <span class="settings-item-content zg-set-row-text">
-                                <strong>Reset M-Wallet Data</strong>
-                                <small>
-                                    Permanently clear everything stored by this M-Wallet
-                                    installation and start fresh.
-                                </small>
-                            </span>
-                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">×</span>
-                        </button>
-
-                    </section>
+                    <!-- BP10: “Reset M-Wallet Data” retired. Wallet
+                         recovery is now “Erase wallet from this device”
+                         under My Data — an explicit, typed-confirmation
+                         action that also clears owner / setup / sync
+                         state and signs you out. -->
 
 
                 </div>
@@ -3726,6 +3941,194 @@
 
 
     <!-- ========================================
+         ACCOUNT / PRIVACY / RECOVERY DIALOGS (BP10)
+         Managed by js/account/account-ui.js. Outside .app so
+         they overlay every screen. All three start hidden.
+    ========================================= -->
+
+    <div
+        id="mw-acct-email-dialog"
+        class="mw-acct-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-acct-email-title"
+        aria-describedby="mw-acct-email-sub"
+        hidden
+        aria-hidden="true"
+    >
+        <div class="mw-acct-dialog-backdrop" data-acct-action="email-cancel"></div>
+
+        <div class="mw-acct-dialog-card">
+            <h2 id="mw-acct-email-title" class="mw-acct-dialog-title" tabindex="-1">
+                Change your email
+            </h2>
+            <p id="mw-acct-email-sub" class="mw-acct-dialog-sub">
+                We'll send a confirmation link to the new address. Your current
+                email keeps working until you click that link. This does not
+                touch your wallet data.
+            </p>
+
+            <label class="mw-acct-field" for="mw-acct-email-input">
+                <span>New email address</span>
+                <input
+                    type="email"
+                    id="mw-acct-email-input"
+                    autocomplete="email"
+                    inputmode="email"
+                    spellcheck="false"
+                >
+            </label>
+
+            <p class="mw-acct-dialog-msg" id="mw-acct-email-msg" role="alert" hidden></p>
+
+            <div class="mw-acct-dialog-actions">
+                <button
+                    type="button"
+                    class="z-btn z-btn-secondary"
+                    data-acct-action="email-cancel"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    class="z-btn z-btn-primary"
+                    id="mw-acct-email-confirm-btn"
+                    data-acct-action="email-confirm"
+                >
+                    Send confirmation
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <div
+        id="mw-acct-restore-dialog"
+        class="mw-acct-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-acct-restore-title"
+        aria-describedby="mw-acct-restore-sub"
+        hidden
+        aria-hidden="true"
+    >
+        <div class="mw-acct-dialog-backdrop" data-acct-action="restore-cancel"></div>
+
+        <div class="mw-acct-dialog-card">
+            <h2 id="mw-acct-restore-title" class="mw-acct-dialog-title" tabindex="-1">
+                Restore this backup?
+            </h2>
+            <p id="mw-acct-restore-sub" class="mw-acct-dialog-sub">
+                This <strong>replaces</strong> the wallet on this device with the
+                contents of the file. Here's what the backup contains:
+            </p>
+
+            <div class="mw-acct-preview" id="mw-acct-restore-preview"></div>
+
+            <p class="mw-acct-warn">
+                <strong>This cannot be undone.</strong>
+                Your current wallet on this device will be overwritten. If you
+                haven't exported a backup of it, cancel and do that first.
+            </p>
+
+            <p class="mw-acct-dialog-msg" id="mw-acct-restore-msg" role="alert" hidden></p>
+
+            <div class="mw-acct-dialog-actions">
+                <button
+                    type="button"
+                    class="z-btn z-btn-secondary"
+                    data-acct-action="restore-cancel"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    class="z-btn z-btn-primary"
+                    id="mw-acct-restore-confirm-btn"
+                    data-acct-action="restore-confirm"
+                >
+                    Replace my wallet
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <div
+        id="mw-acct-erase-dialog"
+        class="mw-acct-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-acct-erase-title"
+        aria-describedby="mw-acct-erase-sub"
+        hidden
+        aria-hidden="true"
+    >
+        <div class="mw-acct-dialog-backdrop" data-acct-action="erase-cancel"></div>
+
+        <div class="mw-acct-dialog-card">
+            <h2 id="mw-acct-erase-title" class="mw-acct-dialog-title" tabindex="-1">
+                Erase this device's wallet
+            </h2>
+            <p id="mw-acct-erase-sub" class="mw-acct-dialog-sub">
+                This removes your wallet, ownership record, first-run setup, guided-tour
+                state, and local sync state from <strong>this device</strong>, then signs
+                you out.
+            </p>
+
+            <p class="mw-acct-warn">
+                <strong>Cloud sync is off in this build.</strong>
+                If you have not exported a backup, this is your only copy and it will be
+                gone. This does not delete your account.
+            </p>
+
+            <div class="mw-acct-dialog-actions" style="justify-content:flex-start;margin-bottom:12px;">
+                <button
+                    type="button"
+                    class="z-btn z-btn-secondary"
+                    data-acct-action="erase-export-first"
+                >
+                    Export a backup first
+                </button>
+            </div>
+
+            <label class="mw-acct-field" for="mw-acct-erase-input">
+                <span>Type ERASE to confirm</span>
+                <input
+                    type="text"
+                    id="mw-acct-erase-input"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                >
+            </label>
+
+            <p class="mw-acct-dialog-msg" id="mw-acct-erase-msg" role="alert" hidden></p>
+
+            <div class="mw-acct-dialog-actions">
+                <button
+                    type="button"
+                    class="z-btn z-btn-secondary"
+                    data-acct-action="erase-cancel"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    class="z-btn mw-acct-danger-btn"
+                    id="mw-acct-erase-confirm-btn"
+                    data-acct-action="erase-confirm"
+                    disabled
+                >
+                    Erase this device
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- ========================================
          UNIVERSAL QUICK ADD
     ========================================= -->
 
@@ -4040,7 +4443,7 @@
          out; unconfigured = local-first app exactly as before. -->
     <script src="./js/auth/auth-config.js?v=2"></script>
     <script src="./js/auth/auth-client.js?v=3"></script>
-    <script src="./js/auth/auth.js?v=4"></script>
+    <script src="./js/auth/auth.js?v=5"></script>
     <script src="./js/auth/auth-ui.js?v=7"></script>
 
     <!-- Passkeys / device authentication (BP9). Built but OFF: the
@@ -4112,9 +4515,17 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=10"></script>
+    <script src="./js/settings-ui.js?v=11"></script>
 
-    <script src="./js/app.js?v=10"></script>
+    <!-- Account / privacy / recovery controls (BP10). Safe account
+         management: change email, sign out (this device / all),
+         export + restore the local wallet, erase this device's wallet.
+         Never mutates mWalletData for an account action; no second
+         Supabase client; no browser-side account deletion. -->
+    <script src="./js/account/account-controls.js?v=1"></script>
+    <script src="./js/account/account-ui.js?v=1"></script>
+
+    <script src="./js/app.js?v=11"></script>
 
     <script src="./js/money.js?v=6"></script>
 

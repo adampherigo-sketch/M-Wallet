@@ -2,15 +2,19 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.8`.** M-Wallet is a pre‑release build.
+> **Status: Beta Preparation — `0.9.0-beta.9`.** M-Wallet is a pre‑release build.
 > It is **not production‑ready**. Accounts, sign-in, non-destructive local
 > data ownership, a first‑run setup wizard, an optional guided walkthrough,
 > a row-level-secured cloud data schema, a complete local‑first **sync engine**,
-> and a complete **passkey** sign-in system now exist (when a Supabase project
+> a complete **passkey** sign-in system, and a full **account-management centre**
+> in Settings (change email, sign out everywhere, export / restore / erase a
+> wallet backup, honest privacy statement) now exist (when a Supabase project
 > is configured). Both the sync engine and passkeys are **shipped OFF** — their
 > release gates stay disabled until a pre-beta security pass (BP12). Email +
-> password sign-in and password reset are unchanged. **Local data remains the
-> source of truth** and nothing synchronizes automatically. See
+> password sign-in and password reset are unchanged. **Account management never
+> silently destroys financial data.** Secure **account deletion is intentionally
+> not built** — it needs a trusted server-side operation. **Local data remains
+> the source of truth** and nothing synchronizes automatically. See
 > [Early Beta data warning](#early-beta-data-warning).
 
 ---
@@ -89,7 +93,8 @@ M-Wallet/
 │   ├── walkthrough.css     BP6 — guided app walkthrough (#mw-walkthrough)
 │   │                       (BP7 adds no CSS — one reused Settings row)
 │   ├── sync.css            BP8 — #mw-sync-bootstrap gate + #mw-sync-conflicts overlay
-│   └── passkeys.css        BP9 — "Use a Passkey" + Settings passkeys + removal dialog
+│   ├── passkeys.css        BP9 — "Use a Passkey" + Settings passkeys + removal dialog
+│   └── account.css         BP10 — Settings account sections + change-email / restore / erase dialogs
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -98,7 +103,7 @@ M-Wallet/
 │   ├── app.js              BudgetApp — renders every page from a month snapshot
 │   ├── money.js            MoneyManager — the add/edit money modal + savings actions
 │   ├── reports-analytics.js  ReportAnalytics — pure chart/aggregation helpers
-│   ├── settings-ui.js      SettingsUI — category manager, import, system panel
+│   ├── settings-ui.js      SettingsUI — category manager + system panel (BP10: import/export/reset removed)
 │   ├── pwa.js              service-worker registration + install prompt
 │   ├── auth/               MWalletAuth / MWalletAuthUI — accounts + sessions
 │   │   ├── auth-config.js       resolves + validates browser-safe auth config
@@ -127,6 +132,10 @@ M-Wallet/
 │   │   ├── sync-planner.js   MWalletSyncPlanner — pure BASE×LOCAL×REMOTE reconciliation
 │   │   ├── sync-engine.js    MWalletSync — orchestration, bootstrap, conflicts
 │   │   └── sync-ui.js        MWalletSyncUI — bootstrap gate + conflict overlay
+│   ├── account/            account-management centre (BP10)
+│   │   ├── account-controls.js  MWalletAccount — DOM-free API: summary, change email,
+│   │   │                        sign out, export / inspect / restore / erase, diagnostics
+│   │   └── account-ui.js        MWalletAccountUI — Settings sections + the three BP10 dialogs
 │   ├── vendor/
 │   │   └── supabase-js.min.js   vendored @supabase/supabase-js (UMD, pinned)
 │   └── m-cash/
@@ -142,6 +151,7 @@ M-Wallet/
 ├── docs/BP7-CLOUD-DATA.md  cloud data model, RLS, migration + live-verification steps
 ├── docs/BP8-SYNC-ENGINE.md local-first sync engine, conflict model, release gate
 ├── docs/BP9-PASSKEYS.md    passkeys, biometric privacy, RP ID, BP12 verification
+├── docs/BP10-ACCOUNT-PRIVACY-RECOVERY.md  account controls, export/restore/erase, privacy, why deletion is server-side only
 ├── docs/design/            Zevaryn Grid concept reference (not used at runtime)
 ├── docs/archive/           superseded phase reports, kept for history
 ├── .github/workflows/      CI (runs the test suite on push / PR to main)
@@ -252,8 +262,25 @@ control, the Settings section, the removal confirmation, XSS, accessibility) —
 all with a stubbed Supabase client + a DOM stub; **no real
 `navigator.credentials`, no network**. See `tests/README.md`.
 
+Account controls (BP10) are covered by `tests/account-controls.test.js`,
+`tests/account-data-export.test.js` (byte-identical `mWalletData`, no excluded
+artifacts), `tests/account-data-import.test.js` (wrapper + schema validation,
+prototype-pollution / non-finite / oversize rejection, confirmation gate, sync
+reset, owner never trusted from the file, **a full export → erase → restore
+round-trip with a per-cent check**), `tests/account-data-erase.test.js` (every
+sidecar removed + verified, never `localStorage.clear()`, auth config kept,
+sign-out, honest incomplete report), and `tests/account-ui.test.js` (the
+dialogs, counts-only preview via `textContent`, Escape cancels
+non-destructively) — with `tests/helpers/account-harness.js` over the real
+`js/storage.js`; **no network, no real Supabase client**.
+
 **Live Supabase / device checks not covered by `npm test`:**
 
+- **BP10 — a real email-change confirmation, a real `scope:"global"` sign-out,
+  and a restore/erase pass on a real browser** are **deferred to BP12**. Secure
+  **account deletion** needs a trusted server-side path and is **not built** — a
+  **hard release gate before BP13 closed beta**. See
+  [`docs/BP10-ACCOUNT-PRIVACY-RECOVERY.md`](docs/BP10-ACCOUNT-PRIVACY-RECOVERY.md).
 - **BP9 — live WebAuthn / passkey verification + the final RP ID decision** is
   **deferred to BP12** and is a **hard release gate before BP13 closed beta**.
   The passkey release gate ships OFF. See

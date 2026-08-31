@@ -1050,7 +1050,7 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 test("service-worker precaches the auth + migration + setup + walkthrough + cloud + sync + passkey modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v28"/.test(sw), "cache bumped to v28");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v29"/.test(sw), "cache bumped to v29");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1073,11 +1073,14 @@ test("service-worker precaches the auth + migration + setup + walkthrough + clou
         "./js/sync/sync-planner.js",
         "./js/sync/sync-engine.js",
         "./js/sync/sync-ui.js",
+        "./js/account/account-controls.js",
+        "./js/account/account-ui.js",
         "./css/auth.css",
         "./css/migration.css",
         "./css/setup.css",
         "./css/walkthrough.css",
         "./css/sync.css",
+        "./css/account.css",
         "./js/vendor/supabase-js.min.js"
     ]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
@@ -1127,9 +1130,9 @@ test("index.html has the auth gateway markup + auth.css, and financial page mark
 test("changed modules are re-versioned in index.html", () => {
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
     assert.ok(/js\/auth\/auth-ui\.js\?v=7/.test(html), "auth-ui.js bumped to ?v=7");
-    assert.ok(/js\/auth\/auth\.js\?v=4/.test(html), "auth.js bumped to ?v=4");
+    assert.ok(/js\/auth\/auth\.js\?v=5/.test(html), "auth.js bumped to ?v=5");
     assert.ok(/js\/auth\/auth-client\.js\?v=3/.test(html), "auth-client.js bumped to ?v=3");
-    assert.ok(/js\/settings-ui\.js\?v=10/.test(html), "settings-ui.js bumped to ?v=10");
+    assert.ok(/js\/settings-ui\.js\?v=11/.test(html), "settings-ui.js bumped to ?v=11");
     assert.ok(/js\/setup\/first-run-setup\.js\?v=2/.test(html), "first-run-setup.js bumped to ?v=2");
     assert.ok(/js\/setup\/setup-ui\.js\?v=\d+/.test(html), "setup-ui.js has a ?v");
     assert.ok(/js\/walkthrough\/guided-walkthrough\.js\?v=\d+/.test(html), "guided-walkthrough.js has a ?v");
@@ -1143,11 +1146,11 @@ test("changed modules are re-versioned in index.html", () => {
     assert.ok(/js\/auth\/passkey-ui\.js\?v=\d+/.test(html), "passkey-ui.js has a ?v");
 });
 
-test("app version bumped to 0.9.0-beta.8 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.9 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.8"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.8", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.9"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.9", "package.json");
 });
 
 test("BP4 migration modules load after auth, before the financial engine", () => {
@@ -1721,11 +1724,11 @@ test("BP9: no passkey source file touches financial data", () => {
     }
 });
 
-test("BP9: version beta.8, cache v28, docs mention passkeys are not E2EE", () => {
+test("BP9: version beta.9, cache v29, docs mention passkeys are not E2EE", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.8"/.test(av));
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.9"/.test(av));
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v28"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v29"/.test(sw));
     const doc = fs.readFileSync(path.join(ROOT, "docs/BP9-PASSKEYS.md"), "utf8");
     assert.ok(/not end-to-end encrypt|not.{0,10}E2EE|RLS.{0,4}(≠|!=|is not).{0,4}E2EE/i.test(doc), "BP9 doc keeps the RLS ≠ E2EE line");
     assert.ok(/does not receive your fingerprint|does not receive.*face/i.test(doc), "biometric-privacy statement present");
@@ -1751,5 +1754,158 @@ test("no auth source file contains a hard-coded credential or logs a session", (
             !/console\.(log|info|warn|error|debug)\([^)]*(session|token|password)/i.test(src),
             file + " never logs a session/token/password"
         );
+    }
+});
+
+
+/* =====================================================
+   BP10 — ACCOUNT / PRIVACY / RECOVERY  (static)
+   ===================================================== */
+
+const ACCOUNT_FILES = ["js/account/account-controls.js", "js/account/account-ui.js"];
+
+test("BP10: account files never create a second Supabase client or use admin / service_role", () => {
+    for (const f of ACCOUNT_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/createClient|auth\.admin|service_role|sb_secret_|deleteUser/.test(code), f + " has no privileged Supabase surface");
+        assert.ok(!/wallet_documents/.test(code), f + " does not touch the cloud table");
+        assert.ok(!/localStorage\.clear\s*\(/.test(code), f + " never calls localStorage.clear()");
+        assert.ok(!/access_token|refresh_token|Authorization|Bearer/.test(code), f + " never names a token");
+    }
+});
+
+test("BP10: account-controls performs email change through MWalletAuth.updateEmail (the ONE client)", () => {
+    const code = stripJs(fs.readFileSync(path.join(ROOT, "js/account/account-controls.js"), "utf8"));
+    assert.ok(/\.updateEmail\s*\(/.test(code), "delegates to MWalletAuth.updateEmail");
+    assert.ok(!/\.auth\.updateUser/.test(code), "does not call the client directly");
+});
+
+test("BP10: auth.js gained updateEmail + scoped signOut, both through the single client", () => {
+    const src = fs.readFileSync(path.join(ROOT, "js/auth/auth.js"), "utf8");
+    assert.ok(/function updateEmail\s*\(/.test(src), "updateEmail present");
+    assert.ok(/updateUser\(\s*\{\s*email/.test(src), "updateEmail uses updateUser({email})");
+    assert.ok(/signOut\(\s*scope\s*\?\s*\{\s*scope/.test(src) || /signOut\(opts\)/.test(src), "signOut accepts a scope");
+    /* the sole Supabase lib.createClient(url, key, …) call site stays in
+       auth-client.js — auth.js only calls the MWalletAuthClient wrapper */
+    const clientSrc = fs.readFileSync(path.join(ROOT, "js/auth/auth-client.js"), "utf8");
+    assert.equal((clientSrc.match(/lib\.createClient\(/g) || []).length, 1);
+    assert.ok(!/lib\.createClient\(/.test(src), "auth.js does not call lib.createClient directly");
+});
+
+test("BP10: no browser-side account deletion anywhere; the limitation is documented honestly", () => {
+    for (const f of ACCOUNT_FILES.concat(["js/auth/auth.js"])) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/deleteUser|admin\.delete|DELETE\s+\/user/i.test(code), f + " has no delete-account call");
+    }
+    const doc = fs.readFileSync(path.join(ROOT, "docs/BP10-ACCOUNT-PRIVACY-RECOVERY.md"), "utf8");
+    assert.ok(/trusted server-side/i.test(doc), "doc explains why deletion is server-side only");
+    assert.ok(/not (implemented|built)/i.test(doc), "doc says deletion is not implemented");
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.ok(/Secure account deletion/i.test(html), "Settings states deletion is not yet available");
+});
+
+test("BP10: the export wrapper is versioned and separate from the wallet schema version", () => {
+    const code = fs.readFileSync(path.join(ROOT, "js/account/account-controls.js"), "utf8");
+    assert.ok(/EXPORT_FORMAT\s*=\s*"m-wallet-export"/.test(code));
+    assert.ok(/EXPORT_FORMAT_VERSION\s*=\s*1/.test(code));
+    assert.ok(/MAX_IMPORT_BYTES/.test(code), "import size cap present");
+    assert.ok(/__proto__|prototype|constructor/.test(code), "prototype-pollution guard present");
+});
+
+test("BP10: restore clears sync state + never trusts owner identity from the file", () => {
+    const code = stripJs(fs.readFileSync(path.join(ROOT, "js/account/account-controls.js"), "utf8"));
+    assert.ok(/resetSyncMetadata|MWalletSyncState/.test(code), "clears sync baseline after restore");
+    assert.ok(/stripNonFinancialKeys|NON_FINANCIAL_KEYS/.test(code), "strips stray identity keys from an imported wallet");
+    assert.ok(/ensureOwnership/.test(code), "can re-establish ownership from the signed-in user, not the file");
+});
+
+test("BP10 hardening: restore resets + VERIFIES sync metadata BEFORE the financial save", () => {
+    const code = stripJs(fs.readFileSync(path.join(ROOT, "js/account/account-controls.js"), "utf8"));
+    /* the sync reset + its verification must appear before storage.save in restoreWallet */
+    const fn = code.slice(code.indexOf("function restoreWallet"), code.indexOf("function restoreWallet") + 2400);
+    const resetAt = fn.indexOf("resetSyncMetadata(");
+    const saveAt = fn.indexOf("storage.save(");
+    assert.ok(resetAt > 0 && saveAt > 0 && resetAt < saveAt, "sync reset precedes the save");
+    assert.ok(/sync_reset_failed/.test(fn), "aborts with sync_reset_failed when the reset cannot be verified");
+    /* resetSyncMetadata reads the key back to confirm it is gone */
+    const rf = code.slice(code.indexOf("function resetSyncMetadata"), code.indexOf("function resetSyncMetadata") + 500);
+    assert.ok(/getItem\([^)]*\)\s*==\s*null|getItem\([^)]*\)\s*!=\s*null/.test(rf), "verifies the key is absent");
+});
+
+test("BP10 hardening: erase removes the primary financial key LAST and aborts before it on any failure", () => {
+    const code = stripJs(fs.readFileSync(path.join(ROOT, "js/account/account-controls.js"), "utf8"));
+    const fn = code.slice(code.indexOf("function orderedEraseTargets"), code.indexOf("function orderedEraseTargets") + 900);
+    /* mWalletData is the `primary`, not part of `before` */
+    assert.ok(/primary:\s*STORAGE_KEY/.test(fn), "STORAGE_KEY is the primary (last) target");
+    assert.ok(fn.indexOf("STORAGE_KEY") > fn.indexOf("budgetTrackerData"), "legacy keys ordered before the primary");
+    const erase = code.slice(code.indexOf("function eraseLocalWallet"), code.indexOf("function eraseLocalWallet") + 2200);
+    assert.ok(/plan\.before/.test(erase) && /plan\.primary/.test(erase), "two-phase removal");
+    assert.ok(/walletPreserved:\s*true/.test(erase), "reports the wallet was preserved on an early failure");
+    assert.ok(/erased_signout_failed/.test(erase), "distinct truthful state when sign-out fails after a verified erase");
+    /* no app refresh / re-resolve inside the erase flow */
+    assert.ok(!/appRefresh\(\)/.test(erase), "erase never refreshes the app (no wallet recreation)");
+});
+
+test("BP10 hardening: legacy storage.exportData / importData / clearAllData are unreachable from any current UI", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const app = stripJs(fs.readFileSync(path.join(ROOT, "js/app.js"), "utf8"));
+    const settings = stripJs(fs.readFileSync(path.join(ROOT, "js/settings-ui.js"), "utf8"));
+    const acctUi = stripJs(fs.readFileSync(path.join(ROOT, "js/account/account-ui.js"), "utf8"));
+    const acctControls = stripJs(fs.readFileSync(path.join(ROOT, "js/account/account-controls.js"), "utf8"));
+
+    /* nothing in the live UI calls the raw helpers */
+    for (const [name, src] of [["app.js", app], ["settings-ui.js", settings], ["account-ui.js", acctUi]]) {
+        assert.ok(!/\.exportData\s*\(|\.importData\s*\(|\.clearAllData\s*\(/.test(src), name + " does not call the legacy helpers");
+    }
+    /* the BP10 restore path uses normalizeData/save, NOT importData/clearAllData */
+    assert.ok(!/\.importData\s*\(|\.clearAllData\s*\(/.test(acctControls), "account-controls never routes through the legacy helpers");
+    assert.ok(/normalizeData/.test(acctControls) && /storage\.save\(/.test(acctControls), "restore uses the canonical normalizer + save");
+
+    /* account-ui only reaches financial data through window.MWalletAccount */
+    assert.ok(!/MWalletStorage|BudgetStorage/.test(acctUi), "account-ui touches storage only via MWalletAccount");
+
+    /* storage.js still exposes them but flags them legacy/deprecated */
+    const storage = fs.readFileSync(path.join(ROOT, "js/storage.js"), "utf8");
+    assert.ok(/DEPRECATED for UI use as of BP10/.test(storage), "the helpers are documented as deprecated legacy");
+});
+
+test("BP10: index.html wires the account modules + css and drops the old one-tap data buttons", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.ok(/js\/account\/account-controls\.js\?v=\d+/.test(html), "account-controls.js loaded");
+    assert.ok(/js\/account\/account-ui\.js\?v=\d+/.test(html), "account-ui.js loaded");
+    assert.ok(/href="\.\/css\/account\.css/.test(html), "account.css linked");
+    assert.ok(!/id="export-data"/.test(html), "old #export-data button removed");
+    assert.ok(!/id="clear-data"/.test(html), "old #clear-data button removed");
+    assert.ok(!/id="settings-import-trigger"/.test(html), "old import trigger removed");
+    assert.ok(!/id="settings-import-input"/.test(html), "old import input removed");
+    /* the three BP10 dialogs exist, hidden, and are accessible */
+    for (const id of ["mw-acct-email-dialog", "mw-acct-restore-dialog", "mw-acct-erase-dialog"]) {
+        assert.ok(new RegExp('id="' + id + '"[\\s\\S]{0,260}role="dialog"').test(html), id + " is a dialog");
+        assert.ok(new RegExp('id="' + id + '"[\\s\\S]{0,260}aria-modal="true"').test(html), id + " is modal");
+    }
+});
+
+test("BP10: settings-ui.js + app.js no longer carry the raw import/export/reset paths", () => {
+    const s = fs.readFileSync(path.join(ROOT, "js/settings-ui.js"), "utf8");
+    assert.ok(!/handleImportFile/.test(s), "settings-ui.js dropped handleImportFile");
+    assert.ok(!/settings-import-input|settings-import-trigger/.test(s), "settings-ui.js dropped the import wiring");
+    const a = fs.readFileSync(path.join(ROOT, "js/app.js"), "utf8");
+    assert.ok(!/exportBudgetData\s*\(\)\s*\{/.test(a), "app.js dropped exportBudgetData");
+    assert.ok(!/resetBudgetData\s*\(\)\s*\{/.test(a), "app.js dropped resetBudgetData");
+});
+
+test("BP10: service-worker precaches the account bundle at cache v29", () => {
+    const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v29"/.test(sw));
+    for (const asset of ["./css/account.css", "./js/account/account-controls.js", "./js/account/account-ui.js"]) {
+        assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
+    }
+});
+
+test("BP10: account files carry no analytics / tracking beacons", () => {
+    for (const f of ACCOUNT_FILES) {
+        const code = fs.readFileSync(path.join(ROOT, f), "utf8");
+        assert.ok(!/gtag|analytics\.|mixpanel|amplitude|segment\.|posthog|sentry|hotjar|fullstory|fbq|plausible|navigator\.sendBeacon/i.test(code),
+            f + " has no analytics/tracking");
     }
 });

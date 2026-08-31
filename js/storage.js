@@ -9738,7 +9738,21 @@ const BudgetStorage = {
 
 
     /* =====================================================
-       22. EXPORT / IMPORT / RESET
+       22. EXPORT / IMPORT / RESET  —  LEGACY / INTERNAL ONLY
+
+       DEPRECATED for UI use as of BP10. These are raw, one-shot
+       helpers with NO wrapper, NO schema validation, NO size
+       limit, NO prototype-pollution guard, NO confirmation, and
+       (exportData) they mutate mWalletData via load(). They are
+       kept only for backward compatibility / tooling and are no
+       longer wired to any control in index.html.
+
+       The user-facing backup / restore / erase flows live in
+       js/account/account-controls.js (window.MWalletAccount):
+       exportWallet(), inspectImport(), restoreWallet() and
+       eraseLocalWallet() — versioned envelope, validation,
+       counts-only preview, explicit confirmation, sync-metadata
+       reset, and financial-key-last erase ordering.
        ===================================================== */
 
     exportData() {

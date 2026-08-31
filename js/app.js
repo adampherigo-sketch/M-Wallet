@@ -6321,138 +6321,20 @@ const BudgetApp = {
 
     /* =====================================================
        43. SETTINGS
+
+       BP10 — wallet backup / restore / erase moved out of app.js
+       into js/account/account-controls.js + js/account/account-ui.js
+       (Settings › My Data). Those flows validate the backup wrapper
+       and financial schema, show a counts-only preview, require an
+       explicit confirmation, and — for erase — a typed phrase plus a
+       sign-out. The old #export-data / #clear-data buttons and the
+       raw storage.exportData() / storage.clearAllData() one-tap paths
+       are gone. This hook is kept (still called from init) in case a
+       future Settings action needs app-level wiring.
        ===================================================== */
 
     bindSettingsActions() {
-
-        const exportButton =
-            document.getElementById(
-                "export-data"
-            );
-
-
-        const clearButton =
-            document.getElementById(
-                "clear-data"
-            );
-
-
-        if (exportButton) {
-
-            exportButton.addEventListener(
-                "click",
-                () =>
-                    this.exportBudgetData()
-            );
-        }
-
-
-        if (clearButton) {
-
-            clearButton.addEventListener(
-                "click",
-                () =>
-                    this.resetBudgetData()
-            );
-        }
-    },
-
-
-    /* =====================================================
-       44. EXPORT DATA
-       ===================================================== */
-
-    exportBudgetData() {
-
-        const storage =
-            this.getStorage();
-
-
-        if (!storage) {
-            return;
-        }
-
-
-        const json =
-            storage.exportData();
-
-
-        const blob =
-            new Blob(
-                [json],
-                {
-                    type:
-                        "application/json"
-                }
-            );
-
-
-        const url =
-            URL.createObjectURL(
-                blob
-            );
-
-
-        const link =
-            document.createElement(
-                "a"
-            );
-
-
-        link.href =
-            url;
-
-
-        link.download =
-            `m-wallet-${this.getTodayKey()}.json`;
-
-
-        document.body.appendChild(
-            link
-        );
-
-
-        link.click();
-
-
-        link.remove();
-
-
-        URL.revokeObjectURL(
-            url
-        );
-    },
-
-
-    /* =====================================================
-       45. RESET DATA
-       ===================================================== */
-
-    resetBudgetData() {
-
-        const storage =
-            this.getStorage();
-
-
-        if (!storage) {
-            return;
-        }
-
-
-        const confirmed =
-            window.confirm(
-                "Reset all M-Wallet data? This cannot be undone."
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        storage.clearAllData();
-
-        this.refresh();
+        /* no app-level Settings buttons remain */
     }
 
 };

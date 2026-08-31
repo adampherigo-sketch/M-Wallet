@@ -993,45 +993,15 @@
     }
 
 
-    /* ---- import ------------------------------------- */
+    /* ---- import / export / erase -------------------- */
 
-    function handleImportFile(file) {
-        var store = storage();
-        if (!file || !store || typeof store.importData !== "function") {
-            return;
-        }
-        var reader = new FileReader();
-        reader.onload = function () {
-            var ok = global.confirm(
-                "Importing replaces ALL current M-Wallet data on this device with the " +
-                "contents of this file. This cannot be undone. Continue?"
-            );
-            if (!ok) {
-                setStatus("Import cancelled.", "error");
-                return;
-            }
-            var imported = false;
-            try {
-                imported = store.importData(String(reader.result || ""));
-            } catch (error) {
-                imported = false;
-            }
-            if (imported) {
-                expandedCategoryId = null;
-                editing = null;
-                adding = null;
-                refreshApp();
-                renderAll();
-                setStatus("Data imported successfully.", "success");
-            } else {
-                setStatus("Import failed — that file isn't valid M-Wallet data.", "error");
-            }
-        };
-        reader.onerror = function () {
-            setStatus("Could not read that file.", "error");
-        };
-        reader.readAsText(file);
-    }
+    /* BP10 — wallet backup, restore, and "erase this device" moved to
+       js/account/account-controls.js + js/account/account-ui.js (the
+       My Data section). Restore now shows a counts-only preview and an
+       explicit confirmation, validates the wrapper + financial schema,
+       guards against oversized files and prototype-pollution keys, and
+       never overwrites the current wallet without confirmation. The old
+       one-tap storage.importData() path is intentionally gone. */
 
 
     /* ---- events ------------------------------------- */
@@ -1147,13 +1117,6 @@
             }
             return;
         }
-
-        if (event.target.closest("#settings-import-trigger")) {
-            var input = document.getElementById("settings-import-input");
-            if (input) {
-                input.click();
-            }
-        }
     }
 
     function onSubmit(event) {
@@ -1192,12 +1155,6 @@
                 setSubcategoryEnabled(catId, subId, toggle.checked);
             }
             return;
-        }
-
-        if (event.target.id === "settings-import-input") {
-            var file = event.target.files && event.target.files[0];
-            handleImportFile(file);
-            event.target.value = "";
         }
     }
 
