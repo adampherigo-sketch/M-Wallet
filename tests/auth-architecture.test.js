@@ -1040,15 +1040,18 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 /* ---- static wiring checks ---------------------------- */
 
-test("service-worker precaches the auth modules + UI + vendored library and bumped the cache", () => {
+test("service-worker precaches the auth + migration modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v22"/.test(sw), "cache bumped to v22");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v23"/.test(sw), "cache bumped to v23");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
         "./js/auth/auth.js",
         "./js/auth/auth-ui.js",
+        "./js/migration/local-user-migration.js",
+        "./js/migration/migration-ui.js",
         "./css/auth.css",
+        "./css/migration.css",
         "./js/vendor/supabase-js.min.js"
     ]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
@@ -1099,14 +1102,76 @@ test("auth-ui.js is version-bumped and auth.js re-versioned in index.html", () =
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
     assert.ok(/js\/auth\/auth-ui\.js\?v=\d+/.test(html), "auth-ui.js has a cache-busting ?v");
     assert.ok(/js\/auth\/auth\.js\?v=3/.test(html), "auth.js bumped to ?v=3");
-    assert.ok(/js\/settings-ui\.js\?v=4/.test(html), "settings-ui.js bumped to ?v=4");
+    assert.ok(/js\/settings-ui\.js\?v=5/.test(html), "settings-ui.js bumped to ?v=5");
 });
 
-test("app version bumped to 0.9.0-beta.2 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.3 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.2"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.2", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.3"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.3", "package.json");
+});
+
+test("BP4 migration modules load after auth, before the financial engine", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const at = (needle) => html.indexOf(needle);
+    const authUiAt = at("js/auth/auth-ui.js?v=");
+    const migServiceAt = at("js/migration/local-user-migration.js?v=");
+    const migUiAt = at("js/migration/migration-ui.js?v=");
+    const storageAt = at("js/storage.js?v=");
+    assert.ok(migServiceAt > 0 && migUiAt > 0, "migration scripts present");
+    assert.ok(authUiAt < migServiceAt, "auth-ui before migration service (guard dependency)");
+    assert.ok(migServiceAt < migUiAt, "migration service before migration UI");
+    assert.ok(migUiAt < storageAt, "migration before the financial engine");
+});
+
+test("index.html has the BP4 migration gateway markup + migration.css, financial pages untouched", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.ok(/href="\.\/css\/migration\.css/.test(html), "migration.css linked");
+    assert.ok(/id="mw-migration-gate"/.test(html), "#mw-migration-gate present");
+    assert.ok(/id="mw-migration-gate"[\s\S]{0,240}\bhidden\b/.test(html), "#mw-migration-gate starts hidden");
+    for (const s of ["checking", "needs_claim", "owner_mismatch", "error"]) {
+        assert.ok(html.includes('data-migration-screen="' + s + '"'), "migration screen " + s);
+    }
+    /* NO destructive actions in BP4 */
+    assert.ok(!/data-migration-action="(delete|reset|replace|start-over|override)"/.test(html),
+        "no destructive migration action");
+    assert.ok(html.includes('data-migration-action="claim"'), "claim action");
+    assert.ok(html.includes('data-migration-action="sign-out"'), "sign-out action");
+    /* financial pages still present */
+    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+        assert.ok(html.includes('id="' + p + '"'), p + " markup intact");
+    }
+});
+
+test("BP4 fail-closed: auth-ui carries the built-in ownership-hold fallback + fail-closed guard contract", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const authUi = fs.readFileSync(path.join(ROOT, "js/auth/auth-ui.js"), "utf8");
+    const migration = fs.readFileSync(path.join(ROOT, "js/migration/local-user-migration.js"), "utf8");
+
+    /* fallback markup lives in #mw-auth-gate (does NOT depend on migration-ui.js loading) */
+    assert.ok(html.includes('data-auth-view="ownership-hold"'), "ownership-hold fallback view present");
+    assert.ok(html.includes('data-auth-action="ownership-retry"'), "fallback Retry");
+    assert.ok(html.includes('data-auth-action="ownership-signout"'), "fallback Sign Out");
+    assert.ok(/Local data protection couldn't be verified/.test(html), "fallback message");
+
+    /* auth-ui default for configured+signed_in is DENY: only an
+       explicit { release: true } opens the app */
+    assert.ok(/result\.release === true/.test(authUi), "auth-ui releases only on exact release === true");
+    assert.ok(/ownershipReleased/.test(authUi) && /FAIL CLOSED/.test(authUi), "fail-closed logic present");
+    assert.ok(!/hold\s*=\s*false/.test(authUi), "no 'default hold = false' (fail-open) left in auth-ui");
+
+    /* migration guard uses the { release } contract */
+    assert.ok(/release:\s*status === STATE\.OWNED \|\| status === STATE\.FRESH_CLAIMED/.test(migration),
+        "migration guard releases only for owned / fresh_claimed");
+});
+
+test("no absolute-root asset URLs regressed (GitHub Pages /M-Wallet/ sub-path safe)", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
+    /* every migration/auth/css asset ref must be relative (./…), never /… */
+    assert.ok(!/(src|href)="\/(js|css|icons)\//.test(html), "index.html uses relative asset URLs");
+    assert.ok(!/"\/(js|css|icons)\//.test(sw), "service-worker APP_SHELL uses relative URLs");
 });
 
 test(".gitignore excludes the local auth config override", () => {

@@ -473,6 +473,38 @@
         } else {
             hide(panel); hide(signOutBtn); hide(resetBtn);
         }
+
+        renderLocalDataStatus(state);
+    }
+
+    /* BP4 — local data ownership status. Shown only for the
+       signed-in owner (Settings is unreachable during an
+       ownership mismatch because the app stays gated).
+       Never exposes ownerUserId or migration metadata, and
+       never claims the data is backed up or synced. */
+    function renderLocalDataStatus(authStateSnapshot) {
+        var panel = document.getElementById("settings-local-data-panel");
+        var statusEl = document.getElementById("settings-local-data-status");
+        if (!panel) { return; }
+
+        var migration = global.MWalletLocalMigration;
+        var authState = authStateSnapshot ||
+            (global.MWalletAuth && typeof global.MWalletAuth.getState === "function"
+                ? global.MWalletAuth.getState()
+                : null);
+
+        var signedIn = authState && authState.status === "signed_in";
+        var migStatus = (migration && typeof migration.getStatus === "function")
+            ? migration.getStatus()
+            : null;
+
+        if (!signedIn || (migStatus !== "owned" && migStatus !== "fresh_claimed")) {
+            panel.hidden = true;
+            return;
+        }
+
+        panel.hidden = false;
+        if (statusEl) { statusEl.textContent = "Protected on this device"; }
     }
 
     function onSignOut() {
@@ -906,6 +938,13 @@
         if (global.MWalletAuth && typeof global.MWalletAuth.subscribe === "function") {
             global.MWalletAuth.subscribe(function () {
                 renderAuthStatus();
+            });
+        }
+
+        /* BP4 — keep the Local Data row live as ownership resolves */
+        if (global.MWalletLocalMigration && typeof global.MWalletLocalMigration.subscribe === "function") {
+            global.MWalletLocalMigration.subscribe(function () {
+                renderLocalDataStatus();
             });
         }
 

@@ -11,6 +11,71 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP4 — Existing local user migration + local data ownership (`0.9.0-beta.2` → `0.9.0-beta.3`)
+
+A **non-destructive local ownership** step so that adding accounts never
+deletes, overwrites, uploads, migrates, or exposes existing on-device financial
+data. **BP4 moves nothing to the cloud.**
+
+- **Ownership service** — new `js/migration/local-user-migration.js`
+  (`window.MWalletLocalMigration`): a read-only meaningful-data detector
+  (income / expenses / bills / transactions / savings / M-Cash / custom
+  categories — never generated caches or defaults) and an explicit state model
+  (`unconfigured` / `checking` / `needs_claim` / `owned` / `fresh_claimed` /
+  `owner_mismatch` / `error`). Actions: `initialize`, `getState`, `subscribe`,
+  `detectMeaningfulLocalData`, `getOwnership`, `claimExistingData`,
+  `ensureOwnership`, `diagnostics`.
+- **Ownership record** — its own key `mwallet.local.owner.v1`, separate from
+  `mWalletData`: `{ schemaVersion: 1, ownerUserId, claimedAt, source }`.
+  Identity is the **Supabase user id** (never the email). No passwords, tokens,
+  keys, sessions, emails, or financial contents are stored, returned, or logged.
+- **Migration gateway** — new `js/migration/migration-ui.js` + `css/migration.css`
+  + `#mw-migration-gate` markup: *Checking* / *Your existing M-Wallet data is
+  here* (→ **Keep & Protect My Data** / Sign Out) / *This M-Wallet data belongs
+  to a different account* (→ Sign Out) / *error* (→ Retry / Sign Out). No
+  destructive "delete" / "start over" / "replace" option.
+- **Gate order (FAIL-CLOSED)** — auth configured → initialized → signed in →
+  password recovery → **local ownership verified** → app revealed.
+  `js/auth/auth-ui.js` is the single owner of the financial app root's
+  `inert` / `aria-hidden` state. For a configured, signed-in user the **default
+  is DENY**: the app is revealed **only** when the ownership guard returns
+  exactly `{ release: true }`. A missing guard, a throwing guard, an
+  `undefined`/`null` result, or any malformed result **keeps the app blocked** —
+  authenticated access alone can never reveal the financial application.
+  If the migration module or its UI fails to load, `auth-ui.js` shows a
+  **built-in fallback** ("Local data protection couldn't be verified" +
+  Retry / Sign Out) that does not depend on `migration-ui.js` — never a blank
+  screen, never the financial UI.
+- **Flows** — existing user with meaningful data claims it explicitly (source
+  `legacy`); a fresh device is auto-claimed (source `fresh`) with no extra
+  screen; a returning owner opens straight to the app; a **different account is
+  blocked** with the data and the ownership marker left untouched (never
+  reassigned or cleared).
+- **Fails closed** — corrupt `mWalletData`, a malformed ownership record, a
+  missing user id, or a `localStorage` failure all land in a safe *error* state
+  with Retry / Sign Out; nothing is overwritten, and no replacement data is
+  created.
+- **Signing out** never deletes `mWalletData`, the ownership marker, categories,
+  savings, or M-Cash data.
+- **Settings → System & Beta** gains a **Local Data** row — "Protected on this
+  device" — for the signed-in owner. It never exposes `ownerUserId` or the
+  migration metadata, and never claims the data is backed up or synced.
+- **Service worker** — `local-user-migration.js`, `migration-ui.js`,
+  `migration.css` added to `APP_SHELL`; cache `m-wallet-v22` → `m-wallet-v23`.
+  Supabase responses are still never cached.
+- **Tests** — `tests/local-user-migration.test.js` (detector + state machine +
+  multi-account matrix + data safety, with realistic `mWalletData` from the real
+  `storage.js`), `tests/migration-ui.test.js` (end-to-end gate + screens +
+  buttons), and `tests/fail-closed-ownership.test.js` (no guard / throwing /
+  undefined / malformed guard / missing module / late registration / recovery
+  precedence / unconfigured dev mode — all with the real `auth-ui.js`). The
+  migration layer is asserted to make **zero** writes to `mWalletData`; every
+  BP2/BP3 auth-safety test stays green.
+- **Version / cache unchanged** — still `0.9.0-beta.3` / `m-wallet-v23` (no new
+  assets, only edits to existing modules). Changed assets get a `?v=` bump.
+- The **live BP3 Supabase email-flow verification remains pending** — not
+  completed by BP4.
+
 ### BP3 — Authentication UI + session experience (`0.9.0-beta.1` → `0.9.0-beta.2`)
 
 The account experience layered on the BP2 architecture. It appears **only when a

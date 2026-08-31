@@ -2,10 +2,11 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.2`.** M-Wallet is a pre‑release build.
-> It is **not production‑ready**. Accounts and sign-in now exist (when a Supabase
-> project is configured); cloud backup, sync, and recovery of financial data are
-> still being built. See [Early Beta data warning](#early-beta-data-warning).
+> **Status: Beta Preparation — `0.9.0-beta.3`.** M-Wallet is a pre‑release build.
+> It is **not production‑ready**. Accounts, sign-in, and non-destructive local
+> data ownership now exist (when a Supabase project is configured); cloud
+> backup, sync, and recovery of financial data are still being built. See
+> [Early Beta data warning](#early-beta-data-warning).
 
 ---
 
@@ -77,7 +78,8 @@ M-Wallet/
 │   ├── reports.css         ZG7   (scoped #reports-page)
 │   ├── settings.css        ZG8   (scoped #settings-page)
 │   ├── zg9.css             ZG9 — loaded last; responsive + a11y overrides
-│   └── auth.css            BP3 — account gateway (scoped .mw-auth-*)
+│   ├── auth.css            BP3 — account gateway (scoped .mw-auth-*)
+│   └── migration.css       BP4 — local data ownership gateway
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -94,6 +96,9 @@ M-Wallet/
 │   │   ├── auth.js              state model, session restore, account actions
 │   │   ├── auth-ui.js           the account gateway UI + app gating (BP3)
 │   │   └── auth-config.example.js   config template + how-to (3 routes)
+│   ├── migration/          MWalletLocalMigration — local data ownership (BP4)
+│   │   ├── local-user-migration.js  ownership state + meaningful-data detector
+│   │   └── migration-ui.js          the #mw-migration-gate screens
 │   ├── vendor/
 │   │   └── supabase-js.min.js   vendored @supabase/supabase-js (UMD, pinned)
 │   └── m-cash/
@@ -167,9 +172,14 @@ The suites live in `tests/` (unit + storage‑harness) and `tests/m-cash/`, plus
 `tests/helpers/storage-harness.js` which loads the real `storage.js` in a
 `node:vm` sandbox with a fixed clock and deterministic IDs. Authentication is
 covered by `tests/auth-architecture.test.js`, `tests/auth-ui.test.js`, and
-`tests/auth-data-safety.test.js` — all with a stubbed Supabase library and a
+`tests/auth-data-safety.test.js`; local data ownership (BP4) by
+`tests/local-user-migration.test.js`, `tests/migration-ui.test.js`, and
+`tests/fail-closed-ownership.test.js` — all with a stubbed Supabase library and a
 small DOM stub (`tests/helpers/dom-stub.js`); **no network, no real project**.
-See `tests/README.md`.
+The migration tests build realistic `mWalletData` with the real `storage.js` and
+assert the migration layer makes **zero** writes to it; the fail-closed suite
+proves the financial app stays blocked when the ownership guard is missing,
+throws, or returns a malformed result. See `tests/README.md`.
 
 ---
 
@@ -229,11 +239,58 @@ exactly as before.
 - See their **account email** and a **Sign Out** control in
   Settings → System & Beta.
 
+> The end-to-end email round-trips (verification link, password-reset callback)
+> are covered by tests with a stubbed provider; **live verification against a
+> real Supabase project is still pending**.
+
 **The local-first boundary is unchanged.** Signing in, signing up, signing out,
 and resetting a password **never** read, write, clear, or migrate financial
 data. All financial data stays in `localStorage["mWalletData"]`; the auth
-session lives in a separate key (`mwallet.auth.session`). **BP3 does not sync,
-upload, or move any financial data** — that is a later phase (BP7+).
+session lives in a separate key (`mwallet.auth.session`). **Authentication does
+not sync, upload, or move any financial data** — that is a later phase (BP7+).
+
+### Local data ownership (BP4)
+
+M-Wallet existed as a local-first app before accounts. Adding an account is a
+**non-destructive local ownership** step, not a data move:
+
+- When you sign in and this device already holds **meaningful** M-Wallet data
+  with **no owner yet**, you see **"Your existing M-Wallet data is here"** and
+  one action: **Keep & Protect My Data**. Nothing is deleted, nothing is
+  uploaded — the data stays on the device and the local workspace is linked to
+  your account.
+- A **fresh** device (no meaningful data) is claimed automatically with no
+  extra screen.
+- Reloading as the **same account** opens straight to the app.
+- If the data on this device belongs to a **different account**, M-Wallet shows
+  **"This M-Wallet data belongs to a different account"** and keeps the
+  financial app inaccessible. It never displays the other account's email or id,
+  never shows balances/transactions, and **never reassigns or clears** the
+  ownership marker or the data. Sign in with the owning account to continue.
+- **Signing out never deletes** `mWalletData`, the ownership marker, categories,
+  savings, or M-Cash data.
+
+Ownership is recorded in its **own** key, `mwallet.local.owner.v1` — separate
+from `mWalletData` — as `{ schemaVersion, ownerUserId, claimedAt, source }`.
+Identity is the **Supabase user id** (never the email, which can change). No
+passwords, tokens, keys, sessions, emails, or financial contents are ever
+stored, returned, or logged by the migration layer. **BP4 does not upload,
+back up, or synchronize any financial data** — it stays on the device.
+
+`js/migration/local-user-migration.js` (`window.MWalletLocalMigration`) is the
+service; `js/migration/migration-ui.js` + `css/migration.css` render the
+`#mw-migration-gate` screens.
+
+**Fail-closed.** The financial app root's `inert` / `aria-hidden` state has a
+single owner, `js/auth/auth-ui.js`. For a configured, signed-in user the
+**default is DENY** — the app is revealed **only** when the ownership guard the
+migration service registers returns exactly `{ release: true }` (i.e. `owned` or
+`fresh_claimed`). A missing guard, a throwing guard, an `undefined`/`null`
+result, or any malformed result keeps the app blocked. If the migration module
+or its UI never loads, `auth-ui.js` shows a **built-in fallback** ("Local data
+protection couldn't be verified" + Retry / Sign Out) — never a blank screen,
+never the financial UI. Authenticated access alone can never reveal the local
+financial application.
 
 ### Architecture
 
@@ -252,8 +309,14 @@ upload, or move any financial data** — that is a later phase (BP7+).
   (`#mw-auth-gate` in `index.html`): welcome / create account / sign in / verify
   email / forgot password / set new password / loading / connection error.
   It **gates the app**: configured + signed-out shows the gateway (and marks the
-  financial app `inert`); signed-in hides it; **unconfigured never shows it**.
+  financial app `inert`); signed-in hands off to the BP4 ownership check (see
+  *Local data ownership*) before the app opens; **unconfigured never shows it**.
   The financial DOM and data are never removed — only covered.
+- **Gate order (fail-closed)** — auth configured? → auth initialized? → signed
+  in? → password recovery? → **local ownership positively verified?** → only then
+  is the financial app revealed. A valid login alone never bypasses an owner
+  mismatch, and a missing/broken ownership check never defaults to allowing
+  access (see *Local data ownership → Fail-closed*).
 - **Explicit state model** — `unconfigured` → `initializing` →
   `signed_out` / `signed_in` / `error` (+ a `recoveryMode` flag for the
   password-reset return). Only `signed_in` means authenticated. A refused
@@ -338,10 +401,11 @@ A file override (`js/auth/auth-config.local.js`, git-ignored) is still supported
 for anyone who prefers files, but is no longer required. See
 `js/auth/auth-config.example.js`.
 
-**Not yet:** cloud financial tables, data migration, financial sync, and
-passkeys — each is its own later phase (BP4, BP7, BP8, BP9). A production domain
-must be chosen before the passkey phase; GitHub Pages may serve the app under a
-repo sub-path (e.g. `/M-Wallet/`) rather than a domain root.
+**Not yet:** cloud financial tables, financial sync, cloud backup, and
+passkeys — each is its own later phase (BP7, BP8, BP9). BP4 is **local**
+ownership only; no financial data leaves the device. A production domain must be
+chosen before the passkey phase; GitHub Pages may serve the app under a repo
+sub-path (e.g. `/M-Wallet/`) rather than a domain root.
 
 ---
 
@@ -351,11 +415,11 @@ M-Wallet has completed its core financial foundation and the Zevaryn Grid visual
 overhaul, and is now in **Beta Preparation** — a sequence of phases (BP0–BP13)
 focused on making it safe, understandable, recoverable, secure, testable, and
 multi‑device before real testers use it. Done so far: a versioned beta build
-(BP1), the authentication architecture (BP2), and the account UI + session
-experience (BP3). Still planned: existing-local-user migration, a first‑run
-setup wizard, a guided walkthrough, row‑level‑secured cloud data, a local‑first
-sync engine, passkeys, account/privacy/recovery controls, and a beta feedback
-system.
+(BP1), the authentication architecture (BP2), the account UI + session
+experience (BP3), and non-destructive local existing-user data ownership (BP4).
+Still planned: a first‑run setup wizard, a guided walkthrough, row‑level‑secured
+cloud data, a local‑first sync engine, passkeys, account/privacy/recovery
+controls, and a beta feedback system.
 
 It is **not production‑ready** and should not be treated as a finished product.
 

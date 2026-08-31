@@ -191,6 +191,17 @@
         href="./css/auth.css?v=1"
     >
 
+
+    <!-- =====================================================
+         LOCAL DATA OWNERSHIP / MIGRATION (BP4)
+         Reuses the auth gateway shell; adds #mw-migration-gate.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/migration.css?v=1"
+    >
+
 </head>
 
 
@@ -2459,6 +2470,17 @@
                             <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
                         </button>
 
+                        <div class="zg-set-row zg-set-account" id="settings-local-data-panel" hidden>
+                            <span class="zg-set-row-text">
+                                <strong>Local Data</strong>
+                                <small id="settings-local-data-note">
+                                    Your financial data is still stored locally on this
+                                    device. It has not been backed up or synced.
+                                </small>
+                            </span>
+                            <span class="zg-set-row-value" id="settings-local-data-status">—</span>
+                        </div>
+
                         <div class="zg-set-identity">
                             <div>
                                 <span>Version</span>
@@ -2918,6 +2940,156 @@
                 </form>
             </section>
 
+
+            <!-- OWNERSHIP HOLD — built-in fail-closed fallback (BP4).
+                 Shown when a signed-in user's local ownership cannot
+                 be verified AND the migration UI is not presenting
+                 its own screen (e.g. the migration module failed to
+                 load, or its guard threw). Never reveals financial
+                 data; the financial app root stays inert. -->
+            <section data-auth-view="ownership-hold" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">
+                    Local data protection couldn't be verified
+                </h1>
+                <p class="mw-auth-sub">
+                    M-Wallet couldn't verify who owns the financial data stored on
+                    this device. Your data has not been changed.
+                </p>
+
+                <div class="mw-auth-msg" data-auth-msg="ownership-hold" role="alert" aria-live="assertive" hidden></div>
+
+                <button type="button" class="z-btn z-btn-primary mw-auth-block" data-auth-action="ownership-retry">
+                    Retry
+                </button>
+                <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-auth-action="ownership-signout">
+                    Sign Out
+                </button>
+            </section>
+
+        </div>
+    </div>
+
+
+
+    <!-- ========================================
+         LOCAL DATA OWNERSHIP GATEWAY  (BP4)
+         Behaviour: js/migration/migration-ui.js
+         Service:   js/migration/local-user-migration.js
+         Styles:    css/migration.css (+ shared .mw-auth-*)
+
+         Shown ONLY when a Supabase project is configured, a user
+         is signed in, and local ownership is not yet resolved.
+         The financial app root's inert state is owned by
+         js/auth/auth-ui.js — this gate never rewrites mWalletData.
+    ========================================= -->
+
+    <div
+        id="mw-migration-gate"
+        class="mw-auth-gate"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-migration-heading"
+        hidden
+        aria-hidden="true"
+    >
+
+        <div class="mw-auth-card">
+
+            <img
+                class="mw-auth-logo"
+                src="./icons/m-wallet-icon-192.png"
+                alt=""
+            >
+
+            <p class="mw-auth-brand">
+                M-Wallet
+                <span class="z-badge z-badge-violet">BETA</span>
+            </p>
+
+
+            <!-- CHECKING LOCAL DATA -->
+            <section data-migration-screen="checking" hidden>
+                <div class="mw-auth-spinner" aria-hidden="true"></div>
+                <p class="mw-auth-sub" role="status">Checking this device…</p>
+            </section>
+
+
+            <!-- EXISTING DATA FOUND -->
+            <section data-migration-screen="needs_claim" hidden>
+                <span class="mw-migration-badge mw-migration-badge--protect">
+                    <span aria-hidden="true">🛡</span> Local data
+                </span>
+
+                <h1 id="mw-migration-heading" class="mw-auth-title" tabindex="-1">
+                    Your existing M-Wallet data is here
+                </h1>
+                <p class="mw-auth-sub">
+                    We found M-Wallet data already stored on this device. You can
+                    keep it and protect it with the account you just signed in with.
+                </p>
+
+                <ul class="mw-migration-points">
+                    <li>Nothing will be deleted.</li>
+                    <li>Nothing is being uploaded — your financial data stays on this device.</li>
+                    <li>This step connects the local workspace to your signed-in account.</li>
+                </ul>
+
+                <div class="mw-auth-msg" data-migration-msg role="alert" aria-live="assertive" hidden></div>
+
+                <button type="button" class="z-btn z-btn-primary mw-auth-block" data-migration-action="claim">
+                    Keep &amp; Protect My Data
+                </button>
+                <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-migration-action="sign-out">
+                    Sign Out
+                </button>
+
+                <p class="mw-migration-note">
+                    M-Wallet has not backed up or synced your data. It remains only
+                    on this device.
+                </p>
+            </section>
+
+
+            <!-- OWNER MISMATCH -->
+            <section data-migration-screen="owner_mismatch" hidden>
+                <span class="mw-migration-badge mw-migration-badge--mismatch">
+                    <span aria-hidden="true">⚠</span> Different account
+                </span>
+
+                <h1 class="mw-auth-title" tabindex="-1">
+                    This M-Wallet data belongs to a different account
+                </h1>
+                <p class="mw-auth-sub">
+                    Sign in with the account that owns the data stored on this
+                    device. Your data has not been changed or deleted.
+                </p>
+
+                <button type="button" class="z-btn z-btn-primary mw-auth-block" data-migration-action="sign-out">
+                    Sign Out
+                </button>
+            </section>
+
+
+            <!-- ERROR -->
+            <section data-migration-screen="error" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">
+                    We couldn't verify this device
+                </h1>
+                <p class="mw-auth-sub">
+                    We couldn't safely determine who owns the M-Wallet data on this
+                    device. Nothing has been changed or deleted.
+                </p>
+
+                <div class="mw-auth-msg is-error" data-migration-msg role="alert" aria-live="assertive" hidden></div>
+
+                <button type="button" class="z-btn z-btn-primary mw-auth-block" data-migration-action="retry">
+                    Retry
+                </button>
+                <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-migration-action="sign-out">
+                    Sign Out
+                </button>
+            </section>
+
         </div>
     </div>
 
@@ -3239,7 +3411,15 @@
     <script src="./js/auth/auth-config.js?v=2"></script>
     <script src="./js/auth/auth-client.js?v=2"></script>
     <script src="./js/auth/auth.js?v=3"></script>
-    <script src="./js/auth/auth-ui.js?v=1"></script>
+    <script src="./js/auth/auth-ui.js?v=3"></script>
+
+    <!-- Local data ownership / existing-user migration (BP4).
+         Loads after the auth layer it depends on, before the
+         financial engine. Registers an app-root guard so a wrong
+         account or unresolved ownership can never flash the
+         financial UI. Never rewrites mWalletData. -->
+    <script src="./js/migration/local-user-migration.js?v=2"></script>
+    <script src="./js/migration/migration-ui.js?v=2"></script>
 
     <script src="./js/storage.js?v=7"></script>
 
@@ -3257,7 +3437,7 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=4"></script>
+    <script src="./js/settings-ui.js?v=5"></script>
 
     <script src="./js/app.js?v=10"></script>
 

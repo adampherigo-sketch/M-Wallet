@@ -120,16 +120,30 @@ test("configured + signed_out: init() shows the gateway on the welcome view and 
     assert.equal(dom.document.body.classList.contains("mw-auth-locked"), true);
 });
 
-test("configured + signed_in: the gateway is hidden and the app is interactive", async () => {
+test("configured + signed_in + ownership released: gateway hidden, app interactive", async () => {
     const env = makeEnv({ session: SESSION });
     await env.auth.initialize();
     const dom = buildAuthDom();
+    env.ui.setPostAuthGuard(function () { return { release: true }; }); // BP4: ownership verified
     env.ui.init(dom.document);
     await flush();
 
     assert.equal(dom.gate.hidden, true);
     assert.equal(dom.app.hasAttribute("aria-hidden"), false);
     assert.equal(dom.app.inert, false);
+});
+
+test("BP4 FAIL-CLOSED: configured + signed_in with NO ownership guard -> app stays blocked + fallback", async () => {
+    const env = makeEnv({ session: SESSION });
+    await env.auth.initialize();
+    const dom = buildAuthDom();
+    env.ui.init(dom.document);                 // no guard registered
+    await flush();
+
+    assert.equal(dom.app.inert, true, "financial app must NOT become interactive on auth alone");
+    assert.equal(dom.app.getAttribute("aria-hidden"), "true");
+    assert.equal(dom.view("ownership-hold").hidden, false, "built-in fallback view shown");
+    assert.equal(dom.gate.hidden, false);
 });
 
 test("nav buttons switch views without leaving the gateway", async () => {
@@ -209,6 +223,7 @@ test("sign-in submit: success -> SIGNED_IN event hides the gateway", async () =>
     const env = makeEnv({ session: null });
     await env.auth.initialize();
     const dom = buildAuthDom();
+    env.ui.setPostAuthGuard(function () { return { release: true }; }); // BP4: ownership verified
     env.ui.init(dom.document);
     await flush();
 
@@ -242,6 +257,7 @@ test("password recovery: PASSWORD_RECOVERY shows the recovery view; save calls u
     const env = makeEnv({ session: null });
     await env.auth.initialize();
     const dom = buildAuthDom();
+    env.ui.setPostAuthGuard(function () { return { release: true }; }); // BP4: ownership verified after recovery
     env.ui.init(dom.document);
     await flush();
 
