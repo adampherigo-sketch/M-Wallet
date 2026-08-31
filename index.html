@@ -261,6 +261,19 @@
         href="./css/account.css?v=1"
     >
 
+
+    <!-- =====================================================
+         BETA OPERATIONS + FEEDBACK (BP11)
+         Settings Beta Hub + the feedback / known-issues /
+         what's-new dialogs. Feedback is user-initiated only —
+         no analytics, no telemetry, no automatic transmission.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/beta.css?v=1"
+    >
+
 </head>
 
 
@@ -2928,6 +2941,97 @@
                     </section>
 
 
+                    <!-- ============ BETA HUB (BP11) ============ -->
+
+                    <section
+                        class="zg-set-section"
+                        aria-labelledby="zg-set-beta-label"
+                    >
+
+                        <div class="zg-set-section-head">
+                            <span class="z-eyebrow" id="zg-set-beta-label">
+                                Beta Hub
+                            </span>
+                            <p>
+                                M-Wallet is beta software. Please report anything that looks
+                                incorrect — especially missing or changed financial information.
+                            </p>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong id="mw-beta-hub-program">M-Wallet Beta</strong>
+                                <small>Build channel: beta. Keep a wallet export while testing important financial changes.</small>
+                            </span>
+                            <span class="zg-set-row-value mw-beta-hub-value" id="mw-beta-hub-version">—</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="mw-beta-report-btn"
+                            data-beta-action="open-feedback"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Report a beta problem</strong>
+                                <small>Send a bug report or feedback, or copy / download it to send yourself.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Feedback delivery</strong>
+                                <small>Whether reports can be sent in-app, or must be copied / downloaded and sent manually.</small>
+                            </span>
+                            <span class="zg-set-row-value" id="mw-beta-hub-delivery" role="status" aria-live="polite">—</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="mw-beta-known-issues-btn"
+                            data-beta-action="open-known-issues"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Known issues</strong>
+                                <small>Issues the team has already acknowledged for this build.</small>
+                            </span>
+                            <span class="zg-set-row-value" id="mw-beta-hub-known-issues-count">—</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="mw-beta-whats-new-btn"
+                            data-beta-action="open-whats-new"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>What's new</strong>
+                                <small>A short summary of what changed in this beta build.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Current beta limitations</strong>
+                                <ul class="mw-beta-hub-list" id="mw-beta-hub-limitations">
+                                    <li>Loading…</li>
+                                </ul>
+                            </span>
+                        </div>
+
+                        <div class="zg-set-row">
+                            <span class="zg-set-row-text">
+                                <strong>Support</strong>
+                                <small class="mw-beta-hub-support" id="mw-beta-hub-support">—</small>
+                            </span>
+                        </div>
+
+                    </section>
+
+
                     <!-- BP10: “Reset M-Wallet Data” retired. Wallet
                          recovery is now “Erase wallet from this device”
                          under My Data — an explicit, typed-confirmation
@@ -3392,6 +3496,16 @@
                     Sign Out
                 </button>
             </section>
+
+            <!-- BP11 — always available, even when signed out / in an
+                 auth error / on the verify screen. Opens the same
+                 privacy-safe feedback dialog. Managed by
+                 js/beta/beta-ui.js; authentication never depends on it. -->
+            <p class="mw-auth-beta-report">
+                <button type="button" data-beta-action="open-feedback">
+                    Report a beta problem
+                </button>
+            </p>
 
         </div>
     </div>
@@ -4129,6 +4243,213 @@
 
 
     <!-- ========================================
+         BETA FEEDBACK + HUB DIALOGS (BP11)
+         Managed by js/beta/beta-ui.js. Outside .app so they
+         overlay every screen including the auth gateway. All
+         start hidden. Feedback text is rendered with
+         textContent only — never innerHTML.
+    ========================================= -->
+
+    <div
+        id="mw-beta-feedback-dialog"
+        class="mw-beta-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-beta-feedback-title"
+        aria-describedby="mw-beta-feedback-sub"
+        hidden
+        aria-hidden="true"
+    >
+        <div class="mw-beta-dialog-backdrop" data-beta-action="feedback-cancel"></div>
+
+        <div class="mw-beta-dialog-card">
+            <h2 id="mw-beta-feedback-title" class="mw-beta-dialog-title" tabindex="-1">
+                Report a beta problem
+            </h2>
+            <p id="mw-beta-feedback-sub" class="mw-beta-dialog-sub">
+                Tell us what happened. M-Wallet only sends this report when you choose
+                Send — you can also copy or download it.
+            </p>
+
+            <p class="mw-beta-warn">
+                Please do not include passwords, account numbers, passkeys, sign-in
+                tokens, or your account balances in your report.
+            </p>
+
+            <div class="mw-beta-dialog-msg" id="mw-beta-feedback-msg" role="alert" aria-live="assertive" hidden></div>
+
+            <!-- STEP: FORM -->
+            <div id="mw-beta-feedback-step-form">
+                <label class="mw-beta-field" for="mw-beta-field-category">
+                    <span>Type</span>
+                    <select id="mw-beta-field-category">
+                        <option value="bug">Bug</option>
+                        <option value="data">Data issue</option>
+                        <option value="performance">Performance issue</option>
+                        <option value="usability">Usability / UX</option>
+                        <option value="feature">Feature request</option>
+                        <option value="other">Other</option>
+                    </select>
+                </label>
+
+                <label class="mw-beta-field" for="mw-beta-field-severity">
+                    <span>How much does it affect you?</span>
+                    <select id="mw-beta-field-severity">
+                        <option value="blocker">Blocks me</option>
+                        <option value="major">Major problem</option>
+                        <option value="minor">Minor problem</option>
+                        <option value="suggestion">Suggestion</option>
+                    </select>
+                </label>
+
+                <label class="mw-beta-field" for="mw-beta-field-title">
+                    <span>Short title</span>
+                    <input type="text" id="mw-beta-field-title" maxlength="120" autocomplete="off">
+                </label>
+
+                <label class="mw-beta-field" for="mw-beta-field-description">
+                    <span>Description</span>
+                    <textarea id="mw-beta-field-description" maxlength="5000"></textarea>
+                </label>
+
+                <label class="mw-beta-field" for="mw-beta-field-steps">
+                    <span>Steps to reproduce (optional)</span>
+                    <textarea id="mw-beta-field-steps" maxlength="3000"></textarea>
+                </label>
+
+                <label class="mw-beta-field" for="mw-beta-field-expected">
+                    <span>What did you expect? (optional)</span>
+                    <textarea id="mw-beta-field-expected" maxlength="3000"></textarea>
+                </label>
+
+                <label class="mw-beta-field" for="mw-beta-field-actual">
+                    <span>What actually happened? (optional)</span>
+                    <textarea id="mw-beta-field-actual" maxlength="3000"></textarea>
+                </label>
+
+                <div class="mw-beta-check">
+                    <input type="checkbox" id="mw-beta-diag-check">
+                    <label for="mw-beta-diag-check">
+                        Include technical diagnostics (app version, screen, browser,
+                        online/offline — never your financial data).
+                        <button type="button" class="mw-auth-link" data-beta-action="feedback-view-diagnostics">
+                            View diagnostics
+                        </button>
+                    </label>
+                </div>
+
+                <div class="mw-beta-diag-preview" id="mw-beta-diag-preview" hidden aria-live="polite"></div>
+
+                <div class="mw-beta-check">
+                    <input type="checkbox" id="mw-beta-email-check">
+                    <label for="mw-beta-email-check">
+                        Include my email so the beta team can follow up.
+                    </label>
+                </div>
+
+                <label class="mw-beta-field" id="mw-beta-email-row" for="mw-beta-field-email" hidden>
+                    <span>Contact email</span>
+                    <input type="email" id="mw-beta-field-email" maxlength="254" autocomplete="email" inputmode="email">
+                </label>
+
+                <p class="mw-beta-privacy-note">
+                    Your report and any diagnostics you include are sent only when you
+                    press Send, and only if a feedback destination is configured for
+                    this build. Copy and Download never use the network.
+                </p>
+
+                <div class="mw-beta-dialog-actions">
+                    <button type="button" class="z-btn z-btn-secondary" data-beta-action="feedback-cancel">Cancel</button>
+                    <button type="button" class="z-btn z-btn-primary" data-beta-action="feedback-review">Review report</button>
+                </div>
+            </div>
+
+            <!-- STEP: REVIEW -->
+            <div id="mw-beta-feedback-step-review" hidden>
+                <h3 id="mw-beta-review-title" class="mw-beta-dialog-title" tabindex="-1" style="font-size:1rem;">
+                    Review your report
+                </h3>
+                <div class="mw-beta-kv-list" id="mw-beta-review-list"></div>
+                <div class="mw-beta-dialog-actions">
+                    <button type="button" class="z-btn z-btn-secondary" data-beta-action="feedback-back">Back</button>
+                    <button type="button" class="z-btn z-btn-secondary" data-beta-action="feedback-copy">Copy report</button>
+                    <button type="button" class="z-btn z-btn-secondary" data-beta-action="feedback-download">Download report</button>
+                    <button type="button" class="z-btn z-btn-primary" id="mw-beta-send-btn" data-beta-action="feedback-send">Send</button>
+                </div>
+            </div>
+
+            <!-- STEP: SENT -->
+            <div id="mw-beta-feedback-step-sent" hidden>
+                <h3 id="mw-beta-sent-title" class="mw-beta-dialog-title" tabindex="-1" style="font-size:1rem;">
+                    Feedback sent
+                </h3>
+                <p class="mw-beta-dialog-sub">
+                    Thank you. Your report reference is
+                    <strong id="mw-beta-sent-ref">—</strong>.
+                </p>
+                <div class="mw-beta-dialog-actions">
+                    <button type="button" class="z-btn z-btn-secondary" data-beta-action="feedback-new">Submit another report</button>
+                    <button type="button" class="z-btn z-btn-primary" data-beta-action="feedback-done">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div
+        id="mw-beta-known-issues-dialog"
+        class="mw-beta-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-beta-known-issues-title"
+        hidden
+        aria-hidden="true"
+    >
+        <div class="mw-beta-dialog-backdrop" data-beta-action="known-issues-close"></div>
+        <div class="mw-beta-dialog-card">
+            <h2 id="mw-beta-known-issues-title" class="mw-beta-dialog-title" tabindex="-1">
+                Known issues
+            </h2>
+            <p class="mw-beta-dialog-sub">
+                Issues the M-Wallet team has already acknowledged for this build.
+            </p>
+            <div id="mw-beta-known-issues-empty" role="status"></div>
+            <ul id="mw-beta-known-issues-list" style="list-style:none;padding:0;margin:0;"></ul>
+            <div class="mw-beta-dialog-actions">
+                <button type="button" class="z-btn z-btn-primary" data-beta-action="known-issues-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div
+        id="mw-beta-whats-new-dialog"
+        class="mw-beta-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-beta-whats-new-title"
+        hidden
+        aria-hidden="true"
+    >
+        <div class="mw-beta-dialog-backdrop" data-beta-action="whats-new-close"></div>
+        <div class="mw-beta-dialog-card">
+            <h2 id="mw-beta-whats-new-title" class="mw-beta-dialog-title" tabindex="-1">
+                What's new
+            </h2>
+            <p class="mw-beta-dialog-sub">
+                Version <strong id="mw-beta-whats-new-version">—</strong>
+            </p>
+            <ul id="mw-beta-whats-new-list"></ul>
+            <p class="mw-beta-privacy-note" id="mw-beta-whats-new-note"></p>
+            <div class="mw-beta-dialog-actions">
+                <button type="button" class="z-btn z-btn-primary" data-beta-action="whats-new-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- ========================================
          UNIVERSAL QUICK ADD
     ========================================= -->
 
@@ -4524,6 +4845,17 @@
          Supabase client; no browser-side account deletion. -->
     <script src="./js/account/account-controls.js?v=1"></script>
     <script src="./js/account/account-ui.js?v=1"></script>
+
+    <!-- Beta operations + feedback (BP11). User-initiated feedback only;
+         the ONLY outbound network is beta-feedback.js submit(), and only
+         after an explicit Send with a configured HTTPS endpoint. No
+         analytics, no telemetry, no automatic transmission, no
+         localStorage. Fails open — a beta bug never locks the user out. -->
+    <script src="./js/beta/beta-config.js?v=1"></script>
+    <script src="./js/beta/beta-known-issues.js?v=1"></script>
+    <script src="./js/beta/beta-ops.js?v=1"></script>
+    <script src="./js/beta/beta-feedback.js?v=1"></script>
+    <script src="./js/beta/beta-ui.js?v=1"></script>
 
     <script src="./js/app.js?v=11"></script>
 

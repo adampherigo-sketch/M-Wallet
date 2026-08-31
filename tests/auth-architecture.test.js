@@ -1050,7 +1050,7 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 test("service-worker precaches the auth + migration + setup + walkthrough + cloud + sync + passkey modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v29"/.test(sw), "cache bumped to v29");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw), "cache bumped to v30");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1146,11 +1146,11 @@ test("changed modules are re-versioned in index.html", () => {
     assert.ok(/js\/auth\/passkey-ui\.js\?v=\d+/.test(html), "passkey-ui.js has a ?v");
 });
 
-test("app version bumped to 0.9.0-beta.9 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.10 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.9"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.9", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.10"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.10", "package.json");
 });
 
 test("BP4 migration modules load after auth, before the financial engine", () => {
@@ -1724,11 +1724,11 @@ test("BP9: no passkey source file touches financial data", () => {
     }
 });
 
-test("BP9: version beta.9, cache v29, docs mention passkeys are not E2EE", () => {
+test("BP9: version beta.10, cache v30, docs mention passkeys are not E2EE", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.9"/.test(av));
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.10"/.test(av));
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v29"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw));
     const doc = fs.readFileSync(path.join(ROOT, "docs/BP9-PASSKEYS.md"), "utf8");
     assert.ok(/not end-to-end encrypt|not.{0,10}E2EE|RLS.{0,4}(≠|!=|is not).{0,4}E2EE/i.test(doc), "BP9 doc keeps the RLS ≠ E2EE line");
     assert.ok(/does not receive your fingerprint|does not receive.*face/i.test(doc), "biometric-privacy statement present");
@@ -1896,7 +1896,7 @@ test("BP10: settings-ui.js + app.js no longer carry the raw import/export/reset 
 
 test("BP10: service-worker precaches the account bundle at cache v29", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v29"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw));
     for (const asset of ["./css/account.css", "./js/account/account-controls.js", "./js/account/account-ui.js"]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
     }
@@ -1907,5 +1907,169 @@ test("BP10: account files carry no analytics / tracking beacons", () => {
         const code = fs.readFileSync(path.join(ROOT, f), "utf8");
         assert.ok(!/gtag|analytics\.|mixpanel|amplitude|segment\.|posthog|sentry|hotjar|fullstory|fbq|plausible|navigator\.sendBeacon/i.test(code),
             f + " has no analytics/tracking");
+    }
+});
+
+
+/* =====================================================
+   BP11 — BETA OPERATIONS + FEEDBACK  (static)
+   ===================================================== */
+
+const BETA_FILES = [
+    "js/beta/beta-config.js",
+    "js/beta/beta-known-issues.js",
+    "js/beta/beta-ops.js",
+    "js/beta/beta-feedback.js",
+    "js/beta/beta-ui.js"
+];
+
+test("BP11: exactly one outbound network boundary — fetch only in beta-feedback submit()", () => {
+    for (const f of BETA_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/XMLHttpRequest|WebSocket|EventSource|navigator\.sendBeacon|new Image\(/.test(code), f + " has no XHR/WS/beacon/pixel");
+        if (f !== "js/beta/beta-feedback.js") {
+            assert.ok(!/\bfetch\s*\(/.test(code), f + " performs no fetch");
+        }
+    }
+    const fb = stripJs(fs.readFileSync(path.join(ROOT, "js/beta/beta-feedback.js"), "utf8"));
+    /* the transport is an injected function called inside submit(); the
+       module never references the global fetch by name outside deps() */
+    const submitBody = fb.slice(fb.indexOf("function submit"));
+    assert.ok(/transport\s*\(\s*endpoint/.test(submitBody), "submit() calls the injected transport");
+});
+
+test("BP11: no beta file reads financial data or the wallet store", () => {
+    for (const f of BETA_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/mWalletData|BudgetStorage|MWalletStorage|wallet_documents|getCashState|storage\.save|\.transactions\b|\bexpenses\b|\bsavingsGoals\b/.test(code),
+            f + " has no financial-data knowledge");
+    }
+});
+
+test("BP11: no beta file uses localStorage / sessionStorage / IndexedDB", () => {
+    for (const f of BETA_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/localStorage|sessionStorage|indexedDB/.test(code), f + " stores nothing locally");
+    }
+});
+
+test("BP11: no beta file needs an auth token / secret / second Supabase client", () => {
+    for (const f of BETA_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/access_token|refresh_token|Authorization|Bearer|createClient|_getClient|service_role|sb_secret_/.test(code),
+            f + " requires no auth secret");
+    }
+});
+
+test("BP11: no beta file contains analytics / tracking / auto crash-reporting", () => {
+    for (const f of BETA_FILES) {
+        const code = fs.readFileSync(path.join(ROOT, f), "utf8");
+        assert.ok(!/gtag|google-analytics|googletagmanager|mixpanel|amplitude|segment\.com|posthog|hotjar|fullstory|\bfbq\(|plausible\.io|clarity\.ms|Sentry\.|onerror\s*=|addEventListener\(["']error|addEventListener\(["']unhandledrejection/i.test(code),
+            f + " has no tracking / global error capture");
+    }
+});
+
+test("BP11: no beta file monkey-patches console or captures screenshots / the DOM", () => {
+    for (const f of BETA_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/console\.(log|warn|error|info|debug)\s*=|toDataURL|captureStream|getDisplayMedia|html2canvas|document\.documentElement\.outerHTML/.test(code),
+            f + " does not patch console or capture the screen/DOM");
+    }
+});
+
+test("BP11: content-security sinks are absent from beta code", () => {
+    for (const f of BETA_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/\.innerHTML\s*=|insertAdjacentHTML|\beval\s*\(|new Function\s*\(|document\.write/.test(code),
+            f + " reaches no unsafe HTML/JS sink");
+    }
+});
+
+test("BP11: beta-config ships null delivery fields and no provider secret", () => {
+    const src = fs.readFileSync(path.join(ROOT, "js/beta/beta-config.js"), "utf8");
+    const clean = stripJs(src);
+    assert.ok(/feedbackEndpoint:\s*null/.test(clean), "feedbackEndpoint null by default");
+    assert.ok(/supportEmail:\s*null/.test(clean), "supportEmail null by default");
+    assert.ok(!/(resend|formspree|sendgrid|mailgun|supabase)[_-]?(key|secret|token|password)\s*[:=]/i.test(clean));
+});
+
+test("BP11: the feedback report format version is its own (not the app / wallet version)", () => {
+    const fb = fs.readFileSync(path.join(ROOT, "js/beta/beta-feedback.js"), "utf8");
+    assert.ok(/FORMAT\s*=\s*"m-wallet-beta-feedback"/.test(fb));
+    assert.ok(/FORMAT_VERSION\s*=\s*1\b/.test(fb));
+    assert.ok(/MAX_REPORT_BYTES/.test(fb), "a serialized-size cap exists");
+});
+
+test("BP11: submit is HTTPS-only, POST-only, no-retry", () => {
+    const fb = stripJs(fs.readFileSync(path.join(ROOT, "js/beta/beta-feedback.js"), "utf8"));
+    assert.ok(/method:\s*"POST"/.test(fb));
+    assert.ok(/isValidEndpoint/.test(fb), "endpoint scheme is validated");
+    assert.ok(!/setInterval|setTimeout\([^)]*submit|reconnect|retryQueue|navigator\.onLine[\s\S]{0,40}submit/i.test(fb),
+        "no automatic resend / background retry");
+});
+
+test("BP11: index.html wires the beta bundle + css, the Beta Hub, and the auth-gate report control", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    for (const s of ["beta-config.js", "beta-known-issues.js", "beta-ops.js", "beta-feedback.js", "beta-ui.js"]) {
+        assert.ok(new RegExp("js/beta/" + s.replace(".", "\\.") + "\\?v=\\d+").test(html), s + " loaded");
+    }
+    assert.ok(/href="\.\/css\/beta\.css/.test(html), "beta.css linked");
+    assert.ok(/id="zg-set-beta-label"/.test(html), "Beta Hub section present");
+    assert.ok(/id="mw-beta-report-btn"[\s\S]{0,120}data-beta-action="open-feedback"/.test(html), "Settings report button");
+    /* the auth gateway carries a report control that works signed out */
+    assert.ok(/id="mw-auth-gate"[\s\S]*?data-beta-action="open-feedback"[\s\S]*?<\/div>\s*<\/div>/.test(html),
+        "auth gateway has a Report-a-beta-problem control");
+    /* the three dialogs, hidden + accessible */
+    for (const id of ["mw-beta-feedback-dialog", "mw-beta-known-issues-dialog", "mw-beta-whats-new-dialog"]) {
+        assert.ok(new RegExp('id="' + id + '"[\\s\\S]{0,220}role="dialog"').test(html), id + " is a dialog");
+        assert.ok(new RegExp('id="' + id + '"[\\s\\S]{0,220}aria-modal="true"').test(html), id + " is modal");
+    }
+    /* the beta scripts load AFTER the app-version + release-gate + nav deps */
+    const at = (n) => html.indexOf(n);
+    assert.ok(at("js/app-version.js?v=") < at("js/beta/beta-ops.js?v="));
+    assert.ok(at("js/sync/sync-release.js?v=") < at("js/beta/beta-ops.js?v="));
+    assert.ok(at("js/nav.js?v=") < at("js/beta/beta-ops.js?v="));
+});
+
+test("BP11: relative asset paths only (GitHub Pages safe)", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.ok(!/["']\/js\/beta\//.test(html), "no root-absolute /js/beta/ URL in index.html");
+    const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
+    assert.ok(!/["']\/js\/beta\//.test(sw), "no root-absolute /js/beta/ URL in service-worker APP_SHELL");
+});
+
+test("BP11: service-worker precaches the beta bundle at cache v30 and never caches non-GET", () => {
+    const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw));
+    for (const asset of [
+        "./css/beta.css",
+        "./js/beta/beta-config.js", "./js/beta/beta-known-issues.js",
+        "./js/beta/beta-ops.js", "./js/beta/beta-feedback.js", "./js/beta/beta-ui.js"
+    ]) {
+        assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
+    }
+    assert.ok(/event\.request\.method\s*!==\s*"GET"[\s\S]{0,40}return/.test(sw), "non-GET requests are not handled/cached");
+});
+
+test("BP11: docs exist and stay precise about privacy", () => {
+    const ops = fs.readFileSync(path.join(ROOT, "docs/BP11-BETA-OPERATIONS.md"), "utf8");
+    assert.ok(/user-initiated/i.test(ops) && /no (analytics|telemetry|tracking)/i.test(ops));
+    assert.ok(/IP address/i.test(ops), "the endpoint-privacy note mentions network metadata honestly");
+    /* every "end-to-end" mention must be negated ("does not claim ... end-to-end", "not end-to-end") */
+    assert.ok(
+        !/end-to-end/i.test(ops) || /(not|does not (claim|promise)|no)[^.]{0,40}end-to-end/i.test(ops),
+        "no false E2EE claim"
+    );
+    assert.ok(fs.existsSync(path.join(ROOT, "docs/BETA-TESTER-GUIDE.md")));
+    assert.ok(fs.existsSync(path.join(ROOT, "docs/BETA-ISSUE-TRIAGE.md")));
+    const triage = fs.readFileSync(path.join(ROOT, "docs/BETA-ISSUE-TRIAGE.md"), "utf8");
+    assert.ok(/BLOCKER/.test(triage) && /security/i.test(triage) && /demo data|disposable/i.test(triage));
+});
+
+test("BP11: no client-side beta access allowlist (closed-beta access is enforced server-side)", () => {
+    for (const f of BETA_FILES) {
+        const code = stripJs(fs.readFileSync(path.join(ROOT, f), "utf8"));
+        assert.ok(!/allowlist|allowList|betaTesters\s*=\s*\[|whitelist|ALLOWED_EMAILS|isBetaTester\(/i.test(code),
+            f + " contains no front-end access allowlist");
     }
 });

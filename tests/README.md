@@ -433,6 +433,77 @@ real browser. Secure **account deletion** needs a trusted server-side path and i
 **not built** — a hard release gate before BP13. See
 [`../docs/BP10-ACCOUNT-PRIVACY-RECOVERY.md`](../docs/BP10-ACCOUNT-PRIVACY-RECOVERY.md).
 
+## Beta operations + feedback tests (BP11)
+
+`helpers/beta-harness.js` loads the real `js/beta/*` modules in a `node:vm`
+sandbox with deterministic stand-ins for the version API, auth, navigation, and
+the BP8/BP9 release gates. `fetch` is **never** provided by default — a test must
+inject a recording transport. No real network.
+
+`beta-config.test.js` — the committed defaults ship `feedbackEndpoint: null` /
+`supportEmail: null`; an HTTPS endpoint is accepted; `http:` / `javascript:` /
+`data:` / `file:` / `ftp:` / `ws:` and malformed URLs all resolve to `null`;
+support-email shape is validated; the source file has no token / provider secret
+and no `localStorage`.
+
+`beta-ops.test.js` — the build summary uses the central version API;
+`safeDiagnostics()` contains only technical fields (asserted: **no** user id,
+account email, token, session, owner, or financial word); the auth state is a
+label only; a contact email appears **only** with an explicit opt-in **and** a
+supplied address; `currentLimitations()` is derived from the live release gates;
+`generateReportId()` is `MWB-`-prefixed and injectable; release notes are curated
+and match the build; the developer `diagnostics()` object is safe operational
+counts only.
+
+`beta-feedback.test.js` — validation (required title/description, whitelisted
+category/severity, trim + CRLF→LF + null-byte strip + length caps); `buildReport`
+wraps a versioned payload with **no wallet / session / token**; diagnostics
+attach only with opt-in; an oversized report is rejected; `serialize` /
+`toPlainText` never contain wallet data. Transport: no-endpoint → `not_configured`
+with no call; offline → `offline` with no call; a configured HTTPS endpoint → one
+`POST` of JSON returning the report id; non-HTTPS → `invalid_endpoint`; a hung
+request → `timeout`; a throw → `network_error` (internal host never surfaced);
+4xx **and** 5xx → `server_error` with no raw body; a safe `reference` string is
+normalised, anything else dropped; **one submit = one request, ever**.
+
+`beta-known-issues.test.js` — empty registry ships with an honest empty state
+("No published known issues…" + "…undiscovered issues", never "no bugs"); unique
+ids; whitelisted statuses; version-list normalisation; entries are plain strings.
+
+`beta-ui.test.js` — the Beta Hub renders version / delivery status / limitations
+/ known-issue count / support; the feedback dialog opens from Settings **and**
+the auth gateway; Review requires title + description; the review list and
+known-issues list are built with `textContent` (hostile HTML strings render as
+text); **Send is unavailable without an endpoint** while Copy / Download still
+work; with an endpoint one Send = one submit and a double-click is suppressed; a
+failed send keeps the review step and the form contents; diagnostics + contact
+email default **off**; closing with typed content asks to discard while an
+untouched form closes immediately; Escape closes non-destructively.
+
+`beta-integrity.test.js` — a full lifecycle (build → serialize → plain-text →
+filename → failed send → mocked send) makes **zero** global-`fetch` calls and
+**zero** `localStorage` writes with no endpoint; with an endpoint, nothing is
+sent until `submit()` (then exactly one `POST`); building a report while signed
+out / owner-mismatch makes **no** state-mutating call on auth / migration /
+first-run / walkthrough / sync and leaks no owner / user id; a repo-wide
+analytics / tracking scan (beta code included) stays clean; no beta module
+installs a global `error` / `unhandledrejection` handler.
+
+BP11 static wiring lives in `auth-architecture.test.js`: the only outbound
+network boundary is `beta-feedback.js` `submit()`; no beta file reads financial
+data, uses `localStorage`, needs an auth token, or contains analytics / a global
+crash handler / an unsafe HTML sink / a front-end access allowlist; `index.html`
+loads the beta bundle + `beta.css`, has the Beta Hub and the auth-gate report
+control, and three `role="dialog"` + `aria-modal` dialogs; the SW precaches the
+bundle at `m-wallet-v30` and returns early for the non-GET feedback `POST`;
+version is `0.9.0-beta.10`; the docs stay precise (no false E2EE claim, an
+honest IP-address note).
+
+**Not run by `npm test`, and deferred to BP12:** configuring + verifying a real
+feedback destination. No test sends real feedback; there is no live endpoint
+verification yet. The committed build ships with no endpoint. See
+[`../docs/BP11-BETA-OPERATIONS.md`](../docs/BP11-BETA-OPERATIONS.md).
+
 ## Running
 
 Node.js is required. From the repository root:

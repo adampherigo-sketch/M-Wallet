@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v29";
+const CACHE_NAME = "m-wallet-v30";
 
 
 /* =========================================================
@@ -43,6 +43,7 @@ const APP_SHELL = [
     "./css/sync.css",
     "./css/passkeys.css",
     "./css/account.css",
+    "./css/beta.css",
 
     "./js/app-version.js",
 
@@ -83,6 +84,11 @@ const APP_SHELL = [
 
     "./js/account/account-controls.js",
     "./js/account/account-ui.js",
+    "./js/beta/beta-config.js",
+    "./js/beta/beta-known-issues.js",
+    "./js/beta/beta-ops.js",
+    "./js/beta/beta-feedback.js",
+    "./js/beta/beta-ui.js",
 
     "./js/m-cash/cash-ui.js",
     "./js/m-cash/cash-storage.js",
@@ -207,6 +213,12 @@ self.addEventListener(
     "fetch",
     event => {
 
+        /*
+            Non-GET requests are left entirely to the browser and are
+            never cached. This covers the BP11 beta-feedback POST (which
+            is also cross-origin) — its request and response never touch
+            Cache Storage.
+        */
         if (event.request.method !== "GET") {
             return;
         }
