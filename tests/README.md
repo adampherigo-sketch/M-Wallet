@@ -286,6 +286,83 @@ offline verification of BP8 against a real Supabase project — a hard release
 gate before BP13. The engine ships with its release gate OFF. See
 [`../docs/BP8-SYNC-ENGINE.md`](../docs/BP8-SYNC-ENGINE.md).
 
+## Passkey tests (BP9)
+
+BP9 adds passkey / WebAuthn sign-in — **shipped with its release gate OFF**.
+These suites use a stubbed Supabase passkey client and a DOM stub; **no real
+`navigator.credentials`, no network**. Tests exercise the enabled adapter by
+injecting a release dependency (or, for the sync-ui-style tests, by setting
+`window.__MWALLET_TEST_ENV__ = true` before `passkey-release.js` loads) — the
+committed default (`enabled: false`) never changes. Helper:
+`helpers/passkey-harness.js` (a Supabase-auth passkey stub + a `MWalletAuth`
+stub loaded around the real `passkey-release.js` + `passkeys.js`).
+
+`passkey-release.test.js` — the gate ships disabled (phase BP12); a normal
+browser build exposes **no** `setOverride` and there is no query-string /
+localStorage / hostname / Settings switch; setting the flag *after* load is too
+late; the BP8 sync gate is a separate switch that stays false; no `js/` file
+turns passkeys on itself.
+
+`passkey-capability.test.js` — `getCapabilities()` reflects
+`PublicKeyCredential` + `navigator.credentials` + secure context + Supabase
+method presence, makes **zero** network / WebAuthn calls, and **never** treats a
+missing built-in platform authenticator as "no passkeys" (a security key or a
+synced passkey still counts). Diagnostics leak no email / user id / token.
+
+`passkey-auth.test.js` — sign-in + registration through the real adapter:
+release-disabled / unconfigured / recovery / auth-error / unsupported →
+**zero** passkey API calls; signed-out **is** a valid sign-in path; `signIn`
+reuses the one client, calls `signInWithPasskey` once, never asks for an email,
+never creates a session itself, returns a safe result (no raw credential /
+session / token); a cancelled ceremony → `user_cancelled` (not a scary error);
+raw Supabase / browser errors map to safe codes only; a duplicate click while
+busy is suppressed. Registration: signed-out / unconfirmed / anonymous /
+recovery / disabled / unsupported cannot register; success calls
+`registerPasskey` once and refreshes the list; a failure leaves the
+session / account / local data intact; **no automatic enrollment** exists
+(source-level); the adapter **never** calls `navigator.credentials` itself.
+
+`passkey-management.test.js` — list requires signed-in; the list is normalized
+safely (a credential id is never a user-facing string) and **never persisted**;
+rename validates the name (trim, non-empty, ≤ 120) and doesn't show the new name
+as final until the server confirms; delete requires an exact ref and one call; a
+**failed delete keeps the item** (no optimistic removal); the **last** passkey
+can be removed after confirmation (password remains the fallback); raw errors
+never leak.
+
+`passkey-ui.test.js` — release-disabled: the "Use a Passkey" control stays
+hidden, Settings says *"activation pending verification"*, no button can start a
+ceremony, and a forced click on any hidden control is a no-op. Password recovery
+wins (no gateway control, no Settings panel). Enabled test mode: the control
+appears (password + Forgot + Create still there), one click → one `signIn`, a
+cancelled result reads friendly; unverified email → *"Verify your email
+first"*, no Add button; one Add click → one `register`. Settings list: friendly
+names + dates render as **text** (a hostile `<img onerror>` name is inert; the
+module never assigns `innerHTML`), no credential id / raw JSON / token. Removal:
+Cancel = **zero** delete calls; Confirm = **exactly one** for that passkey;
+Escape closes non-destructively; the dialog carries
+`role`/`aria-modal`/`aria-labelledby`/`aria-describedby`, moves focus in, and
+uses real `<button>` controls. Rename: swaps to an edit field; Save → one
+`rename` call. Loading + `initialize()` make **zero** Supabase calls.
+
+BP9 static wiring lives in `auth-architecture.test.js`: the ONE Supabase client
+gains `experimental.passkey` (every original option kept, exactly one
+`lib.createClient` call site, no second client); the passkey adapter never
+calls `navigator.credentials` / a token / an Authorization header / a direct
+GoTrue fetch and embeds no RP ID or credential; passkey modules load after
+auth-ui and before the financial engine, sub-path safe; the auth gateway keeps
+email + password + Forgot + Create with the passkey control hidden; the gate
+order (BP4 → BP8 → BP5 → BP6) is unchanged and the `passkey-signin` handler only
+delegates; the passkey files touch no financial data and never reference the
+BP8 sync engine; `docs/BP9-PASSKEYS.md` keeps the RLS ≠ E2EE line, the
+biometric-privacy statement, and the RP-ID-change warning.
+
+**Not run by `npm test`, and deferred to BP12:** live WebAuthn / passkey
+verification against a real Supabase project + real browsers / devices, and the
+choice of the permanent production RP ID — a hard release gate before BP13. The
+passkey release gate ships OFF. See
+[`../docs/BP9-PASSKEYS.md`](../docs/BP9-PASSKEYS.md).
+
 ## Running
 
 Node.js is required. From the repository root:

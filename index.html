@@ -193,6 +193,18 @@
 
 
     <!-- =====================================================
+         PASSKEYS / DEVICE AUTHENTICATION (BP9)
+         "Use a Passkey" gateway control + Settings management.
+         Dormant while the passkey release gate is off (default).
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/passkeys.css?v=1"
+    >
+
+
+    <!-- =====================================================
          LOCAL DATA OWNERSHIP / MIGRATION (BP4)
          Reuses the auth gateway shell; adds #mw-migration-gate.
     ====================================================== -->
@@ -2510,6 +2522,46 @@
                             <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
                         </button>
 
+                        <!-- BP9 — Passkeys. Managed by js/auth/passkey-ui.js.
+                             Release-disabled: shows "activation pending" and no
+                             Add button. Never removes password / reset above. -->
+                        <div class="zg-set-row zg-set-account" id="settings-passkey-panel" hidden>
+                            <span class="zg-set-row-text">
+                                <strong>Passkeys</strong>
+                                <small id="settings-passkey-note">
+                                    Passkeys let you sign in without your password.
+                                </small>
+                                <div
+                                    class="mw-passkey-settings-msg"
+                                    id="settings-passkey-msg"
+                                    role="status"
+                                    aria-live="polite"
+                                    hidden
+                                ></div>
+                                <ul id="settings-passkey-list" class="mw-passkey-list" aria-live="polite"></ul>
+                            </span>
+                            <span
+                                class="zg-set-row-value"
+                                id="settings-passkey-status"
+                                role="status"
+                                aria-live="polite"
+                            >—</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="settings-item zg-set-row"
+                            id="settings-passkey-add-btn"
+                            data-passkey-action="passkey-add"
+                            hidden
+                        >
+                            <span class="settings-item-content zg-set-row-text">
+                                <strong>Add passkey</strong>
+                                <small>Your device may ask for Face ID, Touch ID, Windows Hello, a device PIN, or a security key.</small>
+                            </span>
+                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
                         <div class="zg-set-row zg-set-account" id="settings-local-data-panel" hidden>
                             <span class="zg-set-row-text">
                                 <strong>Local Data</strong>
@@ -2970,6 +3022,31 @@
                 <div class="mw-auth-actions-row">
                     <button type="button" class="mw-auth-link" data-auth-action="go-forgot">Forgot password?</button>
                     <button type="button" class="mw-auth-link" data-auth-action="go-signup">Create account</button>
+                </div>
+
+                <!-- BP9 — passkey sign-in. Hidden unless the passkey release
+                     gate is on AND the browser supports WebAuthn. Never
+                     replaces the email/password form above. -->
+                <div class="mw-passkey-gateway" data-passkey-gateway hidden>
+                    <div class="mw-passkey-or" aria-hidden="true"><span>or</span></div>
+                    <button
+                        type="button"
+                        class="z-btn z-btn-secondary mw-auth-block"
+                        data-auth-action="passkey-signin"
+                    >
+                        Use a Passkey
+                    </button>
+                    <p class="mw-passkey-hint">
+                        Your device may ask for Face ID, Touch ID, Windows Hello,
+                        a device PIN, or a security key.
+                    </p>
+                    <div
+                        class="mw-auth-msg"
+                        id="mw-passkey-gateway-msg"
+                        role="alert"
+                        aria-live="assertive"
+                        hidden
+                    ></div>
                 </div>
             </section>
 
@@ -3599,6 +3676,56 @@
 
 
     <!-- ========================================
+         PASSKEY REMOVAL CONFIRMATION  (BP9)
+         Managed by js/auth/passkey-ui.js. One explicit
+         confirmation removes exactly one passkey.
+    ========================================= -->
+
+    <div
+        id="mw-passkey-confirm"
+        class="mw-passkey-confirm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-passkey-confirm-title"
+        aria-describedby="mw-passkey-confirm-desc"
+        hidden
+        aria-hidden="true"
+    >
+        <div class="mw-passkey-confirm-backdrop" data-passkey-action="confirm-cancel"></div>
+
+        <div class="mw-passkey-confirm-card">
+            <h2 id="mw-passkey-confirm-title" class="mw-auth-title" tabindex="-1">
+                Remove this passkey?
+            </h2>
+            <p id="mw-passkey-confirm-desc" class="mw-auth-sub">
+                You will no longer be able to use this passkey to sign in to
+                M-Wallet. Your email and password sign-in will remain available.
+            </p>
+
+            <div class="mw-passkey-confirm-actions">
+                <button
+                    type="button"
+                    class="z-btn z-btn-secondary mw-passkey-confirm-btn"
+                    id="mw-passkey-confirm-cancel"
+                    data-passkey-action="confirm-cancel"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    class="z-btn z-btn-primary mw-passkey-confirm-btn"
+                    id="mw-passkey-confirm-remove"
+                    data-passkey-action="confirm-remove"
+                >
+                    Remove Passkey
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- ========================================
          UNIVERSAL QUICK ADD
     ========================================= -->
 
@@ -3912,9 +4039,19 @@
          only shows the account gateway when configured + signed
          out; unconfigured = local-first app exactly as before. -->
     <script src="./js/auth/auth-config.js?v=2"></script>
-    <script src="./js/auth/auth-client.js?v=2"></script>
-    <script src="./js/auth/auth.js?v=3"></script>
-    <script src="./js/auth/auth-ui.js?v=6"></script>
+    <script src="./js/auth/auth-client.js?v=3"></script>
+    <script src="./js/auth/auth.js?v=4"></script>
+    <script src="./js/auth/auth-ui.js?v=7"></script>
+
+    <!-- Passkeys / device authentication (BP9). Built but OFF: the
+         release gate (passkey-release.js) ships disabled, so M-Wallet
+         makes ZERO passkey / WebAuthn / navigator.credentials calls.
+         Email + password sign-in and password recovery are unchanged.
+         BP12 flips the gate on after the production RP ID is final and
+         real devices/browsers are verified. -->
+    <script src="./js/auth/passkey-release.js?v=1"></script>
+    <script src="./js/auth/passkeys.js?v=1"></script>
+    <script src="./js/auth/passkey-ui.js?v=1"></script>
 
     <!-- Local data ownership / existing-user migration (BP4).
          Loads after the auth layer it depends on, before the
@@ -3975,7 +4112,7 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=9"></script>
+    <script src="./js/settings-ui.js?v=10"></script>
 
     <script src="./js/app.js?v=10"></script>
 

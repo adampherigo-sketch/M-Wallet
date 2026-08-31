@@ -95,7 +95,14 @@
                        introduces them; harmless before then */
                     detectSessionInUrl: true,
                     storageKey: SESSION_STORAGE_KEY,
-                    flowType: "pkce"
+                    flowType: "pkce",
+                    /* BP9 — unlock the client's (experimental) passkey /
+                       WebAuthn methods. This ONLY makes the API callable;
+                       it does NOT authorize or trigger any passkey use.
+                       MWalletPasskeyRelease (default OFF) is what decides
+                       whether M-Wallet ever invokes them, and no passkey
+                       or WebAuthn call happens from client init alone. */
+                    experimental: { passkey: true }
                 }
             });
         });
