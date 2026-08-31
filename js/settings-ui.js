@@ -476,6 +476,7 @@
 
         renderLocalDataStatus(state);
         renderFirstRunStatus(state);
+        renderWalkthroughStatus(state);
     }
 
     /* BP4 — local data ownership status. Shown only for the
@@ -535,6 +536,58 @@
 
         panel.hidden = false;
         if (statusEl) { statusEl.textContent = "Complete"; }
+    }
+
+    /* BP6 — guided walkthrough replay control. Shown for a
+       signed-in owner whose setup is done (complete OR existing).
+       Never exposes the owner id or any progress. Manual replay
+       never re-runs BP5, never touches BP4 or financial data. */
+    function renderWalkthroughStatus(authStateSnapshot) {
+        var panel = document.getElementById("settings-walkthrough-panel");
+        var statusEl = document.getElementById("settings-walkthrough-status");
+        var btn = document.getElementById("settings-walkthrough-btn");
+        var btnLabel = document.getElementById("settings-walkthrough-btn-label");
+        if (!panel || !btn) { return; }
+
+        var tour = global.MWalletWalkthrough;
+        var authState = authStateSnapshot ||
+            (global.MWalletAuth && typeof global.MWalletAuth.getState === "function"
+                ? global.MWalletAuth.getState()
+                : null);
+        var firstRun = global.MWalletFirstRun;
+
+        var signedIn = authState && authState.status === "signed_in";
+        var setupStatus = (firstRun && typeof firstRun.getStatus === "function") ? firstRun.getStatus() : null;
+        var tourStatus = (tour && typeof tour.getStatus === "function") ? tour.getStatus() : null;
+
+        /* Settings itself is only reachable once the app is released,
+           so a signed-in owner here is already BP4-verified. */
+        if (!signedIn || !tour || (setupStatus !== "complete" && setupStatus !== "existing")) {
+            panel.hidden = true;
+            btn.hidden = true;
+            return;
+        }
+
+        panel.hidden = false;
+        btn.hidden = false;
+
+        var label = "Not viewed";
+        var cta = "Start Tour";
+        if (tourStatus === "completed") { label = "Completed"; cta = "Replay Tour"; }
+        else if (tourStatus === "skipped") { label = "Skipped"; cta = "Start Tour"; }
+        else if (tourStatus === "active") { label = "In progress"; cta = "Resume Tour"; }
+
+        if (statusEl) { statusEl.textContent = label; }
+        if (btnLabel) { btnLabel.textContent = cta; }
+    }
+
+    function onWalkthroughStart() {
+        var tour = global.MWalletWalkthrough;
+        if (!tour || typeof tour.startManual !== "function") { return; }
+        var res = tour.startManual();
+        if (res && res.ok === false) {
+            setStatus("The tour can't start right now.", "error");
+        }
     }
 
     function onSignOut() {
@@ -805,6 +858,10 @@
                 onAccountPasswordReset();
                 return;
             }
+            if (action === "walkthrough-start") {
+                onWalkthroughStart();
+                return;
+            }
 
             if (action === "add-category-open") {
                 adding = "category";
@@ -982,6 +1039,14 @@
         if (global.MWalletFirstRun && typeof global.MWalletFirstRun.subscribe === "function") {
             global.MWalletFirstRun.subscribe(function () {
                 renderFirstRunStatus();
+                renderWalkthroughStatus();
+            });
+        }
+
+        /* BP6 — keep the Guided Tour row live */
+        if (global.MWalletWalkthrough && typeof global.MWalletWalkthrough.subscribe === "function") {
+            global.MWalletWalkthrough.subscribe(function () {
+                renderWalkthroughStatus();
             });
         }
 

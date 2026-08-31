@@ -11,6 +11,83 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP6 — Guided app walkthrough (`0.9.0-beta.4` → `0.9.0-beta.5`)
+
+An **optional, replayable** coach-mark tour that teaches a genuinely new owner
+what the major areas of M-Wallet do — shown **only after** BP4 has verified
+local ownership and BP5's first-run wizard has been completed. BP6 is education,
+not a gate: it **fails open** and never touches financial data.
+
+- **Walkthrough service** — new `js/walkthrough/guided-walkthrough.js`
+  (`window.MWalletWalkthrough`): state model
+  (`inactive` / `checking` / `active` / `completed` / `skipped` / `error`), an
+  8-step registry (Welcome → Home → Budget → Transactions → Savings → M-Cash →
+  Reports → Settings), owner-bound resume progress, and the auto-start decision.
+  Actions: `initialize`, `getState`, `getStatus`, `subscribe`, `start`,
+  `startManual`, `next`, `back`, `goToStep`, `skip`, `complete`, `retry`,
+  `bailOut`, `diagnostics`.
+- **Auto-start** — the tour opens automatically **only** for: auth configured +
+  signed in + not recovery + BP4 `owned`/`fresh_claimed` + **BP5 status exactly
+  `complete`** (the fresh-user wizard path — never `existing`/legacy) + no
+  completed/skipped record for this owner. A legacy/existing user is **never**
+  force-toured; a completed or skipped user is not re-toured. It also
+  re-resolves when BP5 broadcasts `complete`, so it opens right after the wizard
+  with no reload.
+- **Gate priority** — auth → BP4 ownership (fail-closed) → BP5 setup (fail-open)
+  → **BP6 walkthrough (fail-open)** → app. Owner mismatch, `needs_claim`, a
+  required BP5 wizard, password recovery, signed-out, and unconfigured all keep
+  BP6 `inactive`. `js/auth/auth-ui.js` gains `setWalkthroughGuard` /
+  `setWalkthroughScreenActive`; it holds the app for the tour **only** on an
+  explicit `{ release: false }` from a working guard (no guard / throw /
+  malformed → release), and reveals the verified owner's app if the tour service
+  says "active" but the overlay isn't actually presenting.
+- **Walkthrough UI** — new `js/walkthrough/walkthrough-ui.js`
+  (`window.MWalletWalkthroughUI`) + `css/walkthrough.css` + `#mw-walkthrough`
+  markup **outside `.app`**: a dimmed backdrop, a spotlight ring on a
+  developer-controlled `[data-walkthrough-target]` per page, and a Zevaryn-Grid
+  coach-mark card with step progress, Back / Next / Skip / Finish. Positioning is
+  a pure, NaN-safe solver (`computePlacement`) recalculated on resize /
+  orientation / navigation via a **bounded** settle loop; a missing or
+  oversized target degrades to a centred card with no spotlight — it never
+  throws. All copy is static and rendered with `textContent`; the overlay is
+  `role="dialog"` `aria-modal`, traps focus, is keyboard-operable, Escape ==
+  Skip, and respects `prefers-reduced-motion`.
+- **Navigation** — the tour drives page changes through the app's canonical
+  `BudgetNavigation.showPage` only. It **never** submits a form, clicks an
+  Add/Edit/Delete control, transfers savings, changes the month, or touches
+  M-Cash. The M-Cash step navigates into the (read-only) M-Cash page.
+- **Metadata** (local only, never uploaded) — `mwallet.walkthrough.v1`
+  (`{ schemaVersion, ownerUserId, status: "completed"|"skipped", completedAt,
+  skippedAt, contentVersion }`) and `mwallet.walkthrough.progress.v1` (first-time
+  resume only, cleared on complete/skip). Identity is the **Supabase user id**,
+  never the email. A record/progress bound to a different owner is ignored;
+  `diagnostics()` exposes only safe booleans/ids-free values. The persisted
+  status is the user's **strongest** state — a manual skip never downgrades a
+  prior `completed`; a metadata-write failure never traps the owner (the overlay
+  still closes, no false "saved" claim, the tour may appear again).
+- **Settings → System & Beta** gains a **Guided Tour** row —
+  *Completed* / *Skipped* / *Not viewed* — with a **Replay Tour** / **Start
+  Tour** button for a signed-in owner. Manual replay works for legacy/existing
+  users too, never re-runs BP5, never resets BP4, and never writes financial
+  data.
+- **Service worker** — `guided-walkthrough.js`, `walkthrough-ui.js`,
+  `walkthrough.css` added to `APP_SHELL`; cache `m-wallet-v24` → `m-wallet-v25`.
+  Supabase responses are still never cached.
+- **Tests** — `tests/guided-walkthrough.test.js` (40 cases: auto-start rules,
+  gate priority, step navigation, progress/resume, skip/complete + idempotency +
+  write-failure fail-open, manual-replay semantics, sign-out, storage failure,
+  and a realistic financial fixture proving `mWalletData` is byte-identical
+  before/after with zero `setItem`/`removeItem` on it) and
+  `tests/walkthrough-ui.test.js` (19 cases: the pure placement solver — never
+  NaN/Infinity, always in-viewport — the DOM layer, missing-target fallback,
+  no-double-fire, Escape == Skip, and a real `auth-ui` + service + UI
+  integration). `dom-stub` gained `getBoundingClientRect` / `scrollIntoView` +
+  a walkthrough DOM builder. Suite: **357 → 418**, all green; every BP2–BP5 and
+  fail-closed test stays green.
+- The **live BP3 Supabase email-flow verification** and the **live BP4
+  real-Supabase multi-account verification** both **remain pending** — not
+  completed by BP6.
+
 ### BP5 — First-run setup wizard (`0.9.0-beta.3` → `0.9.0-beta.4`)
 
 A short first-run experience for a **genuinely new** authenticated owner, shown

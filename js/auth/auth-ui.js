@@ -72,6 +72,24 @@
    (the verified owner is never locked out of their own app).
    Only an explicit { release: false } from a working guard
    holds the app for setup.
+
+   ---------------------------------------------------------
+   BP6 GUIDED WALKTHROUGH GATE (education experience — FAIL OPEN)
+
+   AFTER BP4 ownership AND BP5 setup have both released, this
+   module also consults an optional walkthrough guard:
+
+     setWalkthroughGuard(fn): the guided-walkthrough layer
+     registers fn(authSnapshot) -> { release: boolean }. It
+     returns { release: false } ONLY while the tour is genuinely
+     on screen.
+
+     setWalkthroughScreenActive(bool): the walkthrough UI calls
+     this while its overlay is presenting.
+
+   Like BP5, a missing / throwing / malformed walkthrough guard
+   FAILS OPEN. A broken tutorial must never trap a verified,
+   setup-complete owner.
    ========================================================= */
 
 (function (global) {
@@ -99,6 +117,11 @@
        explicit { release: false }. */
     var setupGuard = null;
     var setupScreenActive = false;
+
+    /* BP6 guided-walkthrough guard — fail-open. Holds the app for
+       the tour ONLY on an explicit { release: false }. */
+    var walkthroughGuard = null;
+    var walkthroughScreenActive = false;
 
 
     /* =====================================================
@@ -340,6 +363,14 @@
         setupScreenActive = active === true;
     }
 
+    function setWalkthroughGuard(fn) {
+        walkthroughGuard = (typeof fn === "function") ? fn : null;
+    }
+
+    function setWalkthroughScreenActive(active) {
+        walkthroughScreenActive = active === true;
+    }
+
     /* FAIL-CLOSED. Returns true ONLY when the guard exists, does
        not throw, returns a plain object, and result.release is
        exactly the boolean true. Every other outcome -> false
@@ -366,6 +397,21 @@
         var result;
         try {
             result = setupGuard(authSnap);
+        } catch (e) {
+            return true;
+        }
+        if (!result || typeof result !== "object") { return true; }
+        return result.release !== false;
+    }
+
+    /* FAIL-OPEN. BP6 is education, not security. Returns false
+       (hold for the tour) ONLY when a working guard explicitly
+       says { release: false }. No guard / throw / malformed -> true. */
+    function walkthroughReleased(authSnap) {
+        if (typeof walkthroughGuard !== "function") { return true; }
+        var result;
+        try {
+            result = walkthroughGuard(authSnap);
         } catch (e) {
             return true;
         }
@@ -411,6 +457,21 @@
         }
     }
 
+    /* App held for the guided walkthrough (BP6). The walkthrough
+       UI presents #mw-walkthrough (outside .app); auth-ui just
+       keeps the app root inert so financial controls can't be
+       clicked or tabbed into behind the tour. If the walkthrough
+       UI is not presenting (guard holds but the overlay failed or
+       a transient), FAIL OPEN — reveal the verified owner's app. */
+    function holdForWalkthrough() {
+        if (walkthroughScreenActive) {
+            hideAllViews();
+            applyVisible(false, { keepAppGated: true });
+        } else {
+            applyVisible(false);
+        }
+    }
+
     /* Render from an auth snapshot. */
     function renderState(snapshot) {
         lastSnapshot = snapshot || (global.MWalletAuth && global.MWalletAuth.getState());
@@ -437,6 +498,12 @@
                    still needs the first-run wizard is held here. */
                 if (!setupReleased(lastSnapshot)) {
                     holdForSetup();
+                    return;
+                }
+                /* BP6: setup complete -> only an active guided tour
+                   holds the app (education, fully fail-open). */
+                if (!walkthroughReleased(lastSnapshot)) {
+                    holdForWalkthrough();
                     return;
                 }
                 applyVisible(false);
@@ -760,7 +827,11 @@
 
         /* BP5 coordination */
         setSetupGuard: setSetupGuard,
-        setSetupScreenActive: setSetupScreenActive
+        setSetupScreenActive: setSetupScreenActive,
+
+        /* BP6 coordination */
+        setWalkthroughGuard: setWalkthroughGuard,
+        setWalkthroughScreenActive: setWalkthroughScreenActive
     };
 
 

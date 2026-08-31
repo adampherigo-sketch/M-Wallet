@@ -2,11 +2,11 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.4`.** M-Wallet is a pre‑release build.
+> **Status: Beta Preparation — `0.9.0-beta.5`.** M-Wallet is a pre‑release build.
 > It is **not production‑ready**. Accounts, sign-in, non-destructive local
-> data ownership, and a first‑run setup wizard for new owners now exist (when a
-> Supabase project is configured); cloud backup, sync, and recovery of financial
-> data are still being built. See
+> data ownership, a first‑run setup wizard, and an optional guided walkthrough
+> for new owners now exist (when a Supabase project is configured); cloud
+> backup, sync, and recovery of financial data are still being built. See
 > [Early Beta data warning](#early-beta-data-warning).
 
 ---
@@ -81,7 +81,8 @@ M-Wallet/
 │   ├── zg9.css             ZG9 — loaded last; responsive + a11y overrides
 │   ├── auth.css            BP3 — account gateway (scoped .mw-auth-*)
 │   ├── migration.css       BP4 — local data ownership gateway
-│   └── setup.css           BP5 — first-run setup wizard
+│   ├── setup.css           BP5 — first-run setup wizard
+│   └── walkthrough.css     BP6 — guided app walkthrough (#mw-walkthrough)
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -104,6 +105,9 @@ M-Wallet/
 │   ├── setup/              MWalletFirstRun — first-run setup wizard (BP5)
 │   │   ├── first-run-setup.js       setup state + draft + the Finish transaction
 │   │   └── setup-ui.js              the #mw-setup-gate wizard screens
+│   ├── walkthrough/        MWalletWalkthrough — guided app walkthrough (BP6)
+│   │   ├── guided-walkthrough.js    tour state + owner-bound record/progress
+│   │   └── walkthrough-ui.js        the #mw-walkthrough coach-mark overlay
 │   ├── vendor/
 │   │   └── supabase-js.min.js   vendored @supabase/supabase-js (UMD, pinned)
 │   └── m-cash/
@@ -180,9 +184,10 @@ covered by `tests/auth-architecture.test.js`, `tests/auth-ui.test.js`, and
 `tests/auth-data-safety.test.js`; local data ownership (BP4) by
 `tests/local-user-migration.test.js`, `tests/migration-ui.test.js`, and
 `tests/fail-closed-ownership.test.js`; the first-run setup wizard (BP5) by
-`tests/first-run-setup.test.js` and `tests/setup-ui.test.js` — all with a
-stubbed Supabase library and a small DOM stub (`tests/helpers/dom-stub.js`);
-**no network, no real project**.
+`tests/first-run-setup.test.js` and `tests/setup-ui.test.js`; the guided
+walkthrough (BP6) by `tests/guided-walkthrough.test.js` and
+`tests/walkthrough-ui.test.js` — all with a stubbed Supabase library and a small
+DOM stub (`tests/helpers/dom-stub.js`); **no network, no real project**.
 The migration tests build realistic `mWalletData` with the real `storage.js` and
 assert the migration layer makes **zero** writes to it; the fail-closed suite
 proves the financial app stays blocked when the ownership guard is missing,
@@ -190,7 +195,9 @@ throws, or returns a malformed result. The setup tests run Finish against the
 real `storage.js` and assert **only** the five allowed fields change (everything
 else deep-equal), that an existing owner is never re-asked for balances, and
 that a fresh owner is held for setup while a broken setup module fails **open**.
-See `tests/README.md`.
+The walkthrough tests prove it auto-starts only for a fresh BP5-completed owner,
+never writes `mWalletData`, resumes safely, and — like BP5 — fails **open** when
+the tour UI can't render. See `tests/README.md`.
 
 ---
 
@@ -328,6 +335,37 @@ never locks a verified owner out of their own app. `js/setup/first-run-setup.js`
 (`window.MWalletFirstRun`) is the service; `js/setup/setup-ui.js` +
 `css/setup.css` render the `#mw-setup-gate` screens.
 
+### Guided app walkthrough (BP6)
+
+After BP5's wizard has been **completed** (status exactly `complete` — the
+fresh-user path, never `existing`/legacy), a genuinely new owner is shown an
+**optional** 8-step coach-mark tour of the main areas: Welcome → Home → Budget →
+Transactions → Savings → M-Cash → Reports → Settings. Each step navigates the
+real page (via `BudgetNavigation.showPage`) and spotlights a developer-controlled
+`[data-walkthrough-target]`; the tour **never** submits a form, clicks an
+Add/Edit/Delete control, changes the month, touches M-Cash, or writes
+`mWalletData`, and it makes **no network calls**.
+
+The user can **Skip** at any step (Escape does the same), and **replay** the tour
+later from **Settings → System & Beta → Guided Tour** (*Completed* / *Skipped* /
+*Not viewed*). A legacy/existing user is **never** auto-toured — they get the
+Settings replay only. Completion / skip is recorded per owner in
+`mwallet.walkthrough.v1` (`{ schemaVersion, ownerUserId, status, completedAt,
+skippedAt, contentVersion }` — the Supabase user id, never the email); first-time
+resume progress lives in `mwallet.walkthrough.progress.v1` and is cleared once
+the tour ends. The persisted status is the user's strongest state (a manual skip
+never downgrades a prior *Completed*), and a metadata-write failure never traps
+the owner.
+
+**BP6 is education, not a gate — it fails *open* completely.** `js/auth/auth-ui.js`
+gains `setWalkthroughGuard` / `setWalkthroughScreenActive`; it holds the app for
+the tour **only** while the overlay is genuinely presenting, and reveals the
+verified owner's app on anything else (no guard / throw / malformed / a tour that
+never renders). `js/walkthrough/guided-walkthrough.js` (`window.MWalletWalkthrough`)
+is the service; `js/walkthrough/walkthrough-ui.js` + `css/walkthrough.css` render
+the `#mw-walkthrough` overlay, which lives **outside `.app`** so its controls
+stay usable while the financial UI is inert.
+
 **Fail-closed.** The financial app root's `inert` / `aria-hidden` state has a
 single owner, `js/auth/auth-ui.js`. For a configured, signed-in user the
 **default is DENY** — the app is revealed **only** when the ownership guard the
@@ -361,11 +399,12 @@ financial application.
   The financial DOM and data are never removed — only covered.
 - **Gate order** — auth configured? → auth initialized? → signed in? → password
   recovery? → **local ownership positively verified?** (BP4, *fail-closed*) →
-  **first-run setup decision** (BP5, *fail-open*) → only then is the financial
-  app revealed. A valid login alone never bypasses an owner mismatch, and a
-  missing/broken ownership check never defaults to allowing access; a
-  missing/broken setup check, by contrast, never keeps a verified owner out (see
-  *Local data ownership → Fail-closed* and *First-run setup wizard*).
+  **first-run setup decision** (BP5, *fail-open*) → **guided-walkthrough decision**
+  (BP6, *fail-open*) → only then is the financial app fully revealed. A valid
+  login alone never bypasses an owner mismatch, and a missing/broken ownership
+  check never defaults to allowing access; a missing/broken setup or walkthrough
+  check, by contrast, never keeps a verified owner out (see *Local data ownership
+  → Fail-closed*, *First-run setup wizard*, and *Guided app walkthrough*).
 - **Explicit state model** — `unconfigured` → `initializing` →
   `signed_out` / `signed_in` / `error` (+ a `recoveryMode` flag for the
   password-reset return). Only `signed_in` means authenticated. A refused
@@ -465,10 +504,11 @@ overhaul, and is now in **Beta Preparation** — a sequence of phases (BP0–BP1
 focused on making it safe, understandable, recoverable, secure, testable, and
 multi‑device before real testers use it. Done so far: a versioned beta build
 (BP1), the authentication architecture (BP2), the account UI + session
-experience (BP3), non-destructive local existing-user data ownership (BP4), and
-a first‑run setup wizard for genuinely new owners (BP5). Still planned: a guided
-walkthrough, row‑level‑secured cloud data, a local‑first sync engine, passkeys,
-account/privacy/recovery controls, and a beta feedback system.
+experience (BP3), non-destructive local existing-user data ownership (BP4),
+a first‑run setup wizard for genuinely new owners (BP5), and an optional guided
+app walkthrough (BP6). Still planned: row‑level‑secured cloud data, a
+local‑first sync engine, passkeys, account/privacy/recovery controls, and a beta
+feedback system.
 
 It is **not production‑ready** and should not be treated as a finished product.
 

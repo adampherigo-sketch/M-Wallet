@@ -213,6 +213,17 @@
         href="./css/setup.css?v=1"
     >
 
+
+    <!-- =====================================================
+         GUIDED APP WALKTHROUGH (BP6)
+         Coach-mark overlay #mw-walkthrough (outside .app).
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/walkthrough.css?v=1"
+    >
+
 </head>
 
 
@@ -458,6 +469,7 @@
                     <section
                         class="zg-card zg-total"
                         aria-labelledby="zg-total-label"
+                        data-walkthrough-target="home-overview"
                     >
 
                         <span class="z-eyebrow" id="zg-total-label">
@@ -816,7 +828,7 @@
                 data-page-content="m-cash"
             >
 
-                <div id="m-cash-root"></div>
+                <div id="m-cash-root" data-walkthrough-target="m-cash-overview"></div>
 
             </section>
 
@@ -866,6 +878,7 @@
                         class="zgb-card zg-bov"
                         id="budget-overview"
                         aria-labelledby="zg-bov-label"
+                        data-walkthrough-target="budget-overview"
                     >
 
                         <div class="zgb-head">
@@ -1142,6 +1155,7 @@
                     <section
                         class="zgt-card zg-tx-overview"
                         aria-labelledby="zg-tx-ov-label"
+                        data-walkthrough-target="transactions-overview"
                     >
 
                         <span class="z-eyebrow" id="zg-tx-ov-label">
@@ -1323,6 +1337,7 @@
                     <section
                         class="zgs-card zg-sav-hero"
                         aria-labelledby="zg-sav-hero-label"
+                        data-walkthrough-target="savings-overview"
                     >
 
                         <span class="z-eyebrow" id="zg-sav-hero-label">
@@ -1566,6 +1581,7 @@
                     class="zg-rep-modes"
                     role="tablist"
                     aria-label="Report mode"
+                    data-walkthrough-target="reports-overview"
                 >
 
                     <button
@@ -2157,7 +2173,7 @@
             >
 
 
-                <div class="page-heading zg-set-heading">
+                <div class="page-heading zg-set-heading" data-walkthrough-target="settings-overview">
 
                     <div>
 
@@ -2499,6 +2515,28 @@
                             </span>
                             <span class="zg-set-row-value" id="settings-first-run-status">—</span>
                         </div>
+
+                        <div class="zg-set-row zg-set-account" id="settings-walkthrough-panel" hidden>
+                            <span class="zg-set-row-text">
+                                <strong>Guided Tour</strong>
+                                <small>A quick walk through the main areas of M-Wallet.</small>
+                            </span>
+                            <span class="zg-set-row-value" id="settings-walkthrough-status">—</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="settings-item zg-set-row"
+                            id="settings-walkthrough-btn"
+                            data-set-action="walkthrough-start"
+                            hidden
+                        >
+                            <span class="settings-item-content zg-set-row-text">
+                                <strong id="settings-walkthrough-btn-label">Start Tour</strong>
+                                <small>See the main areas of M-Wallet again. Nothing in your data changes.</small>
+                            </span>
+                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
 
                         <div class="zg-set-identity">
                             <div>
@@ -3315,6 +3353,70 @@
 
 
     <!-- ========================================
+         GUIDED APP WALKTHROUGH  (BP6)
+         Behaviour: js/walkthrough/walkthrough-ui.js
+         Service:   js/walkthrough/guided-walkthrough.js
+         Styles:    css/walkthrough.css
+
+         An OPTIONAL coach-mark tour shown ONLY to a genuinely new
+         owner right after BP5's first-run wizard completes, and
+         replayable from Settings. It lives OUTSIDE .app so its
+         own controls stay usable while the financial UI is inert.
+         A broken tour never blocks the app (fails open).
+    ========================================= -->
+
+    <div
+        id="mw-walkthrough"
+        class="mw-wt"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-wt-title"
+        aria-describedby="mw-wt-body"
+        hidden
+        aria-hidden="true"
+    >
+
+        <div class="mw-wt-backdrop" data-wt-backdrop></div>
+        <div class="mw-wt-spotlight" data-wt-spotlight aria-hidden="true" hidden></div>
+
+        <div class="mw-wt-card" data-wt-card>
+
+            <p class="mw-wt-eyebrow">
+                <span data-wt-step-count>Step 1 of 8</span>
+            </p>
+
+            <ol class="mw-wt-progress" data-wt-progress aria-label="Tour progress">
+                <li data-state="current"></li>
+                <li data-state="todo"></li>
+                <li data-state="todo"></li>
+                <li data-state="todo"></li>
+                <li data-state="todo"></li>
+                <li data-state="todo"></li>
+                <li data-state="todo"></li>
+                <li data-state="todo"></li>
+            </ol>
+
+            <h2 class="mw-wt-title" id="mw-wt-title" data-wt-title tabindex="-1">Here&rsquo;s your M-Wallet</h2>
+
+            <p class="mw-wt-body" id="mw-wt-body" data-wt-body>
+                This quick tour shows you the main areas of M-Wallet. Nothing you
+                see here changes your data, and you can skip at any time.
+            </p>
+
+            <div class="mw-wt-nav">
+                <button type="button" class="mw-wt-skip" data-wt-action="skip">Skip Tour</button>
+                <span class="mw-wt-nav-right">
+                    <button type="button" class="z-btn z-btn-secondary" data-wt-action="back" hidden>Back</button>
+                    <button type="button" class="z-btn z-btn-primary" data-wt-action="next">Start Tour</button>
+                </span>
+            </div>
+
+        </div>
+    </div>
+
+
+
+    <!-- ========================================
          UNIVERSAL QUICK ADD
     ========================================= -->
 
@@ -3630,7 +3732,7 @@
     <script src="./js/auth/auth-config.js?v=2"></script>
     <script src="./js/auth/auth-client.js?v=2"></script>
     <script src="./js/auth/auth.js?v=3"></script>
-    <script src="./js/auth/auth-ui.js?v=4"></script>
+    <script src="./js/auth/auth-ui.js?v=5"></script>
 
     <!-- Local data ownership / existing-user migration (BP4).
          Loads after the auth layer it depends on, before the
@@ -3648,6 +3750,15 @@
     <script src="./js/setup/first-run-setup.js?v=1"></script>
     <script src="./js/setup/setup-ui.js?v=1"></script>
 
+    <!-- Guided app walkthrough (BP6). Loads after auth-ui (fail-open
+         experience guard), BP4 and BP5 (auto-start needs ownership
+         verified + setup status "complete"). Optional education
+         only: never blocks the app, never writes mWalletData, never
+         makes a network call. Navigates existing pages via the
+         canonical BudgetNavigation API at runtime. -->
+    <script src="./js/walkthrough/guided-walkthrough.js?v=1"></script>
+    <script src="./js/walkthrough/walkthrough-ui.js?v=1"></script>
+
     <script src="./js/storage.js?v=7"></script>
 
     <script src="./js/nav.js?v=7"></script>
@@ -3664,7 +3775,7 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=6"></script>
+    <script src="./js/settings-ui.js?v=7"></script>
 
     <script src="./js/app.js?v=10"></script>
 
