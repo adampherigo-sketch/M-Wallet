@@ -12,11 +12,11 @@ node_modules/
 
 # Local environment files — never commit real credentials.
 # .env.example IS allowed to be committed (see negation below).
+# The BP7 live RLS verifier reads Supabase URL + publishable key + two
+# throwaway test-account credentials from shell env vars OR an ignored
+# .env file — never from a committed file.
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
 !.env.example
 
 # Local auth config override (holds a real Supabase URL + anon key for

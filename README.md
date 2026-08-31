@@ -2,11 +2,13 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.5`.** M-Wallet is a pre‑release build.
+> **Status: Beta Preparation — `0.9.0-beta.6`.** M-Wallet is a pre‑release build.
 > It is **not production‑ready**. Accounts, sign-in, non-destructive local
-> data ownership, a first‑run setup wizard, and an optional guided walkthrough
-> for new owners now exist (when a Supabase project is configured); cloud
-> backup, sync, and recovery of financial data are still being built. See
+> data ownership, a first‑run setup wizard, an optional guided walkthrough
+> for new owners, and a row-level-secured cloud data **capability** now exist
+> (when a Supabase project is configured). Cloud **synchronization** — actually
+> uploading, downloading, and reconciling financial data — is still being
+> built; local data remains the source of truth. See
 > [Early Beta data warning](#early-beta-data-warning).
 
 ---
@@ -83,6 +85,7 @@ M-Wallet/
 │   ├── migration.css       BP4 — local data ownership gateway
 │   ├── setup.css           BP5 — first-run setup wizard
 │   └── walkthrough.css     BP6 — guided app walkthrough (#mw-walkthrough)
+│                           (BP7 adds no CSS — one reused Settings row)
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -108,6 +111,9 @@ M-Wallet/
 │   ├── walkthrough/        MWalletWalkthrough — guided app walkthrough (BP6)
 │   │   ├── guided-walkthrough.js    tour state + owner-bound record/progress
 │   │   └── walkthrough-ui.js        the #mw-walkthrough coach-mark overlay
+│   ├── cloud/              cloud financial data capability (BP7 — NOT sync)
+│   │   ├── cloud-financial-codec.js   MWalletCloudFinancialCodec — pure local⇄cloud codec
+│   │   └── cloud-financial-store.js   MWalletCloudFinancial — the only wallet_documents client
 │   ├── vendor/
 │   │   └── supabase-js.min.js   vendored @supabase/supabase-js (UMD, pinned)
 │   └── m-cash/
@@ -118,6 +124,9 @@ M-Wallet/
 │       └── cash.js            M-Cash bootstrap
 │
 ├── icons/                  m-wallet-icon-192 / -512 / -512-maskable / apple-touch
+├── supabase/migrations/    BP7 cloud schema + RLS (applied manually — see docs/BP7-CLOUD-DATA.md)
+├── scripts/                bp7-live-rls-check.mjs — standalone two-user RLS verifier
+├── docs/BP7-CLOUD-DATA.md  cloud data model, RLS, migration + live-verification steps
 ├── docs/design/            Zevaryn Grid concept reference (not used at runtime)
 ├── docs/archive/           superseded phase reports, kept for history
 ├── .github/workflows/      CI (runs the test suite on push / PR to main)
@@ -197,7 +206,26 @@ else deep-equal), that an existing owner is never re-asked for balances, and
 that a fresh owner is held for setup while a broken setup module fails **open**.
 The walkthrough tests prove it auto-starts only for a fresh BP5-completed owner,
 never writes `mWalletData`, resumes safely, and — like BP5 — fails **open** when
-the tour UI can't render. See `tests/README.md`.
+the tour UI can't render. The cloud data capability (BP7) is covered by
+`tests/cloud-financial-codec.test.js` (pure round-trip / determinism /
+no-mutation), `tests/cloud-financial-store.test.js` (stubbed client: ownership
+never sent, reads filter by type/key, optimistic concurrency, safe error
+mapping), `tests/bp7-schema-contract.test.js` (static assertions over the SQL
+migration — RLS enabled + forced, authenticated-only policies on
+`auth.uid() = user_id`, no anon access, revision/immutability trigger), and
+`tests/bp7-no-auto-sync.test.js` (only the store names `wallet_documents`, boot
+does zero network, real `mWalletData` is byte-identical after encoding).
+See `tests/README.md`.
+
+**Live Supabase checks not covered by `npm test`:**
+
+- **BP7 — applying the migration + `npm run bp7:verify-rls`** (the two-user Row
+  Level Security proof) is **deferred to BP12**, the pre-beta security audit. It
+  has **not** been run: the migration is not applied to any real project and RLS
+  is not live-verified. It remains a **hard release gate before BP13 closed
+  beta**. See [`docs/BP7-CLOUD-DATA.md`](docs/BP7-CLOUD-DATA.md).
+- **BP3** — a live signup / email-verification / password-reset round trip.
+- **BP4** — live multi-account ownership verification.
 
 ---
 
@@ -265,7 +293,8 @@ exactly as before.
 and resetting a password **never** read, write, clear, or migrate financial
 data. All financial data stays in `localStorage["mWalletData"]`; the auth
 session lives in a separate key (`mwallet.auth.session`). **Authentication does
-not sync, upload, or move any financial data** — that is a later phase (BP7+).
+not sync, upload, or move any financial data.** Neither does BP7's cloud
+capability — see [Cloud financial data (BP7)](#cloud-financial-data-bp7).
 
 ### Local data ownership (BP4)
 
@@ -376,6 +405,57 @@ or its UI never loads, `auth-ui.js` shows a **built-in fallback** ("Local data
 protection couldn't be verified" + Retry / Sign Out) — never a blank screen,
 never the financial UI. Authenticated access alone can never reveal the local
 financial application.
+
+### Cloud financial data (BP7)
+
+BP7 adds the **capability** to store financial data as per-user,
+row-level-secured documents in Supabase. It does **not** enable synchronization.
+**Local `mWalletData` remains the active source of truth** — opening M-Wallet,
+saving, or finishing setup never uploads anything. Sync (change tracking,
+upload/download, conflict resolution) is BP8.
+
+**BP7 implementation is complete.** The migration has **not** been applied to any
+real Supabase project, RLS has **not** been live-verified, no cloud sync is
+active, and no financial data is backed up. Applying the migration and running
+the two-user live RLS check is **deferred to BP12** (the pre-beta security audit)
+and is a **hard release gate before BP13 closed beta** — see *Release gate* below.
+
+- **Schema** — `public.wallet_documents`, one row per independently versioned
+  document (`accounts`, `settings`, `categories`, `recurring-income`,
+  `recurring-expenses`, `savings`, `cash`, `month/<YYYY-MM>`), keyed
+  `UNIQUE (user_id, document_type, document_key)`. To be applied **manually** via
+  the Supabase SQL Editor from
+  `supabase/migrations/20260831_bp7_wallet_documents.sql` (the file contains no
+  URL or key).
+- **Row Level Security** — RLS `ENABLE`d **and** `FORCE`d; four
+  `authenticated`-only policies, each `auth.uid() = user_id` (INSERT via
+  `WITH CHECK`, UPDATE via both). **No `anon` policy**; `REVOKE ALL … FROM anon`.
+  `user_id` is `NOT NULL DEFAULT auth.uid()` with `ON DELETE CASCADE` — the
+  browser never sends it. A `BEFORE INSERT OR UPDATE` trigger (no `SECURITY
+  DEFINER`) owns `revision` and freezes `id` / `user_id` / type / key /
+  `created_at`, so a document can't be renamed or handed to another user.
+- **Codec** — `js/cloud/cloud-financial-codec.js` (`MWalletCloudFinancialCodec`):
+  a **pure**, deterministic local⇄cloud translation. No Supabase, network,
+  storage, or DOM; never mutates input; preserves every value exactly.
+- **Store** — `js/cloud/cloud-financial-store.js` (`MWalletCloudFinancial`): the
+  **only** runtime module that queries `wallet_documents`. Reuses the existing
+  authenticated client via `MWalletAuth._getClient()` (no second client, no
+  token copying); optimistic concurrency by `revision`; tombstones via
+  `deleted_at`; raw errors mapped to safe codes. `initialize()` does **zero**
+  network — nothing auto-syncs.
+- **Settings** — a read-only *Cloud Financial Storage* row plus an optional
+  user-triggered *Check cloud storage* button (a `SELECT id LIMIT 1`
+  reachability probe — uploads nothing). It never says "backed up" or "synced".
+- **RLS ≠ E2EE.** RLS stops other *users* and anonymous callers. The payload is
+  readable `jsonb` to anyone with project/`service_role` access (i.e. the
+  operator). BP7 is **not** "zero knowledge" or "end-to-end encrypted".
+- **Release gate** — the BP7 code, schema, codec, store, tests, and security
+  behaviour are final. Live two-user RLS verification is **deferred to BP12** and
+  is a **hard gate before BP13 closed beta**: beta must not open until the
+  migration is applied to a real project **and** `npm run bp7:verify-rls` prints
+  `RESULT: PASS` with two accounts, both recorded in the BP12 audit. Full
+  details, migration steps, and verification instructions:
+  [`docs/BP7-CLOUD-DATA.md`](docs/BP7-CLOUD-DATA.md).
 
 ### Architecture
 
@@ -489,11 +569,11 @@ A file override (`js/auth/auth-config.local.js`, git-ignored) is still supported
 for anyone who prefers files, but is no longer required. See
 `js/auth/auth-config.example.js`.
 
-**Not yet:** cloud financial tables, financial sync, cloud backup, and
-passkeys — each is its own later phase (BP7, BP8, BP9). BP4 is **local**
-ownership only; no financial data leaves the device. A production domain must be
-chosen before the passkey phase; GitHub Pages may serve the app under a repo
-sub-path (e.g. `/M-Wallet/`) rather than a domain root.
+**Not yet:** financial sync, cloud backup, and passkeys — each is its own later
+phase (BP8, BP9). BP7 adds the row-level-secured cloud data *schema and client*
+but **no synchronization**: no financial data leaves the device automatically. A
+production domain must be chosen before the passkey phase; GitHub Pages may serve
+the app under a repo sub-path (e.g. `/M-Wallet/`) rather than a domain root.
 
 ---
 
@@ -505,10 +585,12 @@ focused on making it safe, understandable, recoverable, secure, testable, and
 multi‑device before real testers use it. Done so far: a versioned beta build
 (BP1), the authentication architecture (BP2), the account UI + session
 experience (BP3), non-destructive local existing-user data ownership (BP4),
-a first‑run setup wizard for genuinely new owners (BP5), and an optional guided
-app walkthrough (BP6). Still planned: row‑level‑secured cloud data, a
-local‑first sync engine, passkeys, account/privacy/recovery controls, and a beta
-feedback system.
+a first‑run setup wizard for genuinely new owners (BP5), an optional guided
+app walkthrough (BP6), and a row‑level‑secured cloud financial data **capability**
+(BP7 — schema, RLS, and a pure codec + repository client, but **not** sync;
+live two‑user RLS verification against a real project is deferred to BP12 and is
+a hard gate before BP13). Still planned: a local‑first sync engine (BP8),
+passkeys, account/privacy/recovery controls, and a beta feedback system.
 
 It is **not production‑ready** and should not be treated as a finished product.
 

@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v25";
+const CACHE_NAME = "m-wallet-v26";
 
 
 /* =========================================================
@@ -56,6 +56,9 @@ const APP_SHELL = [
 
     "./js/walkthrough/guided-walkthrough.js",
     "./js/walkthrough/walkthrough-ui.js",
+
+    "./js/cloud/cloud-financial-codec.js",
+    "./js/cloud/cloud-financial-store.js",
 
     "./js/storage.js",
     "./js/nav.js",
