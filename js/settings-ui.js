@@ -477,6 +477,7 @@
         renderLocalDataStatus(state);
         renderFirstRunStatus(state);
         renderWalkthroughStatus(state);
+        renderCloudFinancialStatus(state);
     }
 
     /* BP4 — local data ownership status. Shown only for the
@@ -588,6 +589,83 @@
         if (res && res.ok === false) {
             setStatus("The tour can't start right now.", "error");
         }
+    }
+
+    /* BP7 — read-only cloud-storage capability status. BP7 does NOT
+       sync: this row never says "backed up" / "synced". The status is
+       derived without a network call; the optional Check button is the
+       only thing that touches the network, and only when clicked. */
+    var CLOUD_LABELS = {
+        unconfigured: "Not configured",
+        signed_out: "Ready for verification",
+        ready: "Available — sync not enabled",
+        unavailable: "Unavailable"
+    };
+    var CLOUD_CHECK_LABELS = {
+        schema_missing: "Schema not installed",
+        forbidden: "Unavailable",
+        network_error: "Unavailable — offline",
+        signed_out: "Ready for verification",
+        client_unavailable: "Unavailable",
+        unconfigured: "Not configured"
+    };
+
+    function renderCloudFinancialStatus(authStateSnapshot) {
+        var panel = document.getElementById("settings-cloud-panel");
+        var statusEl = document.getElementById("settings-cloud-status");
+        var checkBtn = document.getElementById("settings-cloud-check-btn");
+        if (!panel) { return; }
+
+        var cloud = global.MWalletCloudFinancial;
+        var authState = authStateSnapshot ||
+            (global.MWalletAuth && typeof global.MWalletAuth.getState === "function"
+                ? global.MWalletAuth.getState()
+                : null);
+        var signedIn = authState && authState.status === "signed_in";
+
+        /* Settings is only reachable once the app is released, so a
+           signed-in owner here is already BP4-verified. Show the row
+           only when there is a Supabase project + a signed-in owner. */
+        if (!signedIn || !cloud || !authState || authState.configured !== true) {
+            panel.hidden = true;
+            if (checkBtn) { checkBtn.hidden = true; }
+            return;
+        }
+
+        panel.hidden = false;
+        if (checkBtn) { checkBtn.hidden = false; }
+
+        var state = typeof cloud.getState === "function" ? cloud.getState() : null;
+        var diag = typeof cloud.diagnostics === "function" ? cloud.diagnostics() : null;
+        var label = (state && CLOUD_LABELS[state.status]) || "—";
+        if (diag && diag.lastCheck) {
+            if (diag.lastCheck.ok) { label = "Available — sync not enabled"; }
+            else if (CLOUD_CHECK_LABELS[diag.lastCheck.code]) { label = CLOUD_CHECK_LABELS[diag.lastCheck.code]; }
+        }
+        if (statusEl) { statusEl.textContent = label; }
+    }
+
+    function onCloudCheck() {
+        var cloud = global.MWalletCloudFinancial;
+        if (!cloud || typeof cloud.checkAvailability !== "function") { return; }
+        var btn = document.getElementById("settings-cloud-check-btn");
+        if (btn) { btn.disabled = true; }
+        setStatus("Checking cloud storage…");
+        Promise.resolve(cloud.checkAvailability()).then(function (res) {
+            if (btn) { btn.disabled = false; }
+            renderCloudFinancialStatus();
+            if (res && res.ok) {
+                setStatus("Cloud storage is reachable. Sync is still not enabled.", "success");
+            } else if (res && res.code === "schema_missing") {
+                setStatus("Cloud storage isn't set up on the server yet.", "error");
+            } else {
+                setStatus("Couldn't reach cloud storage right now.", "error");
+            }
+        }).catch(function () {
+            if (btn) { btn.disabled = false; }
+            renderCloudFinancialStatus();
+            setStatus("Couldn't reach cloud storage right now.", "error");
+        });
     }
 
     function onSignOut() {
@@ -860,6 +938,10 @@
             }
             if (action === "walkthrough-start") {
                 onWalkthroughStart();
+                return;
+            }
+            if (action === "cloud-check") {
+                onCloudCheck();
                 return;
             }
 

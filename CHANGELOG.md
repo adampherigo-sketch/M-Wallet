@@ -11,6 +11,96 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP7 — Cloud financial data + Row Level Security (`0.9.0-beta.5` → `0.9.0-beta.6`)
+
+The **capability** to store financial data as per-user, row-level-secured
+documents in Supabase — **not** synchronization. Local `mWalletData` in the
+browser stays the single active source of truth: opening M-Wallet, saving a
+budget, or finishing setup never uploads anything. Sync is BP8.
+
+**BP7 implementation is complete.** The migration has **not** been applied to any
+real Supabase project, RLS has **not** been live-verified, no cloud sync is
+active, and no financial data is backed up. Applying the migration and running
+the two-user live RLS check (`npm run bp7:verify-rls`) is **deferred to BP12**
+(the pre-beta security audit, after BP8–BP11) and remains a **hard release gate
+before BP13 closed beta**.
+
+- **Cloud schema** — new `supabase/migrations/20260831_bp7_wallet_documents.sql`:
+  `public.wallet_documents`, one row per independently versioned document
+  (`accounts`, `settings`, `categories`, `recurring-income`,
+  `recurring-expenses`, `savings`, `cash`, `month/<YYYY-MM>`), keyed
+  `UNIQUE (user_id, document_type, document_key)` so two users can each hold
+  their own `month/2026-08`. `payload` is bounded `jsonb` constrained to an
+  object; `revision` (`> 0`), `client_updated_at`, `deleted_at` (tombstone),
+  `created_at` / `updated_at`. The file contains **no** project URL or key and is
+  **to be applied manually** in the Supabase SQL Editor (deferred to BP12).
+- **Row Level Security** — RLS `ENABLE`d **and** `FORCE`d. Four policies, all
+  `TO authenticated`, each gated on `auth.uid() = user_id` (SELECT/DELETE via
+  `USING`, INSERT via `WITH CHECK`, UPDATE via both). **No `anon` policy** and
+  explicit `REVOKE ALL … FROM anon` / `FROM public`; `GRANT` only to
+  `authenticated`. `user_id` is `NOT NULL DEFAULT auth.uid()` and
+  `REFERENCES auth.users(id) ON DELETE CASCADE` — **the browser never sends it**.
+- **Integrity trigger** — `mwallet_wallet_documents_before_write()` (plain
+  `SECURITY INVOKER`): on INSERT fills `user_id` from `auth.uid()`, sets
+  `revision = 1` and timestamps; on UPDATE **freezes** `id` / `user_id` /
+  `document_type` / `document_key` / `created_at` and sets
+  `revision = OLD.revision + 1`, `updated_at = now()`. A document cannot be
+  renamed, re-owned, or have its history rewritten by a client.
+- **Pure codec** — new `js/cloud/cloud-financial-codec.js`
+  (`window.MWalletCloudFinancialCodec`): deterministic local⇄cloud translation.
+  Never touches Supabase / network / storage / DOM, never mutates its input,
+  preserves every amount / id / date / category / M-Cash denomination exactly.
+  `mWalletData.version` and `.migrations` are deliberately **not** encoded, and
+  no BP2–BP6 local key is ever included.
+- **Cloud repository** — new `js/cloud/cloud-financial-store.js`
+  (`window.MWalletCloudFinancial`): the **only** runtime module that queries
+  `wallet_documents`. Reuses the existing authenticated client via
+  `MWalletAuth._getClient()` — no second client, no token copying. Callers never
+  supply ownership. Optimistic concurrency by `revision` (stale →
+  `revision_conflict`, never a silent overwrite); tombstone / restore via
+  `deleted_at`. Raw Supabase/PostgREST errors are mapped to a fixed set of safe
+  codes; payloads, tokens, and owner ids are never logged or returned by
+  `diagnostics()`. `initialize()` performs **zero** network I/O.
+- **Settings** — a read-only **Cloud Financial Storage** row and an optional,
+  user-triggered **Check cloud storage** button (a `SELECT id LIMIT 1`
+  reachability probe — uploads nothing). Copy never says "backed up" / "synced":
+  *"Cloud sync is not active yet. Your current financial data remains local on
+  this device."* (`settings-ui.js` → `?v=8`).
+- **Live RLS verifier** — new `scripts/bp7-live-rls-check.mjs` +
+  `npm run bp7:verify-rls`. Standalone Node, **not** part of `npm test`. Reads
+  `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` / two throwaway account
+  credentials from the environment (or a git-ignored `.env`); refuses a
+  `service_role` / `sb_secret_` key; never prints a URL, key, token, header, or
+  password. Signs in as two users and proves neither can read, update, or delete
+  the other's rows, that ownership can't be reassigned, that the same month key
+  is isolated, and that stale-revision updates match nothing — then deletes all
+  its test rows.
+- **Privacy model** — documented that **RLS is not end-to-end encryption**: it
+  stops other users and anonymous callers, but the payload is readable `jsonb`
+  to anyone with project / `service_role` access. BP7 is **not** described as
+  "zero knowledge" or "end-to-end encrypted".
+- **Tests** — `tests/cloud-financial-codec.test.js` (14),
+  `tests/cloud-financial-store.test.js` (17), `tests/bp7-schema-contract.test.js`
+  (19, static assertions over the SQL), `tests/bp7-no-auto-sync.test.js` (7,
+  only the store names the table + boot does zero network + real `mWalletData`
+  byte-identical after encoding), plus BP7 static wiring in
+  `tests/auth-architecture.test.js`. **479 tests pass** (was 418).
+- **Docs** — new `docs/BP7-CLOUD-DATA.md` (model, RLS, "apply the migration"
+  10-step, "live verification" instructions incl. removing the temp env vars),
+  new `.env.example`, README + `tests/README.md` updates.
+- **Version / cache** — `0.9.0-beta.5` → `0.9.0-beta.6`; `m-wallet-v25` →
+  `m-wallet-v26` (APP_SHELL adds the two `js/cloud/` modules).
+- **Release gate** — BP7 code, schema, codec, store, tests, and security
+  behaviour are **final**. Live two-user RLS verification against a real Supabase
+  project is **deferred to BP12** and is a **hard gate before BP13 closed beta**:
+  beta must not open until the migration is applied to a real project and
+  `npm run bp7:verify-rls` prints `RESULT: PASS`, both recorded in the BP12
+  audit. As of BP7: migration **not applied**, RLS **not live-verified**, cloud
+  sync **not active**, financial data **not backed up**.
+- **Still pending verification** (unchanged by this deferral): live BP3 Supabase
+  signup / email-verification / password-reset round trip; live BP4 real
+  multi-account ownership. BP8 (local-first sync) **not started**.
+
 ### BP6 — Guided app walkthrough (`0.9.0-beta.4` → `0.9.0-beta.5`)
 
 An **optional, replayable** coach-mark tour that teaches a genuinely new owner

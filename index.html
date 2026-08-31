@@ -2538,6 +2538,31 @@
                             <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
                         </button>
 
+                        <div class="zg-set-row zg-set-account" id="settings-cloud-panel" hidden>
+                            <span class="zg-set-row-text">
+                                <strong>Cloud Financial Storage</strong>
+                                <small id="settings-cloud-note">
+                                    Cloud sync is not active yet. Your current financial
+                                    data remains local on this device.
+                                </small>
+                            </span>
+                            <span class="zg-set-row-value" id="settings-cloud-status">—</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="settings-item zg-set-row"
+                            id="settings-cloud-check-btn"
+                            data-set-action="cloud-check"
+                            hidden
+                        >
+                            <span class="settings-item-content zg-set-row-text">
+                                <strong>Check cloud storage</strong>
+                                <small>Test whether cloud storage is reachable for this account. Uploads nothing.</small>
+                            </span>
+                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
                         <div class="zg-set-identity">
                             <div>
                                 <span>Version</span>
@@ -3759,6 +3784,14 @@
     <script src="./js/walkthrough/guided-walkthrough.js?v=1"></script>
     <script src="./js/walkthrough/walkthrough-ui.js?v=1"></script>
 
+    <!-- Cloud financial data foundation (BP7). Loads after the auth
+         layer (reuses MWalletAuth._getClient()). BP7 builds the CLOUD
+         CAPABILITY only: the codec is pure, and the store makes ZERO
+         network calls on load / navigation / render. No financial data
+         syncs until BP8. -->
+    <script src="./js/cloud/cloud-financial-codec.js?v=1"></script>
+    <script src="./js/cloud/cloud-financial-store.js?v=1"></script>
+
     <script src="./js/storage.js?v=7"></script>
 
     <script src="./js/nav.js?v=7"></script>
@@ -3775,7 +3808,7 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=7"></script>
+    <script src="./js/settings-ui.js?v=8"></script>
 
     <script src="./js/app.js?v=10"></script>
 

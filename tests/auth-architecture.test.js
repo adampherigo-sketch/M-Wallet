@@ -1040,9 +1040,9 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 /* ---- static wiring checks ---------------------------- */
 
-test("service-worker precaches the auth + migration + setup + walkthrough modules and bumped the cache", () => {
+test("service-worker precaches the auth + migration + setup + walkthrough + cloud modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v25"/.test(sw), "cache bumped to v25");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v26"/.test(sw), "cache bumped to v26");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1054,6 +1054,8 @@ test("service-worker precaches the auth + migration + setup + walkthrough module
         "./js/setup/setup-ui.js",
         "./js/walkthrough/guided-walkthrough.js",
         "./js/walkthrough/walkthrough-ui.js",
+        "./js/cloud/cloud-financial-codec.js",
+        "./js/cloud/cloud-financial-store.js",
         "./css/auth.css",
         "./css/migration.css",
         "./css/setup.css",
@@ -1106,20 +1108,22 @@ test("index.html has the auth gateway markup + auth.css, and financial page mark
 
 test("changed modules are re-versioned in index.html", () => {
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.ok(/js\/auth\/auth-ui\.js\?v=5/.test(html), "auth-ui.js bumped to ?v=5");
+    assert.ok(/js\/auth\/auth-ui\.js\?v=5/.test(html), "auth-ui.js still ?v=5");
     assert.ok(/js\/auth\/auth\.js\?v=3/.test(html), "auth.js still ?v=3");
-    assert.ok(/js\/settings-ui\.js\?v=7/.test(html), "settings-ui.js bumped to ?v=7");
+    assert.ok(/js\/settings-ui\.js\?v=8/.test(html), "settings-ui.js bumped to ?v=8");
     assert.ok(/js\/setup\/first-run-setup\.js\?v=\d+/.test(html), "first-run-setup.js has a ?v");
     assert.ok(/js\/setup\/setup-ui\.js\?v=\d+/.test(html), "setup-ui.js has a ?v");
     assert.ok(/js\/walkthrough\/guided-walkthrough\.js\?v=\d+/.test(html), "guided-walkthrough.js has a ?v");
     assert.ok(/js\/walkthrough\/walkthrough-ui\.js\?v=\d+/.test(html), "walkthrough-ui.js has a ?v");
+    assert.ok(/js\/cloud\/cloud-financial-codec\.js\?v=\d+/.test(html), "cloud-financial-codec.js has a ?v");
+    assert.ok(/js\/cloud\/cloud-financial-store\.js\?v=\d+/.test(html), "cloud-financial-store.js has a ?v");
 });
 
-test("app version bumped to 0.9.0-beta.5 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.6 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.5"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.5", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.6"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.6", "package.json");
 });
 
 test("BP4 migration modules load after auth, before the financial engine", () => {
@@ -1345,9 +1349,83 @@ test("BP6 fail-open: auth-ui walkthrough guard holds ONLY on explicit { release:
     assert.ok(/ownershipVerified\(\)/.test(svc), "BP4 ownership required before BP6");
 });
 
-test(".gitignore excludes the local auth config override", () => {
+/* =========================================================
+   BP7 — CLOUD FINANCIAL DATA + RLS  (static / deployment)
+   ========================================================= */
+
+test("BP7 cloud modules: codec before store, both before the financial engine, sub-path safe", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const at = (needle) => html.indexOf(needle);
+
+    const wtUiAt = at("js/walkthrough/walkthrough-ui.js?v=");
+    const codecAt = at("js/cloud/cloud-financial-codec.js?v=");
+    const storeAt = at("js/cloud/cloud-financial-store.js?v=");
+    const storageAt = at("js/storage.js?v=");
+    assert.ok(codecAt > 0 && storeAt > 0, "cloud scripts present");
+    assert.ok(wtUiAt < codecAt, "cloud loads after the BP2-BP6 gate layers");
+    assert.ok(codecAt < storeAt, "the pure codec loads before the store that uses it");
+    assert.ok(storeAt < storageAt, "cloud capability loads before the local financial engine");
+
+    /* GitHub Pages /M-Wallet/ sub-path safe — relative, never root-absolute */
+    assert.ok(!/["'(]\/js\/cloud\//.test(html), "no root-absolute /js/cloud/ URL in index.html");
+    assert.ok(/\.\/js\/cloud\/cloud-financial-codec\.js/.test(html), "codec loaded with a ./ relative URL");
+    const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
+    assert.ok(!/["']\/js\/cloud\//.test(sw), "no root-absolute /js/cloud/ URL in service-worker APP_SHELL");
+});
+
+test("BP7: the codec is a PURE module — no Supabase, network, storage, or DOM", () => {
+    let src = fs.readFileSync(path.join(ROOT, "js/cloud/cloud-financial-codec.js"), "utf8");
+    src = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");   /* strip comments */
+    assert.ok(!/\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|navigator\./.test(src), "no network");
+    assert.ok(!/createClient|supabase|_getClient|\.rpc\s*\(|\.from\s*\(/.test(src), "no Supabase");
+    assert.ok(!/localStorage\.|sessionStorage\.|\.getItem\s*\(|\.setItem\s*\(/.test(src), "no web storage");
+    assert.ok(!/document\.getElementById|\.addEventListener\s*\(|\.innerHTML/.test(src), "no DOM");
+    assert.ok(!/Math\.random|Date\.now\s*\(\)|new Date\s*\(\s*\)/.test(src), "deterministic — no ambient time/random");
+});
+
+test("BP7: the store is the ONLY module that queries wallet_documents, and never escalates privilege", () => {
+    const raw = fs.readFileSync(path.join(ROOT, "js/cloud/cloud-financial-store.js"), "utf8");
+    const store = raw.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");   /* strip comments */
+    /* reuse of the ONE authenticated client, never a second one */
+    assert.ok(/MWalletAuth\b/.test(store) && /\._getClient\s*\(\s*\)/.test(store), "reuses MWalletAuth._getClient()");
+    assert.ok(!/createClient|new\s+SupabaseClient|auth-client/.test(store), "builds no second client");
+    /* callers never supply ownership; the DB default + RLS own it */
+    assert.ok(!/user_id\s*:/.test(store), "the store never sets user_id in a row it sends");
+    assert.ok(!/service_role|sb_secret_|serviceRole|adminQuery|\bsetUserId\b|overrideOwner|hardDelete/.test(store),
+        "no privileged / owner-override / hard-delete surface");
+    /* safe logging only */
+    assert.ok(!/console\.(log|info|warn|error|debug)\([^)]*(payload|token|session|user_id|password)/i.test(store),
+        "never logs a payload / token / owner id");
+
+    /* every other JS file stays away from the table + the raw client */
+    const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) { return walk(full); }
+        return e.isFile() && e.name.endsWith(".js") ? [full] : [];
+    });
+    for (const file of walk(path.join(ROOT, "js"))) {
+        if (file.endsWith("js/cloud/cloud-financial-store.js")) { continue; }
+        const src = fs.readFileSync(file, "utf8");
+        assert.ok(!/wallet_documents/.test(src), path.relative(ROOT, file) + " must not name wallet_documents");
+    }
+});
+
+test("BP7: no cloud source file embeds a credential", () => {
+    for (const file of ["js/cloud/cloud-financial-codec.js", "js/cloud/cloud-financial-store.js",
+        "supabase/migrations/20260831_bp7_wallet_documents.sql"]) {
+        const src = fs.readFileSync(path.join(ROOT, file), "utf8");
+        assert.ok(!/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\./.test(src), file + " embeds no JWT");
+        assert.ok(!/sb_secret_[A-Za-z0-9]/.test(src), file + " embeds no secret key");
+        assert.ok(!/sb_publishable_[A-Za-z0-9]{12,}/.test(src), file + " embeds no real publishable key");
+        assert.ok(!/[a-z0-9]{20}\.supabase\.co/i.test(src), file + " embeds no project URL");
+    }
+});
+
+test(".gitignore excludes the local auth config override + BP7 verifier env files", () => {
     const gi = fs.readFileSync(path.join(ROOT, ".gitignore"), "utf8");
     assert.ok(gi.includes("js/auth/auth-config.local.js"));
+    assert.ok(/^\.env$/m.test(gi) && /^\.env\./m.test(gi), ".env / .env.* ignored for the BP7 live RLS verifier");
+    assert.ok(/!\.env\.example/.test(gi), ".env.example stays tracked");
 });
 
 test("no auth source file contains a hard-coded credential or logs a session", () => {

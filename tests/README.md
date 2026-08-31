@@ -121,6 +121,72 @@ inert), Finish releases the app, and a tour UI that never mounts still **fails
 open**. The DOM stub gained `getBoundingClientRect` / `scrollIntoView` and a
 `buildWalkthroughDom` helper.
 
+## Cloud financial data tests (BP7)
+
+BP7 adds the **capability** to store financial data as per-user,
+row-level-secured Supabase documents — **not** synchronization. These suites run
+entirely offline (`node:vm`, stubbed client, SQL read as text); **no network, no
+real Supabase project**.
+
+`cloud-financial-codec.test.js` loads the real `js/cloud/cloud-financial-codec.js`
+and proves the local⇄cloud codec is **pure** (source-level: no Supabase /
+network / storage / DOM / ambient time), **deterministic** (same input → same
+document set and order), and **non-mutating** (a deep-frozen realistic
+`mWalletData` v5 fixture is unchanged after encoding). It checks the document
+registry matches the audited schema, that every amount / id / date / category /
+M-Cash denomination round-trips deep-equal to the syncable slice, that
+`version` / `migrations` and all BP2–BP6 local keys are excluded, that a
+tombstoned document decodes as absent, and that NaN / Infinity / function /
+cycle / oversized payloads and malformed month keys are rejected.
+
+`cloud-financial-store.test.js` loads the real `js/cloud/cloud-financial-store.js`
+with a stub Supabase query builder and a stub `MWalletAuth`. It proves status
+(`unconfigured` / `signed_out` / `ready`) is derived **without a network call**,
+`initialize()` makes **zero** client calls, the existing authenticated client is
+reused (never a second one, no token copying), `createDocument` **omits
+`user_id`** and ignores any caller-supplied owner id, reads filter by
+type/key — **never** by `user_id` — updates carry the expected-`revision`
+filter (stale → `revision_conflict`, missing → `not_found`, never a silent
+overwrite), tombstone uses `UPDATE (deleted_at)` with no hard-delete on the
+public API, raw Supabase errors map to safe codes only, and `diagnostics()`
+leaks no owner id / payload / token.
+
+`bp7-schema-contract.test.js` reads
+`supabase/migrations/20260831_bp7_wallet_documents.sql` as text and asserts the
+security-critical shape: a per-user `wallet_documents` table (`user_id` NOT NULL
+`uuid` `DEFAULT auth.uid()`, FK `auth.users` `ON DELETE CASCADE`),
+`UNIQUE (user_id, document_type, document_key)`, `revision` + `deleted_at`, RLS
+`ENABLE` **and** `FORCE`, four `authenticated`-only policies each on
+`auth.uid() = user_id` (INSERT `WITH CHECK`, UPDATE both), **no `anon` policy**,
+`REVOKE … FROM anon`, the `BEFORE INSERT OR UPDATE` trigger that controls
+`revision` and freezes id / owner / type / key / `created_at`, that the trigger
+function is **not** `SECURITY DEFINER`, and that the file carries no project URL
+or credential.
+
+`bp7-no-auto-sync.test.js` proves BP7 builds capability, not sync: **only**
+`cloud-financial-store.js` names `wallet_documents`, only the store + the
+Settings check reference `window.MWalletCloudFinancial`, nothing subscribes to
+auth changes to auto-pull, `js/storage.js` has zero knowledge of the cloud, the
+store's boot (`initialize` + `DOMContentLoaded`) makes **zero** network calls,
+and running the codec over **real `mWalletData`** (built with the real
+`js/storage.js`) leaves the stored string byte-identical while the documents
+round-trip back to the same syncable slice.
+
+BP7 static wiring (load order, `./js/cloud/…` sub-path-safe URLs, `?v=`
+bumps, `m-wallet-v26`, `0.9.0-beta.6`, no credential in the cloud files, the
+`.env` / `.env.*` ignore) lives in `auth-architecture.test.js`.
+
+**Not run by `npm test`, and deferred to BP12:** `scripts/bp7-live-rls-check.mjs`
+(`npm run bp7:verify-rls`) is a standalone, operator-run two-user Row Level
+Security proof against a **real** Supabase project. It has **not** been run — the
+BP7 migration is not applied to any real project and RLS is not live-verified.
+This check is **deferred to BP12** (the pre-beta security audit) and is a **hard
+release gate before BP13 closed beta** — see
+[`../docs/BP7-CLOUD-DATA.md`](../docs/BP7-CLOUD-DATA.md). It reads Supabase URL +
+publishable key + two throwaway account credentials from the environment (or a
+git-ignored `.env`), refuses a `service_role` key, and never prints a URL, key,
+token, or password.
+
 ## Running
 
 Node.js is required. From the repository root:
