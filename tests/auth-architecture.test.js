@@ -1,25 +1,27 @@
 "use strict";
 
 /* =========================================================
-   BP2 — AUTHENTICATION ARCHITECTURE TESTS
+   BP2 + BP3 — AUTHENTICATION ARCHITECTURE + API TESTS
 
    Loads the real js/auth/*.js modules into a node:vm sandbox
    with mocked browser globals and a stubbed Supabase library.
    No network, no real Supabase project.
 
-   Covers the BP2.16 scenarios:
-     - unconfigured / configured / error state model
-     - no library load while unconfigured
-     - idempotent initialize()
-     - session restoration
-     - exactly one auth-event listener
-     - offline startup + single reconnect reconciliation
-     - library / network failure -> safe error, no data loss
-     - signOut safe in every state
-     - subscribe / unsubscribe
-     - diagnostics + state never expose tokens
-     - service_role key refused
-     - BP3 extension points fail loudly
+   BP2: unconfigured / configured / error state model · no
+   library load while unconfigured · idempotent initialize() ·
+   session restoration · exactly one auth-event listener ·
+   offline startup + single reconnect · library / network
+   failure -> safe error, no data loss · signOut safe in every
+   state · subscribe/unsubscribe · diagnostics + state never
+   expose tokens · secret / service_role / unknown key refused.
+
+   BP3: signUp / signIn / resetPassword / updatePassword /
+   resendVerification call the provider correctly · email
+   normalized · input validation · safe result objects (no raw
+   session / token) · provider errors mapped · PASSWORD_RECOVERY
+   -> recoveryMode · password/token never logged · sub-path-safe
+   redirect URL.
+
    Plus static checks on index.html / service-worker / .gitignore.
    ========================================================= */
 
@@ -150,7 +152,27 @@ function makeAuthEnv(options) {
         lastCb: null,
         signOutCalls: 0,
         session: options.session || null,
-        clientOpts: null
+        clientOpts: null,
+        calls: []            /* BP3: [{ method, args }] provider call log */
+    };
+
+    const logCall = (method, args) => libState.calls.push({ method, args });
+    const providerResult = (name) => {
+        /* options.provider[name] can be:
+           - an Error  -> rejected
+           - { error }  -> resolved provider error
+           - { data }   -> resolved success payload
+           - a function -> called with args
+        */
+        const spec = (options.provider || {})[name];
+        return spec;
+    };
+    const respond = (name, args, successData) => {
+        const spec = providerResult(name);
+        if (spec instanceof Error) { return Promise.reject(spec); }
+        if (typeof spec === "function") { return Promise.resolve(spec(...args)); }
+        if (spec && (spec.error || spec.data)) { return Promise.resolve(spec); }
+        return Promise.resolve({ data: successData || {}, error: null });
     };
 
     const mockLib = {
@@ -183,11 +205,40 @@ function makeAuthEnv(options) {
                     },
                     signOut() {
                         libState.signOutCalls += 1;
+                        logCall("signOut", []);
                         if (options.signOutRejects) {
                             return Promise.reject(new Error("sign-out failed"));
                         }
                         libState.session = null;
                         return Promise.resolve({ error: null });
+                    },
+                    signUp(payload) {
+                        logCall("signUp", [payload]);
+                        return respond("signUp", [payload], {
+                            user: { id: "new-user", email: payload && payload.email },
+                            session: options.signUpAutoConfirm ? makeSession() : null
+                        });
+                    },
+                    signInWithPassword(payload) {
+                        logCall("signInWithPassword", [payload]);
+                        return respond("signIn", [payload], {
+                            user: { id: "user-123", email: payload && payload.email },
+                            session: makeSession()
+                        });
+                    },
+                    resetPasswordForEmail(email, opts) {
+                        logCall("resetPasswordForEmail", [email, opts]);
+                        return respond("resetPassword", [email, opts], {});
+                    },
+                    updateUser(payload) {
+                        logCall("updateUser", [payload]);
+                        return respond("updateUser", [payload], {
+                            user: { id: "user-123", email: "tester@example.com" }
+                        });
+                    },
+                    resend(payload) {
+                        logCall("resend", [payload]);
+                        return respond("resend", [payload], {});
                     }
                 }
             };
@@ -221,7 +272,7 @@ function makeAuthEnv(options) {
     }
 
     vm.createContext(sandbox);
-    for (const file of AUTH_FILES) {
+    for (const file of AUTH_FILES.concat(["js/auth/auth-ui.js"])) {
         const code = fs.readFileSync(path.join(ROOT, file), "utf8");
         vm.runInContext(code, sandbox, { filename: file });
     }
@@ -229,11 +280,14 @@ function makeAuthEnv(options) {
     return {
         sandbox,
         auth: sandbox.MWalletAuth,
+        ui: sandbox.MWalletAuthUI,
         resolved: sandbox.MWalletAuthConfigResolved,
         client: sandbox.MWalletAuthClient,
         libState,
+        calls: libState.calls,
         consoleLines,
         consoleText() { return consoleLines.join("\n"); },
+        callsTo(method) { return libState.calls.filter((c) => c.method === method); },
         fireOnline() { (connectivity.online || []).forEach((fn) => fn()); },
         fireOffline() { (connectivity.offline || []).forEach((fn) => fn()); },
         fireAuthEvent(evt, session) {
@@ -709,17 +763,6 @@ test("diagnostics() returns only non-sensitive fields", async () => {
 });
 
 
-/* ---- BP3 extension points ---------------------------- */
-
-test("BP3 extension points exist and reject clearly in BP2", async () => {
-    const env = makeAuthEnv({ config: VALID_CONFIG, session: null });
-    await env.auth.initialize();
-    for (const name of ["signUp", "signIn", "resetPassword"]) {
-        assert.equal(typeof env.auth[name], "function");
-        await assert.rejects(env.auth[name](), /BP3/);
-    }
-});
-
 test("whenReady() resolves to a terminal-state snapshot", async () => {
     const env = makeAuthEnv({ config: VALID_CONFIG, session: makeSession() });
     const snap = await env.auth.whenReady();
@@ -727,15 +770,285 @@ test("whenReady() resolves to a terminal-state snapshot", async () => {
 });
 
 
+/* =====================================================
+   BP3 — ACCOUNT ACTIONS (auth API)
+   ===================================================== */
+
+async function configured(options) {
+    const env = makeAuthEnv(Object.assign({ config: VALID_CONFIG, session: null }, options || {}));
+    await env.auth.initialize();
+    return env;
+}
+
+test("BP3 API surface is present", async () => {
+    const env = await configured();
+    for (const m of ["signUp", "signIn", "signOut", "resetPassword", "updatePassword", "resendVerification"]) {
+        assert.equal(typeof env.auth[m], "function", m);
+    }
+    assert.equal(typeof env.auth._internals.validateEmail, "function");
+    assert.equal(typeof env.auth._internals.redirectUrl, "function");
+});
+
+test("signUp validates + normalizes email and calls the provider once", async () => {
+    const env = await configured();
+    const res = await env.auth.signUp("  NewUser@Example.COM ", "sup3rsecret!");
+    assert.equal(res.ok, true);
+    assert.equal(res.email, "newuser@example.com");
+    assert.equal(res.needsVerification, true);           // mock returns no session
+
+    const calls = env.callsTo("signUp");
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].args[0].email, "newuser@example.com");
+    assert.equal(calls[0].args[0].password, "sup3rsecret!");
+});
+
+test("signUp rejects a weak password before any network call", async () => {
+    const env = await configured();
+    const res = await env.auth.signUp("a@b.com", "short");
+    assert.equal(res.ok, false);
+    assert.equal(res.code, "weak_password");
+    assert.equal(res.field, "password");
+    assert.equal(env.callsTo("signUp").length, 0);
+});
+
+test("signUp rejects an invalid email before any network call", async () => {
+    const env = await configured();
+    const res = await env.auth.signUp("not-an-email", "longenough1");
+    assert.equal(res.ok, false);
+    assert.equal(res.code, "invalid_email");
+    assert.equal(env.callsTo("signUp").length, 0);
+});
+
+test("signUp with auto-confirm returns ok and no verification step", async () => {
+    const env = await configured({ signUpAutoConfirm: true });
+    const res = await env.auth.signUp("a@b.com", "longenough1");
+    assert.equal(res.ok, true);
+    assert.equal(res.needsVerification, false);
+    // result never contains a session / tokens
+    const blob = JSON.stringify(res);
+    assert.ok(!blob.includes("access_token"));
+    assert.ok(!blob.includes(SECRET_ACCESS_TOKEN));
+});
+
+test("signUp maps a provider 'already registered' error", async () => {
+    const env = await configured({ provider: { signUp: { error: { message: "User already registered" } } } });
+    const res = await env.auth.signUp("a@b.com", "longenough1");
+    assert.equal(res.ok, false);
+    assert.match(res.message, /already exists/i);
+});
+
+test("signIn success returns a safe result (no session) and provider is called normalized", async () => {
+    const env = await configured();
+    const res = await env.auth.signIn(" User@Example.com ", "pw-value-here");
+    assert.equal(res.ok, true);
+    const blob = JSON.stringify(res);
+    assert.ok(!blob.includes("access_token") && !blob.includes(SECRET_ACCESS_TOKEN) && !blob.includes(SECRET_REFRESH_TOKEN));
+    assert.equal(env.callsTo("signInWithPassword")[0].args[0].email, "user@example.com");
+});
+
+test("signIn invalid credentials -> mapped message, still signed_out", async () => {
+    const env = await configured({ provider: { signIn: { error: { message: "Invalid login credentials" } } } });
+    const res = await env.auth.signIn("a@b.com", "whatever");
+    assert.equal(res.ok, false);
+    assert.equal(res.code, "signin_failed");
+    assert.match(res.message, /doesn't match/i);
+    assert.equal(env.auth.getStatus(), "signed_out");
+});
+
+test("signIn email-not-confirmed is flagged for the resend flow", async () => {
+    const env = await configured({ provider: { signIn: { error: { message: "Email not confirmed" } } } });
+    const res = await env.auth.signIn("a@b.com", "whatever");
+    assert.equal(res.ok, false);
+    assert.equal(res.code, "email_not_confirmed");
+    assert.equal(res.email, "a@b.com");
+});
+
+test("signIn requires a password before any network call", async () => {
+    const env = await configured();
+    const res = await env.auth.signIn("a@b.com", "");
+    assert.equal(res.ok, false);
+    assert.equal(res.code, "missing_password");
+    assert.equal(env.callsTo("signInWithPassword").length, 0);
+});
+
+test("resetPassword returns a generic (non-enumerating) success and passes a redirectTo", async () => {
+    const env = await configured();
+    const res = await env.auth.resetPassword("Person@Example.com");
+    assert.equal(res.ok, true);
+    assert.match(res.message, /if that email has an account/i);
+    const call = env.callsTo("resetPasswordForEmail")[0];
+    assert.equal(call.args[0], "person@example.com");
+    assert.ok("redirectTo" in call.args[1]);
+});
+
+test("resetPassword surfaces a rate-limit error", async () => {
+    const env = await configured({ provider: { resetPassword: { error: { message: "For security purposes, you can only request this after 60 seconds" } } } });
+    const res = await env.auth.resetPassword("a@b.com");
+    assert.equal(res.ok, false);
+    assert.match(res.message, /too many attempts/i);
+});
+
+test("updatePassword validates strength, calls updateUser, and clears recoveryMode", async () => {
+    const env = await configured();
+    env.fireAuthEvent("PASSWORD_RECOVERY", makeSession());
+    assert.equal(env.auth.getState().recoveryMode, true);
+
+    const weak = await env.auth.updatePassword("nope");
+    assert.equal(weak.ok, false);
+    assert.equal(env.callsTo("updateUser").length, 0);
+
+    const res = await env.auth.updatePassword("a-brand-new-password");
+    assert.equal(res.ok, true);
+    assert.equal(env.callsTo("updateUser")[0].args[0].password, "a-brand-new-password");
+    assert.equal(env.auth.getState().recoveryMode, false);
+});
+
+test("resendVerification calls resend with the normalized email + redirect", async () => {
+    const env = await configured();
+    const res = await env.auth.resendVerification("  A@B.com");
+    assert.equal(res.ok, true);
+    const call = env.callsTo("resend")[0];
+    assert.equal(call.args[0].type, "signup");
+    assert.equal(call.args[0].email, "a@b.com");
+    assert.ok(call.args[0].options && "emailRedirectTo" in call.args[0].options);
+});
+
+test("every account action is a safe no-op when not configured", async () => {
+    const env = makeAuthEnv();               // unconfigured
+    await env.auth.initialize();
+    for (const call of [
+        env.auth.signUp("a@b.com", "longenough1"),
+        env.auth.signIn("a@b.com", "longenough1"),
+        env.auth.resetPassword("a@b.com"),
+        env.auth.updatePassword("longenough1"),
+        env.auth.resendVerification("a@b.com")
+    ]) {
+        const res = await call;
+        assert.equal(res.ok, false);
+        assert.equal(res.code, "not_configured");
+    }
+    assert.equal(env.libState.createClientCalls, 0);
+    assert.equal(env.auth.getStatus(), "unconfigured");
+});
+
+test("PASSWORD_RECOVERY sets recoveryMode and the UI decision shows the recovery view", async () => {
+    const env = await configured();
+    env.fireAuthEvent("PASSWORD_RECOVERY", makeSession());
+    const state = env.auth.getState();
+    assert.equal(state.recoveryMode, true);
+    const decision = env.ui.decideGate(state);
+    assert.equal(decision.visible, true);
+    assert.equal(decision.view, "recovery");
+});
+
+test("passwords and tokens never appear in the console during account actions", async () => {
+    const env = await configured({ signUpAutoConfirm: true });
+    env.auth.debug = true;                    // even verbose
+    await env.auth.signUp("person@example.com", "T0p-Secret-Password");
+    await env.auth.signIn("person@example.com", "T0p-Secret-Password");
+    await env.auth.resetPassword("person@example.com");
+    env.fireAuthEvent("PASSWORD_RECOVERY", makeSession());
+    await env.auth.updatePassword("Another-Secret-Password");
+
+    const log = env.consoleText();
+    assert.ok(!log.includes("T0p-Secret-Password"), "signup/signin password leaked");
+    assert.ok(!log.includes("Another-Secret-Password"), "recovery password leaked");
+    assert.ok(!log.includes(SECRET_ACCESS_TOKEN) && !log.includes(SECRET_REFRESH_TOKEN), "token leaked");
+});
+
+test("getState()/getSession() still expose no tokens after signing in via signIn", async () => {
+    const env = await configured();
+    await env.auth.signIn("a@b.com", "whatever-pw");
+    // mock signInWithPassword resolves with a session -> but state is driven by the event
+    env.fireAuthEvent("SIGNED_IN", makeSession());
+    assert.equal(env.auth.isAuthenticated(), true);
+    const blob = JSON.stringify(env.auth.getState()) + JSON.stringify(env.auth.getSession());
+    assert.ok(!blob.includes(SECRET_ACCESS_TOKEN) && !blob.includes(SECRET_REFRESH_TOKEN));
+    assert.ok(!blob.toLowerCase().includes("access_token"));
+});
+
+test("redirectUrl() is sub-path safe", async () => {
+    // domain root
+    let env = makeAuthEnv({ config: VALID_CONFIG });
+    env.sandbox.location = { origin: "http://127.0.0.1:4178", pathname: "/index.html", href: "http://127.0.0.1:4178/index.html" };
+    assert.equal(env.auth._internals.redirectUrl(), "http://127.0.0.1:4178/");
+    // repo sub-path (GitHub Pages)
+    env.sandbox.location = { origin: "https://user.github.io", pathname: "/M-Wallet/index.html", href: "https://user.github.io/M-Wallet/index.html" };
+    assert.equal(env.auth._internals.redirectUrl(), "https://user.github.io/M-Wallet/");
+    // sub-path directory URL
+    env.sandbox.location = { origin: "https://user.github.io", pathname: "/M-Wallet/", href: "https://user.github.io/M-Wallet/" };
+    assert.equal(env.auth._internals.redirectUrl(), "https://user.github.io/M-Wallet/");
+});
+
+
+/* =====================================================
+   BP3 — AUTH UI decision + validation (pure)
+   ===================================================== */
+
+test("decideGate: unconfigured never shows the gateway (developer not locked out)", () => {
+    const env = makeAuthEnv();
+    assert.deepEqual(plain(env.ui.decideGate({ configured: false, status: "unconfigured" })),
+        { visible: false, view: null, reason: "unconfigured" });
+});
+
+test("decideGate: configured signed_out shows the gateway; signed_in hides it", () => {
+    const env = makeAuthEnv();
+    assert.equal(env.ui.decideGate({ configured: true, status: "signed_out" }).visible, true);
+    assert.equal(env.ui.decideGate({ configured: true, status: "signed_in" }).visible, false);
+});
+
+test("decideGate: initializing shows a loading view (no flash of signed-out UI)", () => {
+    const env = makeAuthEnv();
+    const d = env.ui.decideGate({ configured: true, status: "initializing" });
+    assert.equal(d.visible, true);
+    assert.equal(d.view, "loading");
+});
+
+test("decideGate: error shows the gateway with a retry banner, never a blank screen", () => {
+    const env = makeAuthEnv();
+    const d = env.ui.decideGate({ configured: true, status: "error" });
+    assert.equal(d.visible, true);
+    assert.equal(d.banner, "error");
+});
+
+test("decideGate: recoveryMode outranks signed_in and shows the recovery view", () => {
+    const env = makeAuthEnv();
+    const d = env.ui.decideGate({ configured: true, status: "signed_in", recoveryMode: true });
+    assert.equal(d.view, "recovery");
+    assert.equal(d.visible, true);
+});
+
+test("auth-ui validators: signup password mismatch + signin/forgot/recovery", () => {
+    const env = makeAuthEnv();
+    const U = env.ui;
+    assert.equal(U.validateSignUp({ email: "a@b.com", password: "abcdefgh", confirm: "different" }).field, "confirm");
+    assert.equal(U.validateSignUp({ email: "bad", password: "abcdefgh", confirm: "abcdefgh" }).field, "email");
+    assert.equal(U.validateSignUp({ email: "a@b.com", password: "x", confirm: "x" }).field, "password");
+    assert.deepEqual(plain(U.validateSignUp({ email: " A@B.com ", password: "abcdefgh", confirm: "abcdefgh" })),
+        { ok: true, email: "a@b.com", password: "abcdefgh" });
+
+    assert.equal(U.validateSignIn({ email: "a@b.com", password: "" }).field, "password");
+    assert.equal(U.validateSignIn({ email: "a@b.com", password: "anything" }).ok, true);
+
+    assert.equal(U.validateForgot({ email: "nope" }).field, "email");
+    assert.equal(U.validateForgot({ email: "a@b.com" }).ok, true);
+
+    assert.equal(U.validateRecovery({ password: "abcdefgh", confirm: "nomatch" }).field, "confirm");
+    assert.equal(U.validateRecovery({ password: "abcdefgh", confirm: "abcdefgh" }).ok, true);
+});
+
+
 /* ---- static wiring checks ---------------------------- */
 
-test("service-worker precaches the auth modules + vendored library and bumped the cache", () => {
+test("service-worker precaches the auth modules + UI + vendored library and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v21"/.test(sw), "cache bumped to v21");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v22"/.test(sw), "cache bumped to v22");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
         "./js/auth/auth.js",
+        "./js/auth/auth-ui.js",
+        "./css/auth.css",
         "./js/vendor/supabase-js.min.js"
     ]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
@@ -747,15 +1060,53 @@ test("service-worker keeps the cross-origin guard (auth traffic never cached)", 
     assert.ok(/requestURL\.origin\s*!==\s*[\s\S]*self\.location\.origin/.test(sw));
 });
 
-test("index.html loads the auth modules before the financial engine", () => {
+test("index.html loads the auth modules (incl. auth-ui) before the financial engine", () => {
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    const authConfigAt = html.indexOf("js/auth/auth-config.js");
-    const authAt = html.indexOf("js/auth/auth.js");
-    const storageAt = html.indexOf("js/storage.js");
-    assert.ok(authConfigAt > 0 && authAt > 0 && storageAt > 0);
+    /* match the <script> tags only (via the ?v= cache-buster) */
+    const at = (needle) => html.indexOf(needle);
+    const authConfigAt = at('js/auth/auth-config.js?v=');
+    const authAt = at('js/auth/auth.js?v=');
+    const authUiAt = at('js/auth/auth-ui.js?v=');
+    const storageAt = at('js/storage.js?v=');
+    assert.ok(authConfigAt > 0 && authAt > 0 && authUiAt > 0 && storageAt > 0);
     assert.ok(authConfigAt < storageAt, "auth-config before storage");
-    assert.ok(authAt < storageAt, "auth before storage");
-    assert.ok(html.indexOf("js/app-version.js") < authConfigAt, "app-version first");
+    assert.ok(authAt < authUiAt, "auth.js before auth-ui.js");
+    assert.ok(authUiAt < storageAt, "auth-ui before storage");
+    assert.ok(at('js/app-version.js?v=') < authConfigAt, "app-version first");
+});
+
+test("index.html has the auth gateway markup + auth.css, and financial page markup is untouched", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.ok(/href="\.\/css\/auth\.css/.test(html), "auth.css linked");
+    assert.ok(/id="mw-auth-gate"/.test(html), "#mw-auth-gate present");
+    // all six real views exist
+    for (const v of ["welcome", "signup", "signin", "verify", "forgot", "recovery", "loading"]) {
+        assert.ok(html.includes('data-auth-view="' + v + '"'), "view " + v);
+    }
+    // the gate starts hidden — never blocks first paint
+    assert.ok(/id="mw-auth-gate"[\s\S]{0,200}\bhidden\b/.test(html), "#mw-auth-gate starts hidden");
+    // financial pages still present
+    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+        assert.ok(html.includes('id="' + p + '"'), p + " markup intact");
+    }
+    // password fields use the right autocomplete tokens
+    assert.ok(html.includes('autocomplete="new-password"'), "new-password autocomplete");
+    assert.ok(html.includes('autocomplete="current-password"'), "current-password autocomplete");
+    assert.ok(html.includes('autocomplete="email"'), "email autocomplete");
+});
+
+test("auth-ui.js is version-bumped and auth.js re-versioned in index.html", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.ok(/js\/auth\/auth-ui\.js\?v=\d+/.test(html), "auth-ui.js has a cache-busting ?v");
+    assert.ok(/js\/auth\/auth\.js\?v=3/.test(html), "auth.js bumped to ?v=3");
+    assert.ok(/js\/settings-ui\.js\?v=4/.test(html), "settings-ui.js bumped to ?v=4");
+});
+
+test("app version bumped to 0.9.0-beta.2 and mirrored in package.json", () => {
+    const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.2"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.2", "package.json");
 });
 
 test(".gitignore excludes the local auth config override", () => {
@@ -764,7 +1115,7 @@ test(".gitignore excludes the local auth config override", () => {
 });
 
 test("no auth source file contains a hard-coded credential or logs a session", () => {
-    for (const file of AUTH_FILES.concat(["js/auth/auth-config.example.js"])) {
+    for (const file of AUTH_FILES.concat(["js/auth/auth-ui.js", "js/auth/auth-config.example.js"])) {
         const src = fs.readFileSync(path.join(ROOT, file), "utf8");
         // no real JWT
         assert.ok(!/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\./.test(src), file + " embeds no JWT");

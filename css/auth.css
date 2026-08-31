@@ -1,0 +1,257 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   BP3 — Authentication gateway (#mw-auth-gate)
+
+   A full-screen account experience shown only when a Supabase
+   project is configured and the user is signed out / verifying
+   / recovering. Reuses the global .z-btn / .z-input / .z-field
+   primitives; this sheet only adds the overlay, card, brand,
+   messaging and view layout.
+   ========================================================= */
+
+.mw-auth-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+
+    padding: clamp(16px, 6vh, 64px) 18px calc(24px + env(safe-area-inset-bottom, 0px));
+
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    color: var(--z-text);
+
+    background:
+        radial-gradient(circle at 82% -10%, rgba(155, 92, 255, 0.16), transparent 46%),
+        radial-gradient(circle at 0% 8%, rgba(53, 223, 193, 0.08), transparent 42%),
+        linear-gradient(var(--z-grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--z-grid-line) 1px, transparent 1px),
+        var(--z-bg);
+    background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px, 100% 100%;
+
+    animation: mw-auth-fade 160ms ease-out;
+}
+
+@keyframes mw-auth-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+body.mw-auth-locked {
+    overflow: hidden;
+}
+
+
+/* ---- card ------------------------------------------------ */
+
+.mw-auth-card {
+    width: 100%;
+    max-width: 400px;
+    margin: auto 0;
+
+    padding: 30px 26px 26px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-lg);
+
+    background: var(--z-panel);
+    box-shadow: var(--z-shadow-lg);
+}
+
+.mw-auth-logo {
+    display: block;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 12px;
+    border-radius: 14px;
+}
+
+.mw-auth-brand {
+    margin-bottom: 22px;
+    text-align: center;
+
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--z-text-secondary);
+}
+
+.mw-auth-brand .z-badge {
+    vertical-align: middle;
+}
+
+
+/* ---- views ---------------------------------------------- */
+
+.mw-auth-gate [data-auth-view][hidden] {
+    display: none;
+}
+
+.mw-auth-title {
+    margin: 0 0 6px;
+    font-size: 1.32rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--z-text);
+}
+
+.mw-auth-title:focus {
+    outline: none;
+}
+
+.mw-auth-sub {
+    margin: 0 0 20px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--z-text-secondary);
+}
+
+.mw-auth-reqs {
+    margin: 7px 0 0;
+    font-size: 0.78rem;
+    color: var(--z-text-muted);
+}
+
+
+/* ---- buttons / links ----------------------------------- */
+
+.mw-auth-block {
+    display: flex;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.mw-auth-card form .mw-auth-block {
+    margin-top: 4px;
+}
+
+.mw-auth-switch {
+    margin: 18px 0 0;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--z-text-secondary);
+}
+
+.mw-auth-link {
+    padding: 6px 4px;
+
+    border: 0;
+    background: none;
+
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--z-violet-bright);
+
+    cursor: pointer;
+}
+
+.mw-auth-link:hover {
+    color: var(--z-text);
+}
+
+.mw-auth-link:focus-visible {
+    outline: 3px solid rgba(155, 92, 255, 0.55);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+.mw-auth-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    gap: 12px;
+}
+
+
+/* ---- messages (aria-live) ------------------------------ */
+
+.mw-auth-msg {
+    margin: 0 0 16px;
+    padding: 11px 13px;
+
+    border: 1px solid var(--z-border);
+    border-radius: var(--z-radius-sm);
+
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--z-text-secondary);
+
+    background: var(--z-bg-secondary);
+}
+
+.mw-auth-msg[hidden] {
+    display: none;
+}
+
+.mw-auth-msg.is-error {
+    border-color: rgba(255, 101, 119, 0.4);
+    background: rgba(255, 101, 119, 0.12);
+    color: var(--z-danger-bright);
+}
+
+.mw-auth-msg.is-success {
+    border-color: rgba(53, 223, 193, 0.4);
+    background: var(--z-teal-soft);
+    color: var(--z-teal-bright);
+}
+
+
+/* ---- inputs (adds to .z-input) ------------------------- */
+
+.mw-auth-card .z-input[aria-invalid="true"] {
+    border-color: var(--z-danger);
+    box-shadow: 0 0 0 3px rgba(255, 101, 119, 0.14);
+}
+
+.mw-auth-card .is-busy {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+
+/* ---- loading spinner ---------------------------------- */
+
+.mw-auth-spinner {
+    width: 34px;
+    height: 34px;
+    margin: 8px auto 16px;
+
+    border: 3px solid var(--z-border);
+    border-top-color: var(--z-violet);
+    border-radius: 50%;
+
+    animation: mw-auth-spin 720ms linear infinite;
+}
+
+@keyframes mw-auth-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mw-auth-gate { animation: none; }
+    .mw-auth-spinner { animation-duration: 1800ms; }
+}
+
+
+/* ---- Settings: signed-in account panel ---------------- */
+
+.zg-set-account small {
+    word-break: break-word;
+}
+
+
+@media (max-width: 380px) {
+    .mw-auth-card {
+        padding: 24px 18px 20px;
+    }
+    .mw-auth-title {
+        font-size: 1.18rem;
+    }
+}
