@@ -475,6 +475,7 @@
         }
 
         renderLocalDataStatus(state);
+        renderFirstRunStatus(state);
     }
 
     /* BP4 — local data ownership status. Shown only for the
@@ -505,6 +506,35 @@
 
         panel.hidden = false;
         if (statusEl) { statusEl.textContent = "Protected on this device"; }
+    }
+
+    /* BP5 — first-run setup status. Shown once setup is done
+       (via the wizard OR auto-skipped for an existing user).
+       Never exposes the owner id or the metadata source. There
+       is deliberately no "Restart Setup" control in BP5. */
+    function renderFirstRunStatus(authStateSnapshot) {
+        var panel = document.getElementById("settings-first-run-panel");
+        var statusEl = document.getElementById("settings-first-run-status");
+        if (!panel) { return; }
+
+        var firstRun = global.MWalletFirstRun;
+        var authState = authStateSnapshot ||
+            (global.MWalletAuth && typeof global.MWalletAuth.getState === "function"
+                ? global.MWalletAuth.getState()
+                : null);
+
+        var signedIn = authState && authState.status === "signed_in";
+        var setupStatus = (firstRun && typeof firstRun.getStatus === "function")
+            ? firstRun.getStatus()
+            : null;
+
+        if (!signedIn || (setupStatus !== "complete" && setupStatus !== "existing")) {
+            panel.hidden = true;
+            return;
+        }
+
+        panel.hidden = false;
+        if (statusEl) { statusEl.textContent = "Complete"; }
     }
 
     function onSignOut() {
@@ -945,6 +975,13 @@
         if (global.MWalletLocalMigration && typeof global.MWalletLocalMigration.subscribe === "function") {
             global.MWalletLocalMigration.subscribe(function () {
                 renderLocalDataStatus();
+            });
+        }
+
+        /* BP5 — keep the First-Run Setup row live */
+        if (global.MWalletFirstRun && typeof global.MWalletFirstRun.subscribe === "function") {
+            global.MWalletFirstRun.subscribe(function () {
+                renderFirstRunStatus();
             });
         }
 

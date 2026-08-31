@@ -59,6 +59,37 @@ and a missing migration module all keep the financial app `inert` +
 no flash, recovery still takes precedence, and unconfigured still allows local
 developer mode.
 
+## First-run setup wizard tests (BP5)
+
+`first-run-setup.test.js` loads the real `js/setup/first-run-setup.js` through
+`node:vm` with a stubbed `MWalletAuth`, a stubbed `MWalletLocalMigration` (BP4),
+the **real `js/storage.js`** (via the storage harness) as `MWalletStorage`, and
+an instrumented `localStorage`. It covers fresh-owner detection, existing-owner
+auto-skip — including **balance-only** workspaces (a non-zero checking balance,
+savings balance, or current-month `startingBalance` on its own → wizard skipped,
+data untouched) and the case where the `"existing"` metadata write fails (owner
+still reaches the app; BP4 stays authoritative) — the owner-bound draft (resume,
+foreign-owner rejection, malformed-JSON safety), money parsing, step navigation,
+and the **Finish** transaction — asserting that it changes **only** the account
+names, the savings balance, `settings.firstDayOfWeek`, and the **current
+calendar month's** `startingBalance` (via `storage.setStartingBalance`, never a
+selected historical month), while income / expenses / savings goals / M-Cash /
+other months / categories / currency stay deep-equal and the month carries no
+created activity — plus idempotency (opening balance never applied twice),
+save-failure / partial-apply / interrupted-then-reloaded paths, sign-out
+mid-wizard, BP4 coordination, recovery precedence, and that `diagnostics()` /
+state / the console leak no id, draft value, or financial content.
+
+`setup-ui.test.js` unit-tests the pure `decideScreen` / `progressModel`, then the
+DOM layer against `#mw-setup-gate` (gate visibility per status, step switching,
+progress cells, XSS-safe rendering of a hostile account name, the action
+buttons), and finally a real `auth-ui.js` + `first-run-setup.js` + `setup-ui.js`
+**integration**: a fresh verified owner is held behind the wizard (app root
+inert), Finish releases the app and hides the wizard, and a setup module that
+never initialises still **fails open** (the verified owner reaches their app).
+The DOM stub was extended with descendant / compound / `:checked` selector
+support for this suite.
+
 ## Running
 
 Node.js is required. From the repository root:
