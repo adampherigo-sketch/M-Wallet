@@ -25,6 +25,17 @@ The harness provides:
 
 The harness exposes the real `window.BudgetStorage` object. It does not reimplement M-Wallet financial calculations.
 
+## Auth tests (BP2 / BP3)
+
+`auth-architecture.test.js`, `auth-ui.test.js`, and `auth-data-safety.test.js`
+load the real `js/auth/*.js` modules through `node:vm` with a **stubbed Supabase
+library** and, for the UI, a minimal DOM stub (`helpers/dom-stub.js`). There is
+**no network and no real Supabase project**. They cover the account state model,
+the `signUp` / `signIn` / `resetPassword` / `updatePassword` /
+`resendVerification` API (safe result objects, input validation, error mapping,
+no token/password logging), the gateway show/hide + view wiring, and that no
+auth operation ever reads or writes `localStorage["mWalletData"]`.
+
 ## Running
 
 Node.js is required. From the repository root:

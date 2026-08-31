@@ -17,7 +17,7 @@
 
 (function (global) {
 
-    var APP_VERSION = "0.9.0-beta.1";
+    var APP_VERSION = "0.9.0-beta.2";
 
     /* "beta" while in Beta Preparation; becomes "stable" at 1.0.0 */
     var APP_CHANNEL = "beta";

@@ -437,26 +437,85 @@
         }
     }
 
-    /* BP2 — minimal auth-architecture status. Reads the explicit
-       state from MWalletAuth; shows nothing sensitive. */
+    /* BP2/BP3 — account status +, when signed in, a safe account
+       panel (email + Sign Out). Never renders a token, session,
+       key, or metadata. */
     function renderAuthStatus() {
         var el = document.getElementById("settings-auth-status");
-        if (!el) {
-            return;
-        }
+        var panel = document.getElementById("settings-account-panel");
+        var emailEl = document.getElementById("settings-account-email");
+        var signOutBtn = document.getElementById("settings-sign-out-btn");
+        var resetBtn = document.getElementById("settings-account-reset-btn");
+
+        var hide = function (node) { if (node) { node.hidden = true; } };
+        var show = function (node) { if (node) { node.hidden = false; } };
+
         var auth = global.MWalletAuth;
         if (!auth || typeof auth.getState !== "function") {
-            el.textContent = "Unavailable";
+            if (el) { el.textContent = "Unavailable"; }
+            hide(panel); hide(signOutBtn); hide(resetBtn);
             return;
         }
+
+        var state = auth.getState();
         var labels = {
             unconfigured: "Not configured",
             initializing: "Checking…",
-            signed_out: "Ready",
+            signed_out: "Ready · signed out",
             signed_in: "Signed in",
             error: "Unavailable"
         };
-        el.textContent = labels[auth.getState().status] || "—";
+        if (el) { el.textContent = labels[state.status] || "—"; }
+
+        if (state.status === "signed_in" && state.user && state.user.email) {
+            if (emailEl) { emailEl.textContent = state.user.email; }
+            show(panel); show(signOutBtn); show(resetBtn);
+        } else {
+            hide(panel); hide(signOutBtn); hide(resetBtn);
+        }
+    }
+
+    function onSignOut() {
+        var auth = global.MWalletAuth;
+        if (!auth || typeof auth.signOut !== "function") {
+            return;
+        }
+        var btn = document.getElementById("settings-sign-out-btn");
+        if (btn) { btn.disabled = true; }
+        setStatus("Signing out…");
+        auth.signOut().then(function (res) {
+            if (btn) { btn.disabled = false; }
+            renderAll();
+            setStatus(
+                res && res.ok ? "Signed out. Your local data is unchanged." : "Signed out on this device.",
+                "success"
+            );
+        }).catch(function () {
+            if (btn) { btn.disabled = false; }
+            renderAll();
+        });
+    }
+
+    function onAccountPasswordReset() {
+        var auth = global.MWalletAuth;
+        var state = auth && typeof auth.getState === "function" ? auth.getState() : null;
+        var email = state && state.user ? state.user.email : "";
+        if (!auth || typeof auth.resetPassword !== "function" || !email) {
+            return;
+        }
+        var btn = document.getElementById("settings-account-reset-btn");
+        if (btn) { btn.disabled = true; }
+        setStatus("Sending reset email…");
+        auth.resetPassword(email).then(function (res) {
+            if (btn) { btn.disabled = false; }
+            setStatus(
+                (res && res.message) || "If that email has an account, a reset link is on its way.",
+                res && res.ok ? "success" : "error"
+            );
+        }).catch(function () {
+            if (btn) { btn.disabled = false; }
+            setStatus("Could not send the reset email right now.", "error");
+        });
     }
 
 
@@ -675,6 +734,15 @@
             var action = trigger.getAttribute("data-set-action");
             var catId = trigger.getAttribute("data-cat-id");
             var subId = trigger.getAttribute("data-sub-id");
+
+            if (action === "auth-sign-out") {
+                onSignOut();
+                return;
+            }
+            if (action === "auth-password-reset") {
+                onAccountPasswordReset();
+                return;
+            }
 
             if (action === "add-category-open") {
                 adding = "category";

@@ -180,6 +180,17 @@
         href="./css/zg9.css?v=1"
     >
 
+
+    <!-- =====================================================
+         AUTHENTICATION GATEWAY (BP3)
+         Scoped to .mw-auth-* — only affects #mw-auth-gate.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/auth.css?v=1"
+    >
+
 </head>
 
 
@@ -2394,10 +2405,11 @@
 
                         <div class="zg-set-row">
                             <span class="zg-set-row-text">
-                                <strong>Accounts</strong>
-                                <small>
-                                    Sign-in and cloud backup are not part of this
-                                    build yet. M-Wallet runs entirely on this device.
+                                <strong>Account</strong>
+                                <small id="settings-account-note">
+                                    M-Wallet runs entirely on this device. An account
+                                    only signs you in — your financial data is never
+                                    uploaded in this build.
                                 </small>
                             </span>
                             <span
@@ -2407,6 +2419,45 @@
                                 —
                             </span>
                         </div>
+
+                        <div class="zg-set-row zg-set-account" id="settings-account-panel" hidden>
+                            <span class="zg-set-row-text">
+                                <strong>Signed in as</strong>
+                                <small id="settings-account-email">—</small>
+                            </span>
+                            <span class="zg-set-row-value" id="settings-account-provider">Supabase</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="settings-item zg-set-row"
+                            id="settings-sign-out-btn"
+                            data-set-action="auth-sign-out"
+                            hidden
+                        >
+                            <span class="settings-item-content zg-set-row-text">
+                                <strong>Sign Out</strong>
+                                <small>
+                                    End this session on this device. Your local
+                                    M-Wallet data stays exactly as it is.
+                                </small>
+                            </span>
+                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="settings-item zg-set-row"
+                            id="settings-account-reset-btn"
+                            data-set-action="auth-password-reset"
+                            hidden
+                        >
+                            <span class="settings-item-content zg-set-row-text">
+                                <strong>Send password-reset email</strong>
+                                <small>Email yourself a link to choose a new password.</small>
+                            </span>
+                            <span class="settings-item-arrow zg-set-row-go" aria-hidden="true">›</span>
+                        </button>
 
                         <div class="zg-set-identity">
                             <div>
@@ -2589,6 +2640,285 @@
         </nav>
 
 
+    </div>
+
+
+
+    <!-- ========================================
+         AUTHENTICATION GATEWAY  (BP3)
+         Behaviour: js/auth/auth-ui.js  ·  Styles: css/auth.css
+         Starts hidden; shown only when a Supabase project is
+         configured and the user is signed out / verifying /
+         recovering. When auth is UNCONFIGURED it never appears
+         and the local-first app is used exactly as before.
+    ========================================= -->
+
+    <div
+        id="mw-auth-gate"
+        class="mw-auth-gate"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-auth-heading"
+        hidden
+        aria-hidden="true"
+    >
+
+        <div class="mw-auth-card">
+
+            <img
+                class="mw-auth-logo"
+                src="./icons/m-wallet-icon-192.png"
+                alt=""
+            >
+
+            <p class="mw-auth-brand">
+                M-Wallet
+                <span class="z-badge z-badge-violet">BETA</span>
+            </p>
+
+
+            <!-- LOADING -->
+            <section data-auth-view="loading" hidden>
+                <div class="mw-auth-spinner" aria-hidden="true"></div>
+                <p class="mw-auth-sub" role="status">Checking your session…</p>
+            </section>
+
+
+            <!-- WELCOME -->
+            <section data-auth-view="welcome" hidden>
+                <h1 id="mw-auth-heading" class="mw-auth-title" tabindex="-1">
+                    Welcome to M-Wallet
+                </h1>
+                <p class="mw-auth-sub">
+                    Your money stays on this device. An account is only used to
+                    sign you in and, later, sync sign-in across devices — your
+                    balances and transactions are never uploaded in this build.
+                </p>
+
+                <div class="mw-auth-msg" data-auth-msg="welcome" role="alert" aria-live="assertive" hidden></div>
+
+                <button type="button" class="z-btn z-btn-primary mw-auth-block" data-auth-action="go-signup">
+                    Create Account
+                </button>
+                <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-auth-action="go-signin">
+                    Sign In
+                </button>
+                <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-auth-action="retry" hidden>
+                    Retry connection
+                </button>
+            </section>
+
+
+            <!-- CREATE ACCOUNT -->
+            <section data-auth-view="signup" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">Create your account</h1>
+
+                <form data-auth-form="signup" novalidate>
+
+                    <div class="mw-auth-msg" data-auth-msg="signup" role="alert" aria-live="assertive" hidden></div>
+
+                    <div class="z-field">
+                        <label class="z-label" for="mw-signup-email">Email</label>
+                        <input
+                            class="z-input"
+                            id="mw-signup-email"
+                            name="email"
+                            type="email"
+                            inputmode="email"
+                            autocomplete="email"
+                            autocapitalize="none"
+                            spellcheck="false"
+                            required
+                        >
+                    </div>
+
+                    <div class="z-field">
+                        <label class="z-label" for="mw-signup-password">Password</label>
+                        <input
+                            class="z-input"
+                            id="mw-signup-password"
+                            name="password"
+                            type="password"
+                            autocomplete="new-password"
+                            required
+                            aria-describedby="mw-signup-reqs"
+                        >
+                        <p class="mw-auth-reqs" id="mw-signup-reqs">At least 8 characters.</p>
+                    </div>
+
+                    <div class="z-field">
+                        <label class="z-label" for="mw-signup-confirm">Confirm password</label>
+                        <input
+                            class="z-input"
+                            id="mw-signup-confirm"
+                            name="confirm"
+                            type="password"
+                            autocomplete="new-password"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="z-btn z-btn-primary mw-auth-block" data-auth-submit>
+                        Create Account
+                    </button>
+                </form>
+
+                <p class="mw-auth-switch">
+                    Already have an account?
+                    <button type="button" class="mw-auth-link" data-auth-action="go-signin">Sign in</button>
+                </p>
+            </section>
+
+
+            <!-- SIGN IN -->
+            <section data-auth-view="signin" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">Sign in</h1>
+
+                <form data-auth-form="signin" novalidate>
+
+                    <div class="mw-auth-msg" data-auth-msg="signin" role="alert" aria-live="assertive" hidden></div>
+
+                    <div class="z-field">
+                        <label class="z-label" for="mw-signin-email">Email</label>
+                        <input
+                            class="z-input"
+                            id="mw-signin-email"
+                            name="email"
+                            type="email"
+                            inputmode="email"
+                            autocomplete="email"
+                            autocapitalize="none"
+                            spellcheck="false"
+                            required
+                        >
+                    </div>
+
+                    <div class="z-field">
+                        <label class="z-label" for="mw-signin-password">Password</label>
+                        <input
+                            class="z-input"
+                            id="mw-signin-password"
+                            name="password"
+                            type="password"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="z-btn z-btn-primary mw-auth-block" data-auth-submit>
+                        Sign In
+                    </button>
+                </form>
+
+                <div class="mw-auth-actions-row">
+                    <button type="button" class="mw-auth-link" data-auth-action="go-forgot">Forgot password?</button>
+                    <button type="button" class="mw-auth-link" data-auth-action="go-signup">Create account</button>
+                </div>
+            </section>
+
+
+            <!-- VERIFY EMAIL -->
+            <section data-auth-view="verify" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">Check your email</h1>
+                <p class="mw-auth-sub">
+                    We sent a verification link to
+                    <strong data-auth-email>your email address</strong>.
+                    Open it to activate your account, then come back and sign in.
+                </p>
+
+                <div class="mw-auth-msg" data-auth-msg="verify" role="status" aria-live="polite" hidden></div>
+
+                <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-auth-action="resend">
+                    Resend verification email
+                </button>
+                <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-auth-action="go-signin">
+                    Back to sign in
+                </button>
+            </section>
+
+
+            <!-- FORGOT PASSWORD -->
+            <section data-auth-view="forgot" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">Reset your password</h1>
+                <p class="mw-auth-sub">
+                    Enter your account email and we'll send a link to set a new
+                    password.
+                </p>
+
+                <form data-auth-form="forgot" novalidate>
+
+                    <div class="mw-auth-msg" data-auth-msg="forgot" role="alert" aria-live="assertive" hidden></div>
+
+                    <div class="z-field">
+                        <label class="z-label" for="mw-forgot-email">Email</label>
+                        <input
+                            class="z-input"
+                            id="mw-forgot-email"
+                            name="email"
+                            type="email"
+                            inputmode="email"
+                            autocomplete="email"
+                            autocapitalize="none"
+                            spellcheck="false"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="z-btn z-btn-primary mw-auth-block" data-auth-submit>
+                        Send Reset Link
+                    </button>
+                </form>
+
+                <p class="mw-auth-switch">
+                    <button type="button" class="mw-auth-link" data-auth-action="go-signin">Back to sign in</button>
+                </p>
+            </section>
+
+
+            <!-- SET NEW PASSWORD (recovery return) -->
+            <section data-auth-view="recovery" hidden>
+                <h1 class="mw-auth-title" tabindex="-1">Set a new password</h1>
+                <p class="mw-auth-sub">
+                    Choose a new password for your M-Wallet account.
+                </p>
+
+                <form data-auth-form="recovery" novalidate>
+
+                    <div class="mw-auth-msg" data-auth-msg="recovery" role="alert" aria-live="assertive" hidden></div>
+
+                    <div class="z-field">
+                        <label class="z-label" for="mw-recovery-password">New password</label>
+                        <input
+                            class="z-input"
+                            id="mw-recovery-password"
+                            name="password"
+                            type="password"
+                            autocomplete="new-password"
+                            required
+                            aria-describedby="mw-recovery-reqs"
+                        >
+                        <p class="mw-auth-reqs" id="mw-recovery-reqs">At least 8 characters.</p>
+                    </div>
+
+                    <div class="z-field">
+                        <label class="z-label" for="mw-recovery-confirm">Confirm new password</label>
+                        <input
+                            class="z-input"
+                            id="mw-recovery-confirm"
+                            name="confirm"
+                            type="password"
+                            autocomplete="new-password"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="z-btn z-btn-primary mw-auth-block" data-auth-submit>
+                        Save New Password
+                    </button>
+                </form>
+            </section>
+
+        </div>
     </div>
 
 
@@ -2900,13 +3230,16 @@
 
     <script src="./js/app-version.js?v=1"></script>
 
-    <!-- Authentication architecture (BP2) — infrastructure only.
+    <!-- Authentication (BP2 architecture + BP3 account UI).
          Loads before the financial engine, initializes detached,
          and stays in "unconfigured" mode until a Supabase project
-         is wired up. The local app never waits on it. -->
+         is wired up. The local app never waits on it. auth-ui.js
+         only shows the account gateway when configured + signed
+         out; unconfigured = local-first app exactly as before. -->
     <script src="./js/auth/auth-config.js?v=2"></script>
     <script src="./js/auth/auth-client.js?v=2"></script>
-    <script src="./js/auth/auth.js?v=2"></script>
+    <script src="./js/auth/auth.js?v=3"></script>
+    <script src="./js/auth/auth-ui.js?v=1"></script>
 
     <script src="./js/storage.js?v=7"></script>
 
@@ -2924,7 +3257,7 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=3"></script>
+    <script src="./js/settings-ui.js?v=4"></script>
 
     <script src="./js/app.js?v=10"></script>
 

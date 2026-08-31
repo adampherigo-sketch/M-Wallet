@@ -11,6 +11,52 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP3 — Authentication UI + session experience (`0.9.0-beta.1` → `0.9.0-beta.2`)
+
+The account experience layered on the BP2 architecture. It appears **only when a
+Supabase project is configured**; with no project configured, M-Wallet is the
+local-first app exactly as before.
+
+- **Account actions** on `window.MWalletAuth` (replacing the BP2 placeholders):
+  `signUp(email, password)`, `signIn(email, password)`, `signOut()`,
+  `resetPassword(email)`, `updatePassword(newPassword)`,
+  `resendVerification(email)`. Each validates + normalizes input, returns a
+  **safe result object** (`{ ok, code?, message?, … }`) — **never a raw session
+  or token** — and maps provider errors to a short user-displayable message.
+  Passwords and tokens are never logged.
+- **Account gateway** — new `js/auth/auth-ui.js` (`window.MWalletAuthUI`) +
+  `css/auth.css` + `#mw-auth-gate` markup in `index.html`. Zevaryn Grid dark,
+  centered card, violet primary / teal accents, mobile-first. Views: welcome,
+  create account, sign in, verify email, forgot password, set new password,
+  loading, connection error.
+- **App gating** — configured + signed-out shows the gateway and marks the
+  financial app `inert` + `aria-hidden`; signed-in hides it; **unconfigured
+  never shows it** (developer / local user is never locked out). The financial
+  DOM and `localStorage["mWalletData"]` are never removed, cleared, or migrated
+  by any auth operation — **signing out keeps all local data**.
+- **Sessions** — restored from Supabase's own browser storage on reload
+  (`mwallet.auth.session`, separate from `mWalletData`); a brief branded loading
+  state avoids a flash of the signed-out screen; `error` shows a retry, never a
+  blank screen.
+- **Email links** — `PASSWORD_RECOVERY` opens a "set new password" view;
+  redirect targets are the **directory of the current page** so the same build
+  works at a domain root and under a GitHub Pages `/M-Wallet/` sub-path;
+  leftover auth parameters are scrubbed from the visible URL; callback tokens
+  are never logged.
+- **Settings → System & Beta** — when signed in, shows the account email, the
+  provider, a **Sign Out** button, and an optional "send password-reset email".
+  Never shows a token, session JSON, key, or un-approved metadata.
+- **Accessibility** — labelled fields, `aria-live` error/success regions,
+  focus moves to each view's heading, visible focus rings, 44px targets,
+  `autocomplete="email" / "new-password" / "current-password"`, paste allowed.
+- **Service worker** — `auth-ui.js` + `auth.css` added to `APP_SHELL`; cache
+  `m-wallet-v21` → `m-wallet-v22`. Cross-origin (Supabase) responses are still
+  never cached.
+- **Tests** — `tests/auth-architecture.test.js` extended with the BP3 API +
+  UI-decision suites; new `tests/auth-ui.test.js` (DOM-stub gateway wiring) and
+  `tests/auth-data-safety.test.js` (auth never touches `mWalletData`). All with
+  a stubbed Supabase library — no network.
+
 ### BP2 — Authentication architecture (infrastructure only)
 - Added a dedicated `js/auth/` subsystem with one public entry point,
   `window.MWalletAuth`:

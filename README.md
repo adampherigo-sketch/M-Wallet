@@ -2,8 +2,9 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.1`.** M-Wallet is a pre‑release build.
-> It is **not production‑ready**. Accounts, cloud backup, sync, and recovery are
+> **Status: Beta Preparation — `0.9.0-beta.2`.** M-Wallet is a pre‑release build.
+> It is **not production‑ready**. Accounts and sign-in now exist (when a Supabase
+> project is configured); cloud backup, sync, and recovery of financial data are
 > still being built. See [Early Beta data warning](#early-beta-data-warning).
 
 ---
@@ -75,7 +76,8 @@ M-Wallet/
 │   ├── m-cash.css          ZG6   (scoped #m-cash-page)
 │   ├── reports.css         ZG7   (scoped #reports-page)
 │   ├── settings.css        ZG8   (scoped #settings-page)
-│   └── zg9.css             ZG9 — loaded last; responsive + a11y overrides
+│   ├── zg9.css             ZG9 — loaded last; responsive + a11y overrides
+│   └── auth.css            BP3 — account gateway (scoped .mw-auth-*)
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -86,10 +88,11 @@ M-Wallet/
 │   ├── reports-analytics.js  ReportAnalytics — pure chart/aggregation helpers
 │   ├── settings-ui.js      SettingsUI — category manager, import, system panel
 │   ├── pwa.js              service-worker registration + install prompt
-│   ├── auth/               MWalletAuth — authentication architecture (BP2)
+│   ├── auth/               MWalletAuth / MWalletAuthUI — accounts + sessions
 │   │   ├── auth-config.js       resolves + validates browser-safe auth config
 │   │   ├── auth-client.js       lazy Supabase library loader + client factory
-│   │   ├── auth.js              auth state model, session restore, public API
+│   │   ├── auth.js              state model, session restore, account actions
+│   │   ├── auth-ui.js           the account gateway UI + app gating (BP3)
 │   │   └── auth-config.example.js   config template + how-to (3 routes)
 │   ├── vendor/
 │   │   └── supabase-js.min.js   vendored @supabase/supabase-js (UMD, pinned)
@@ -162,7 +165,11 @@ any test fails.
 
 The suites live in `tests/` (unit + storage‑harness) and `tests/m-cash/`, plus
 `tests/helpers/storage-harness.js` which loads the real `storage.js` in a
-`node:vm` sandbox with a fixed clock and deterministic IDs. See `tests/README.md`.
+`node:vm` sandbox with a fixed clock and deterministic IDs. Authentication is
+covered by `tests/auth-architecture.test.js`, `tests/auth-ui.test.js`, and
+`tests/auth-data-safety.test.js` — all with a stubbed Supabase library and a
+small DOM stub (`tests/helpers/dom-stub.js`); **no network, no real project**.
+See `tests/README.md`.
 
 ---
 
@@ -203,25 +210,55 @@ Consequences of the current model:
 
 ---
 
-## Authentication Architecture
+## Authentication
 
-M-Wallet has an authentication **foundation** (`js/auth/`, added in BP2) but
-**no account UI and no cloud data yet**. Today every build ships in
-**AUTH UNCONFIGURED** mode: the local financial app is the whole app.
+M-Wallet has a full account experience (`js/auth/`) that appears **only when a
+Supabase project is configured**. With no project configured, every build ships
+in **AUTH UNCONFIGURED** mode and the local financial app is the whole app —
+exactly as before.
 
-**Design**
+**What a beta user can do** (auth configured):
+
+- **Create an account** with email + password, then complete Supabase's email
+  verification.
+- **Sign in** / **sign out**.
+- **Reset a forgotten password** by email, and **set a new password** when they
+  return from the reset link.
+- **Reload and stay signed in** — the session is restored from Supabase's own
+  browser storage.
+- See their **account email** and a **Sign Out** control in
+  Settings → System & Beta.
+
+**The local-first boundary is unchanged.** Signing in, signing up, signing out,
+and resetting a password **never** read, write, clear, or migrate financial
+data. All financial data stays in `localStorage["mWalletData"]`; the auth
+session lives in a separate key (`mwallet.auth.session`). **BP3 does not sync,
+upload, or move any financial data** — that is a later phase (BP7+).
+
+### Architecture
 
 - **One entry point** — `window.MWalletAuth`. The rest of the app never talks
   to Supabase directly.
-  - `initialize()` (idempotent, runs detached on `DOMContentLoaded`),
-    `getState()`, `getUser()`, `getSession()`, `isAuthenticated()`,
-    `subscribe(fn)`, `signOut()`, `diagnostics()`.
-  - `signUp()` / `signIn()` / `resetPassword()` are declared extension points —
-    they reject until the account UI phase (BP3) implements them.
+  - Observation: `initialize()` (idempotent, detached on `DOMContentLoaded`),
+    `whenReady()`, `getState()`, `getUser()`, `getSession()` (safe summary — no
+    tokens), `isAuthenticated()`, `subscribe(fn)`, `diagnostics()`.
+  - Actions: `signUp(email, password)`, `signIn(email, password)`, `signOut()`,
+    `resetPassword(email)`, `updatePassword(newPassword)`,
+    `resendVerification(email)`. Each **validates + normalizes input**, returns a
+    **predictable safe result object** (`{ ok, code?, message?, … }`), maps
+    provider errors to a user-displayable string, and **never returns a raw
+    Supabase session or token**, logs a password, or logs a token.
+- **Account UI** — `js/auth/auth-ui.js` + `css/auth.css` render the gateway
+  (`#mw-auth-gate` in `index.html`): welcome / create account / sign in / verify
+  email / forgot password / set new password / loading / connection error.
+  It **gates the app**: configured + signed-out shows the gateway (and marks the
+  financial app `inert`); signed-in hides it; **unconfigured never shows it**.
+  The financial DOM and data are never removed — only covered.
 - **Explicit state model** — `unconfigured` → `initializing` →
-  `signed_out` / `signed_in` / `error`. Only `signed_in` means authenticated.
-  A refused browser key also lands in `unconfigured` (with a safe
-  `configIssue` reason), never `error` — the local app is never blocked.
+  `signed_out` / `signed_in` / `error` (+ a `recoveryMode` flag for the
+  password-reset return). Only `signed_in` means authenticated. A refused
+  browser key also lands in `unconfigured` (with a safe `configIssue` reason),
+  never `error` — the local app is never blocked.
 - **Browser key validation** — `auth-config.js` accepts only browser-safe keys:
   - **Publishable key** (`sb_publishable_…`) — the preferred, current key.
   - **Legacy `anon` key** (a JWT whose role is `anon`) — the older browser-safe
@@ -246,8 +283,16 @@ M-Wallet has an authentication **foundation** (`js/auth/`, added in BP2) but
      with the public values, bump `CACHE_NAME`).
   - A file override (`js/auth/auth-config.local.js`, git-ignored) is still
     supported for anyone who prefers files, but is no longer required.
-- **Non-blocking boot** — the financial UI renders synchronously; auth state
-  simply transitions when ready. No blank screen, no race.
+- **Non-blocking boot** — the financial UI renders synchronously; the gateway
+  shows a brief branded loading state while auth settles, then the right view.
+  No blank screen, no flash of a signed-out screen, no race.
+- **Redirects** — email links come back to the **directory of the current
+  page**, so the same code works at a domain root
+  (`http://127.0.0.1:4178/`) and under a repo sub-path
+  (`https://<user>.github.io/M-Wallet/`). Supabase (PKCE +
+  `detectSessionInUrl`) consumes the `?code=` parameter and M-Wallet scrubs any
+  leftover auth parameters from the visible URL. Callback tokens are never
+  logged. The project's **Redirect URLs** must list every origin used.
 - **Offline** — restores from the stored session only, never deletes a session
   or any data on a network failure, and reconciles once on reconnect (no retry
   loops).
@@ -256,17 +301,47 @@ M-Wallet has an authentication **foundation** (`js/auth/`, added in BP2) but
   `auth-client.js` **only when a project is configured**. It is precached by the
   service worker but never executed in unconfigured mode.
 - **Service worker** — unchanged policy: every cross-origin request is ignored,
-  so Supabase token/session endpoints are never cached.
+  so Supabase token/session endpoints are never cached. Auth static assets
+  (`auth-ui.js`, `auth.css`) are part of the precached app shell.
 - **Diagnostics** — console output is silent unless `MWalletAuth.debug === true`
   (a single actionable warning is the one exception: a refused browser key logs
   one line, with a fixed safe reason and never the key). Otherwise only
   non-sensitive strings are ever logged — never keys, tokens, sessions,
   passwords, or financial data.
 
-**Not in this foundation:** account screens, cloud financial tables, data
-migration, sync, and passkeys — each is its own later phase. A production domain
-must be chosen before the passkey phase; note that GitHub Pages may serve the
-app under a repo sub-path (e.g. `/M-Wallet/`) rather than a domain root.
+### Browser key validation
+
+`auth-config.js` accepts only browser-safe keys:
+
+- **Publishable key** (`sb_publishable_…`) — the preferred, current key.
+- **Legacy `anon` key** (a JWT whose role is `anon`) — the older browser-safe
+  equivalent, still accepted.
+- **Refused:** the **secret key** (`sb_secret_…`), the **`service_role`** key,
+  and any other unrecognized/privileged key format. Secret and service-role keys
+  are **server-only** and must never appear in M-Wallet front-end source or the
+  repo. The key value is never logged, and `diagnostics()` reports only the key
+  *family* (`publishable` / `legacy_anon`), never the key.
+
+### Configuration (static-PWA friendly, no build step, first match wins)
+
+1. `window.MWalletAuthConfig` — an object set by an inline script.
+2. `localStorage["mwallet.auth.config"]` — **the recommended local-dev path.**
+   From the running app's DevTools console:
+   `MWalletAuthConfigResolved.saveLocalConfig("https://<ref>.supabase.co", "sb_publishable_…")`
+   then reload. Stored only in that browser, never committed, never shipped,
+   kept clear of `mWalletData`; undo with `clearLocalConfig()`. **No file to
+   create and no tracked `index.html` edit.**
+3. `DEPLOY_CONFIG` in `auth-config.js` — the deployed GitHub Pages build (fill
+   with the public values, bump `CACHE_NAME`).
+
+A file override (`js/auth/auth-config.local.js`, git-ignored) is still supported
+for anyone who prefers files, but is no longer required. See
+`js/auth/auth-config.example.js`.
+
+**Not yet:** cloud financial tables, data migration, financial sync, and
+passkeys — each is its own later phase (BP4, BP7, BP8, BP9). A production domain
+must be chosen before the passkey phase; GitHub Pages may serve the app under a
+repo sub-path (e.g. `/M-Wallet/`) rather than a domain root.
 
 ---
 
@@ -275,10 +350,12 @@ app under a repo sub-path (e.g. `/M-Wallet/`) rather than a domain root.
 M-Wallet has completed its core financial foundation and the Zevaryn Grid visual
 overhaul, and is now in **Beta Preparation** — a sequence of phases (BP0–BP13)
 focused on making it safe, understandable, recoverable, secure, testable, and
-multi‑device before real testers use it. Planned: real accounts, row‑level‑
-secured cloud data, a local‑first sync engine, a first‑run setup wizard, a
-guided walkthrough, passkeys, account/privacy/recovery controls, and a beta
-feedback system.
+multi‑device before real testers use it. Done so far: a versioned beta build
+(BP1), the authentication architecture (BP2), and the account UI + session
+experience (BP3). Still planned: existing-local-user migration, a first‑run
+setup wizard, a guided walkthrough, row‑level‑secured cloud data, a local‑first
+sync engine, passkeys, account/privacy/recovery controls, and a beta feedback
+system.
 
 It is **not production‑ready** and should not be treated as a finished product.
 

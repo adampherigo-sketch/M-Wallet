@@ -1,13 +1,13 @@
 "use strict";
 
 /* =========================================================
-   M-WALLET — AUTHENTICATION CORE   (BP2)
+   M-WALLET — AUTHENTICATION CORE   (BP2 + BP3)
 
    The single public entry point for everything auth-related:
 
        window.MWalletAuth
 
-   BP2 scope = infrastructure only. This module:
+   This module:
      - resolves configuration (via auth-config.js)
      - lazily builds the Supabase client (via auth-client.js)
      - restores an existing session if one is stored
@@ -15,11 +15,15 @@
      - exposes an explicit, observable auth state
      - fails safe: an unconfigured / offline / broken auth
        layer never blocks or alters the local financial app
+     - BP3: real signUp / signIn / signOut / resetPassword /
+       updatePassword / resendVerification, with input
+       validation, email normalization, safe result objects,
+       and provider-error -> user message mapping. Raw Supabase
+       sessions and tokens are NEVER returned to callers.
 
-   BP2 does NOT: render any account UI, create cloud tables,
-   move financial data anywhere, or add passkeys. Sign-up /
-   sign-in flows arrive in BP3 through the extension points
-   at the bottom of this file.
+   This module does NOT: create cloud tables, move financial
+   data anywhere, migrate local users, sync, or add passkeys.
+   The account UI lives in js/auth/auth-ui.js.
 
    ---------------------------------------------------------
    STATE MODEL
@@ -72,10 +76,11 @@
         status: STATE.INITIALIZING,
         configured: false,
         provider: "supabase",
-        user: null,        /* { id, email } only */
-        session: null,     /* safe summary — never tokens */
-        error: null,       /* { code, message } — never secrets */
-        configIssue: null, /* short safe reason if browser config was refused */
+        user: null,          /* { id, email } only */
+        session: null,       /* safe summary — never tokens */
+        error: null,         /* { code, message } — never secrets */
+        configIssue: null,   /* short safe reason if browser config was refused */
+        recoveryMode: false, /* true after a PASSWORD_RECOVERY callback until the password is reset */
         online: readOnline()
     };
 
@@ -167,6 +172,131 @@
         return message.length > 160 ? message.slice(0, 157) + "…" : message;
     }
 
+
+    /* ---- BP3: input validation + email + error mapping ------ */
+
+    var PASSWORD_MIN = 8;
+    var PASSWORD_MAX = 72; /* bcrypt truncation boundary */
+    var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function normalizeEmail(value) {
+        return String(value == null ? "" : value).trim().toLowerCase();
+    }
+
+    function validateEmail(value) {
+        var email = normalizeEmail(value);
+        if (!email) {
+            return { ok: false, field: "email", message: "Enter your email address." };
+        }
+        if (email.length > 254 || !EMAIL_RE.test(email)) {
+            return { ok: false, field: "email", message: "Enter a valid email address." };
+        }
+        return { ok: true, value: email };
+    }
+
+    function validatePassword(value) {
+        var pw = String(value == null ? "" : value);
+        if (!pw) {
+            return { ok: false, field: "password", message: "Enter a password." };
+        }
+        if (pw.length < PASSWORD_MIN) {
+            return { ok: false, field: "password", message: "Use at least " + PASSWORD_MIN + " characters." };
+        }
+        if (pw.length > PASSWORD_MAX) {
+            return { ok: false, field: "password", message: "That password is too long (" + PASSWORD_MAX + " characters max)." };
+        }
+        return { ok: true };
+    }
+
+    /* Turn a raw provider error into a short, user-displayable
+       string. Never returns HTML, tokens, or internals. */
+    function mapError(error) {
+        var raw = (error && (error.message || error.error_description || error.msg || error.error)) || "";
+        var text = String(raw).toLowerCase();
+
+        if (/invalid login credentials|invalid email or password/.test(text)) {
+            return "That email or password doesn't match our records.";
+        }
+        if (/email not confirmed|not confirmed/.test(text)) {
+            return "Confirm your email address first — open the verification link we sent you.";
+        }
+        if (/user already registered|already( been)? registered|already exists/.test(text)) {
+            return "An account with that email already exists. Try signing in instead.";
+        }
+        if (/password should be at least|password is too short|weak.?password/.test(text)) {
+            return "That password is too short.";
+        }
+        if (/same.?password|new password should be different/.test(text)) {
+            return "Choose a password you haven't used here before.";
+        }
+        if (/rate limit|too many requests|for security purposes|after \d+ seconds/.test(text)) {
+            return "Too many attempts. Please wait a minute and try again.";
+        }
+        if (/(redirect|redirect_to|redirecturl)/.test(text) && /(not allowed|invalid|denied|mismatch)/.test(text)) {
+            return "This site isn't on the sign-in service's allowed list yet.";
+        }
+        if (/network|failed to fetch|load failed|timeout|offline|connection/.test(text)) {
+            return "Can't reach the sign-in service. Check your connection and try again.";
+        }
+        if (/session|token/.test(text) && /expired|invalid|missing/.test(text)) {
+            return "That link has expired. Request a new one and try again.";
+        }
+        if (raw) {
+            return String(raw).replace(/\s+/g, " ").trim().slice(0, 160);
+        }
+        return "Something went wrong. Please try again.";
+    }
+
+    /* Sub-path-safe redirect target for Supabase email links:
+       the DIRECTORY of the current page, so it works at a domain
+       root (http://127.0.0.1:4178/) and under a repo sub-path
+       (https://user.github.io/M-Wallet/). */
+    function redirectUrl() {
+        try {
+            var loc = global.location;
+            if (!loc || !loc.origin) {
+                return undefined;
+            }
+            var dir = String(loc.pathname || "/").replace(/[^/]*$/, "");
+            return loc.origin + (dir || "/");
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /* Remove auth callback parameters from the visible URL once
+       the provider has consumed them. Never logs them. Called
+       only after an auth event / init settle, by which point
+       detectSessionInUrl has already read the code. */
+    function scrubAuthParamsFromUrl() {
+        try {
+            var loc = global.location;
+            var hist = global.history;
+            if (!loc || !hist || typeof hist.replaceState !== "function" || typeof URL !== "function") {
+                return;
+            }
+            var url = new URL(loc.href);
+            var dirty = false;
+            ["code", "error", "error_description", "error_code", "provider_token",
+                "access_token", "refresh_token", "expires_in", "token_type", "type", "token_hash"
+            ].forEach(function (param) {
+                if (url.searchParams.has(param)) {
+                    url.searchParams.delete(param);
+                    dirty = true;
+                }
+            });
+            if (/(?:^#|[#&])(access_token|refresh_token|error|type|token_hash)=/.test(url.hash || "")) {
+                url.hash = "";
+                dirty = true;
+            }
+            if (dirty) {
+                hist.replaceState(hist.state, "", url.pathname + url.search + url.hash);
+            }
+        } catch (error) {
+            /* never throw into the app for a cosmetic URL tidy */
+        }
+    }
+
     function snapshot() {
         return {
             status: current.status,
@@ -188,6 +318,7 @@
                 ? { code: current.error.code, message: current.error.message }
                 : null,
             configIssue: current.configIssue,
+            recoveryMode: current.recoveryMode === true,
             online: current.online
         };
     }
@@ -288,8 +419,23 @@
                     status: STATE.SIGNED_OUT,
                     user: null,
                     session: null,
+                    recoveryMode: false,
                     error: null
                 });
+                break;
+
+            case "PASSWORD_RECOVERY":
+                /* the user followed a reset link — Supabase gives a
+                   short-lived session; keep the account UI in front
+                   showing "set a new password" until updatePassword */
+                patch({ recoveryMode: true, error: null });
+                if (session && session.user) {
+                    patch({
+                        status: STATE.SIGNED_IN,
+                        user: safeUser(session.user),
+                        session: safeSession(session)
+                    });
+                }
                 break;
 
             case "SIGNED_IN":
@@ -316,6 +462,7 @@
                 break;
         }
         debugLog("event: " + String(event));
+        scrubAuthParamsFromUrl();
     }
 
 
@@ -487,6 +634,7 @@
                     });
                     debugLog("no active session");
                 }
+                scrubAuthParamsFromUrl();
                 return snapshot();
             })
             .catch(function (error) {
@@ -563,21 +711,150 @@
     }
 
 
-    /* ---- BP3 extension points ------------------------------ */
-    /* Deliberately unimplemented in BP2. BP3 builds sign-up /
-       sign-in / recovery flows here (or in a sibling module that
-       calls MWalletAuth._getClient()). Calling them now fails
-       loudly instead of silently doing nothing. */
+    /* ---- BP3: account actions ----------------------------- */
+    /*
+       Every action:
+         - validates + normalizes input before touching the network
+         - returns a predictable, safe result object
+           ({ ok, code?, message?, ... }) — NEVER a raw Supabase
+           session, user object, or token
+         - maps provider errors to a user-displayable string
+         - never logs passwords or tokens
+       Financial storage (localStorage["mWalletData"]) is never
+       read or written by any of these.
+    */
 
-    function notAvailableYet(name) {
-        return Promise.reject(new Error(
-            "MWalletAuth." + name + "() arrives with the account UI (BP3)."
-        ));
+    var NOT_CONFIGURED = {
+        ok: false,
+        code: "not_configured",
+        message: "Accounts aren't set up on this build."
+    };
+
+    function withClient(run) {
+        if (!current.configured) {
+            return Promise.resolve(NOT_CONFIGURED);
+        }
+        return ensureClient()
+            .then(function (c) {
+                wireAuthEvents();
+                return run(c);
+            })
+            .catch(function (error) {
+                return {
+                    ok: false,
+                    code: "unavailable",
+                    message: mapError(error)
+                };
+            });
     }
 
-    function signUp() { return notAvailableYet("signUp"); }
-    function signIn() { return notAvailableYet("signIn"); }
-    function resetPassword() { return notAvailableYet("resetPassword"); }
+    function signUp(email, password) {
+        var e = validateEmail(email);
+        if (!e.ok) { return Promise.resolve({ ok: false, code: "invalid_email", field: e.field, message: e.message }); }
+        var p = validatePassword(password);
+        if (!p.ok) { return Promise.resolve({ ok: false, code: "weak_password", field: p.field, message: p.message }); }
+
+        return withClient(function (c) {
+            return c.auth.signUp({
+                email: e.value,
+                password: String(password),
+                options: { emailRedirectTo: redirectUrl() }
+            }).then(function (res) {
+                if (res && res.error) {
+                    return { ok: false, code: "signup_failed", message: mapError(res.error), email: e.value };
+                }
+                var data = (res && res.data) || {};
+                /* no session => email confirmation is required */
+                var needsVerification = !data.session;
+                debugLog("signUp: request accepted");
+                return { ok: true, needsVerification: needsVerification, email: e.value };
+            });
+        });
+    }
+
+    function signIn(email, password) {
+        var e = validateEmail(email);
+        if (!e.ok) { return Promise.resolve({ ok: false, code: "invalid_email", field: e.field, message: e.message }); }
+        if (!String(password || "")) {
+            return Promise.resolve({ ok: false, code: "missing_password", field: "password", message: "Enter your password." });
+        }
+
+        return withClient(function (c) {
+            return c.auth.signInWithPassword({
+                email: e.value,
+                password: String(password)
+            }).then(function (res) {
+                if (res && res.error) {
+                    var text = String((res.error.message || "")).toLowerCase();
+                    var code = /not confirmed/.test(text) ? "email_not_confirmed" : "signin_failed";
+                    return { ok: false, code: code, message: mapError(res.error), email: e.value };
+                }
+                /* the SIGNED_IN auth event drives state; never return the session */
+                debugLog("signIn: accepted");
+                return { ok: true, email: e.value };
+            });
+        });
+    }
+
+    function resetPassword(email) {
+        var e = validateEmail(email);
+        if (!e.ok) { return Promise.resolve({ ok: false, code: "invalid_email", field: e.field, message: e.message }); }
+
+        return withClient(function (c) {
+            return c.auth.resetPasswordForEmail(e.value, {
+                redirectTo: redirectUrl()
+            }).then(function (res) {
+                if (res && res.error) {
+                    /* rate-limit / network still surface; the provider
+                       does not reveal whether the address exists */
+                    return { ok: false, code: "reset_failed", message: mapError(res.error) };
+                }
+                debugLog("resetPassword: request accepted");
+                return {
+                    ok: true,
+                    message: "If that email has an account, a password-reset link is on its way."
+                };
+            });
+        });
+    }
+
+    function updatePassword(newPassword) {
+        var p = validatePassword(newPassword);
+        if (!p.ok) { return Promise.resolve({ ok: false, code: "weak_password", field: p.field, message: p.message }); }
+
+        return withClient(function (c) {
+            return c.auth.updateUser({ password: String(newPassword) }).then(function (res) {
+                if (res && res.error) {
+                    return { ok: false, code: "update_failed", message: mapError(res.error) };
+                }
+                patch({ recoveryMode: false });
+                debugLog("updatePassword: accepted");
+                return { ok: true, message: "Your password has been updated." };
+            });
+        });
+    }
+
+    function resendVerification(email) {
+        var e = validateEmail(email);
+        if (!e.ok) { return Promise.resolve({ ok: false, code: "invalid_email", field: e.field, message: e.message }); }
+
+        return withClient(function (c) {
+            if (!c.auth || typeof c.auth.resend !== "function") {
+                return { ok: false, code: "unsupported", message: "Resending isn't available — request a new link from the sign-in screen." };
+            }
+            return c.auth.resend({
+                type: "signup",
+                email: e.value,
+                options: { emailRedirectTo: redirectUrl() }
+            }).then(function (res) {
+                if (res && res.error) {
+                    return { ok: false, code: "resend_failed", message: mapError(res.error) };
+                }
+                debugLog("resendVerification: request accepted");
+                return { ok: true, message: "Verification email sent. Check your inbox." };
+            });
+        });
+    }
 
     /* Controlled access to the underlying Supabase client for
        later phases. null in local-only mode. */
@@ -632,10 +909,24 @@
         signOut: signOut,
         diagnostics: diagnostics,
 
-        /* BP3 extension points */
+        /* BP3 account actions — safe result objects only */
         signUp: signUp,
         signIn: signIn,
         resetPassword: resetPassword,
+        updatePassword: updatePassword,
+        resendVerification: resendVerification,
+
+        /* pure helpers, exposed for the UI layer + tests */
+        _internals: {
+            PASSWORD_MIN: PASSWORD_MIN,
+            PASSWORD_MAX: PASSWORD_MAX,
+            normalizeEmail: normalizeEmail,
+            validateEmail: validateEmail,
+            validatePassword: validatePassword,
+            mapError: mapError,
+            redirectUrl: redirectUrl
+        },
+
         _getClient: _getClient
     };
 
