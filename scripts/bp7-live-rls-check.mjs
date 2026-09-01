@@ -296,15 +296,26 @@ async function main() {
         check("a stale-revision UPDATE affects 0 rows", rows.length === 0, `${rows.length} row(s)`);
     }
 
-    /* 13 — a tombstone is a normal owner-only UPDATE */
+    /* 13 — a tombstone is a normal owner-only UPDATE.
+       KEY_A has already taken at least one earlier legitimate owner UPDATE
+       (check 9's ownership-reassignment attempt: the trigger freezes
+       user_id, but the UPDATE still succeeds and the database bumps the
+       revision). So the tombstone must advance the revision by exactly 1
+       relative to whatever it is now — not to a hard-coded value. */
     {
+        const before = await rest("GET", { token: A.token, query: `select=revision&document_key=eq.${KEY_A}` });
+        const beforeRevision = Number(
+            before.body && before.body[0] ? before.body[0].revision : NaN
+        );
         const r = await rest("PATCH", {
             token: A.token, query: `document_key=eq.${KEY_A}`,
             body: { deleted_at: new Date().toISOString() }, prefer: "return=representation"
         });
         const row = Array.isArray(r.body) ? r.body[0] : r.body;
         check("an owner can tombstone their own document", row && row.deleted_at, `status ${r.status}`);
-        check("the tombstone UPDATE also bumped the revision", row && Number(row.revision) === 2);
+        check("the tombstone UPDATE also bumped the revision",
+            Number.isFinite(beforeRevision) && row && Number(row.revision) === beforeRevision + 1,
+            `before ${beforeRevision} / after ${row && row.revision}`);
     }
 
     /* 14 — cleanup: each user deletes their own rows */
