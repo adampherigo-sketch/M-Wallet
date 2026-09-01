@@ -4249,6 +4249,18 @@ const BudgetStorage = {
 
 
         /*
+            Track whether this pass ACTUALLY changed the target month's
+            bills. Merely reading / navigating to a month must not bump
+            updatedAt or rewrite the month — otherwise the local-first
+            sync layer sees an untouched month as "locally edited" and
+            starts asking the user to choose Local vs Cloud for months
+            they never touched. See getMonth().
+        */
+        let recurringBillsChanged =
+            false;
+
+
+        /*
             Track both:
               1. the latest generated occurrence, so normal edits can
                  continue flowing forward;
@@ -4499,6 +4511,9 @@ const BudgetStorage = {
                             1
                         );
 
+                        recurringBillsChanged =
+                            true;
+
                     }
 
 
@@ -4527,22 +4542,33 @@ const BudgetStorage = {
                     /*
                         Keep already-generated in-range occurrences, but
                         synchronize their recurrence metadata so future
-                        reads do not keep stale end-date settings.
+                        reads do not keep stale end-date settings. Only
+                        write when a value actually differs — a no-op
+                        re-assignment must not mark the month changed.
                     */
-                    existingBill.recurring =
-                        true;
+                    if (
+                        existingBill.recurring !== true ||
+                        existingBill.frequency !== "monthly" ||
+                        existingBill.endDate !== sourceBill.endDate ||
+                        existingBill.recurringDay !== sourceBill.recurringDay
+                    ) {
 
+                        existingBill.recurring =
+                            true;
 
-                    existingBill.frequency =
-                        "monthly";
+                        existingBill.frequency =
+                            "monthly";
 
+                        existingBill.endDate =
+                            sourceBill.endDate;
 
-                    existingBill.endDate =
-                        sourceBill.endDate;
+                        existingBill.recurringDay =
+                            sourceBill.recurringDay;
 
+                        recurringBillsChanged =
+                            true;
 
-                    existingBill.recurringDay =
-                        sourceBill.recurringDay;
+                    }
 
 
                     return;
@@ -4588,12 +4614,26 @@ const BudgetStorage = {
                     generatedBill
                 );
 
+                recurringBillsChanged =
+                    true;
+
             }
         );
 
 
-        targetMonth.updatedAt =
-            this.now();
+        if (
+            recurringBillsChanged
+        ) {
+
+            targetMonth.updatedAt =
+                this.now();
+
+        }
+
+
+        /* read by getMonth() to decide whether a persist is even needed */
+        this._recurringBillsChanged =
+            recurringBillsChanged;
 
 
         return targetMonth;
@@ -4609,6 +4649,13 @@ const BudgetStorage = {
             this.load();
 
 
+        const existedBefore =
+            Object.prototype.hasOwnProperty.call(
+                data.months || {},
+                monthKey
+            );
+
+
         const month =
             this.ensureRecurringBillsInData(
                 data,
@@ -4616,9 +4663,32 @@ const BudgetStorage = {
             );
 
 
-        this.save(
-            data
-        );
+        if (
+            !existedBefore ||
+            this._recurringBillsChanged
+        ) {
+
+            /*
+                Persist ONLY when this call actually created the month
+                shell or materialized a recurring-bill occurrence.
+                Do it SILENTLY — neither is a user action, every device
+                reproduces the identical result, and a pure navigation
+                must not emit a financial-saved event or make an
+                untouched month look locally edited to the sync layer.
+                The sync engine's next real cycle still uploads it, and
+                two devices that materialize the same month converge on
+                an identical content fingerprint (no conflict).
+            */
+            this.saveSilently(
+                data
+            );
+
+        }
+
+        /*
+            An existing, unchanged month: NO write at all. Reading /
+            navigating a month is side-effect free.
+        */
 
 
         return month;
