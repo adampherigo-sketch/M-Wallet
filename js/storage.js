@@ -980,6 +980,21 @@ const BudgetStorage = {
             startingBalance:
                 0,
 
+            /*
+                false  -> startingBalance is DERIVED from the previous
+                          month's ending balance (automatic carry-forward,
+                          recomputed on every read — see
+                          resolveMonthStartingBalance).
+                true   -> startingBalance is an EXPLICIT manual opening
+                          balance set via setStartingBalance() (also used
+                          by the first-run setup wizard). It is used
+                          verbatim and breaks the auto-rollover chain for
+                          this month; later months resume from this
+                          month's resulting ending balance.
+            */
+            startingBalanceManual:
+                false,
+
             endingBalance:
                 0,
 
@@ -1060,6 +1075,26 @@ const BudgetStorage = {
             this.toNumber(
                 month.startingBalance
             );
+
+
+        /*
+            Distinguish a manual opening balance from an
+            automatically-derived one.
+
+            - An explicit boolean flag is trusted as-is.
+            - A LEGACY month has no flag: a clearly-intentional
+              non-zero starting balance is treated as a manual
+              opening balance and preserved; a 0 is treated as the
+              default and becomes an automatic carry-forward. This
+              inference never rewrites a non-zero historical value.
+        */
+        month.startingBalanceManual =
+            typeof month.startingBalanceManual ===
+                "boolean"
+
+                ? month.startingBalanceManual
+
+                : month.startingBalance !== 0;
 
 
         month.endingBalance =
@@ -4650,6 +4685,15 @@ const BudgetStorage = {
        6. STARTING BALANCE
        ===================================================== */
 
+    /*
+        Explicit / manual opening balance for a month.
+
+        This is an intentional override: the amount is stored
+        verbatim and the month is flagged manual, so it is NOT
+        replaced by the automatic previous-month carry-forward.
+        The first-run setup wizard uses this for the opening
+        checking balance.
+    */
     setStartingBalance(
         amount,
         monthKey =
@@ -4666,6 +4710,9 @@ const BudgetStorage = {
             this.toNumber(
                 amount
             );
+
+        month.startingBalanceManual =
+            true;
 
 
         if (
@@ -4700,18 +4747,224 @@ const BudgetStorage = {
     },
 
 
+    /*
+        The EFFECTIVE opening balance for a month:
+          - a manual month returns its stored value
+          - an automatic month returns the previous month's
+            resulting ending balance (see resolveMonthStartingBalance)
+    */
     getStartingBalance(
         monthKey =
             this.getSelectedMonthKey()
     ) {
 
-        return this.toNumber(
+        return this.resolveMonthStartingBalance(
+            monthKey
+        );
 
+    },
+
+
+    /*
+        Clear a manual override so a month resumes automatic
+        month-to-month carry-forward. (Not wired to any UI yet;
+        available for a future "use automatic starting balance"
+        control.)
+    */
+    clearStartingBalanceOverride(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        const month =
             this.getMonth(
                 monthKey
-            ).startingBalance
+            );
 
+
+        month.startingBalanceManual =
+            false;
+
+
+        if (
+            !this.saveMonth(
+                monthKey,
+                month
+            )
+        ) {
+
+            return null;
+
+        }
+
+
+        const syncedBalance =
+            this.syncCheckingAccountBalance(
+                monthKey
+            );
+
+
+        if (
+            syncedBalance === null
+        ) {
+
+            return null;
+
+        }
+
+
+        return this.resolveMonthStartingBalance(
+            monthKey
         );
+
+    },
+
+
+    /*
+        Is this month object an explicit manual opening balance?
+
+        Trusts an explicit boolean flag; for a legacy month with
+        no flag, a non-zero starting balance is inferred manual so
+        historical opening balances are never silently discarded.
+    */
+    isManualStartingBalance(
+        month
+    ) {
+
+        if (
+            !month ||
+            typeof month !== "object"
+        ) {
+
+            return false;
+
+        }
+
+
+        if (
+            typeof month.startingBalanceManual ===
+                "boolean"
+        ) {
+
+            return month.startingBalanceManual;
+
+        }
+
+
+        return this.toNumber(
+            month.startingBalance
+        ) !== 0;
+
+    },
+
+
+    /*
+        The effective opening (checking) balance for a month.
+
+        AUTOMATIC MONTH-TO-MONTH CONTINUITY
+        -----------------------------------
+        A month without a manual override opens at the resulting
+        ending balance of the most recent earlier month that has
+        data. This is computed FRESH on every read from the
+        canonical monthly formula — it is never a one-time copied
+        value — so a later correction to an earlier month flows
+        forward automatically.
+
+        - Deterministic single forward pass over the existing
+          month keys in chronological order; no recursion, no
+          re-entrancy into this method.
+        - Calendar-year boundaries (Dec -> Jan) work because
+          YYYY-MM keys sort chronologically.
+        - Negative / overdraft balances carry forward unchanged
+          (never clamped to zero).
+        - A manual month in the chain is used verbatim and the
+          running balance resumes from its ending balance.
+        - Reads are event-suppressed: calculating a carry-forward
+          never emits "mwallet:financial-saved" and so never
+          creates cloud-sync churn just from viewing a month.
+    */
+    resolveMonthStartingBalance(
+        monthKey =
+            this.getSelectedMonthKey()
+    ) {
+
+        this._suppressFinancialSaved += 1;
+
+        try {
+
+            const data =
+                this.load();
+
+
+            const target =
+                data.months[monthKey];
+
+
+            if (
+                this.isManualStartingBalance(
+                    target
+                )
+            ) {
+
+                return this.toNumber(
+                    target.startingBalance
+                );
+
+            }
+
+
+            const priorKeys =
+                Object.keys(data.months)
+                    .filter(
+                        key =>
+                            /^\d{4}-\d{2}$/.test(key) &&
+                            key < monthKey
+                    )
+                    .sort();
+
+
+            let carry =
+                0;
+
+
+            for (
+                const key
+                of priorKeys
+            ) {
+
+                const priorMonth =
+                    data.months[key];
+
+
+                const priorStart =
+                    this.isManualStartingBalance(
+                        priorMonth
+                    )
+                        ? this.toNumber(
+                            priorMonth.startingBalance
+                        )
+                        : carry;
+
+
+                carry =
+                    priorStart
+                    + this.getTotalIncome(key)
+                    - this.getTotalBills(key)
+                    - this.getTotalExpenses(key)
+                    - this.getTotalSavingsDeposits(key);
+
+            }
+
+
+            return carry;
+
+        }
+
+        finally {
+
+            this._suppressFinancialSaved -= 1;
+
+        }
 
     },
 
@@ -9004,8 +9257,8 @@ const BudgetStorage = {
 
         const endingBalance =
 
-            this.toNumber(
-                month.startingBalance
+            this.resolveMonthStartingBalance(
+                monthKey
             )
 
             +
@@ -9059,15 +9312,15 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        const month =
-            this.getMonth(
-                monthKey
-            );
+        /* materialize recurring bills / normalize the month first */
+        this.getMonth(
+            monthKey
+        );
 
 
         const startingBalance =
-            this.toNumber(
-                month.startingBalance
+            this.resolveMonthStartingBalance(
+                monthKey
             );
 
 
@@ -9535,10 +9788,10 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        const month =
-            this.getMonth(
-                monthKey
-            );
+        /* materialize recurring bills / normalize the month first */
+        this.getMonth(
+            monthKey
+        );
 
 
         return {
@@ -9547,8 +9800,8 @@ const BudgetStorage = {
 
 
             startingBalance:
-                this.toNumber(
-                    month.startingBalance
+                this.resolveMonthStartingBalance(
+                    monthKey
                 ),
 
 
