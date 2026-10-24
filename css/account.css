@@ -68,7 +68,7 @@
 .mw-acct-dialog-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(12, 12, 16, 0.55);
+    background: var(--z-overlay);
 }
 
 .mw-acct-dialog-card {

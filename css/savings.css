@@ -509,12 +509,12 @@
 
 #savings-page .zg-goal-btn--danger {
     border-color: rgba(255, 101, 119, 0.28);
-    background: rgba(255, 101, 119, 0.14);
+    background: transparent;
     color: var(--z-danger);
 }
 
 #savings-page .zg-goal-btn--danger:hover:not(:disabled) {
-    background: rgba(255, 101, 119, 0.24);
+    background: var(--z-danger-soft);
     color: var(--z-danger-bright);
 }
 

@@ -251,9 +251,7 @@ document.addEventListener(
                                         data-money-action="income"
                                     >
 
-                                        <span class="money-action-icon">
-                                            💵
-                                        </span>
+                                        <span class="money-action-icon"><svg class="mw-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg></span>
 
 
                                         <span class="money-action-content">
@@ -282,9 +280,7 @@ document.addEventListener(
                                         data-money-action="bill"
                                     >
 
-                                        <span class="money-action-icon">
-                                            🧾
-                                        </span>
+                                        <span class="money-action-icon"><svg class="mw-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span>
 
 
                                         <span class="money-action-content">
@@ -313,9 +309,7 @@ document.addEventListener(
                                         data-money-action="expense"
                                     >
 
-                                        <span class="money-action-icon">
-                                            🛒
-                                        </span>
+                                        <span class="money-action-icon"><svg class="mw-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 7h14l-1.5 12a2 2 0 0 1-2 1.8h-7a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></span>
 
 
                                         <span class="money-action-content">
@@ -344,9 +338,7 @@ document.addEventListener(
                                         data-money-action="transaction"
                                     >
 
-                                        <span class="money-action-icon">
-                                            ⇄
-                                        </span>
+                                        <span class="money-action-icon"><svg class="mw-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 4 3 8l4 4"/><path d="M3 8h14"/><path d="m17 20 4-4-4-4"/><path d="M21 16H7"/></svg></span>
 
 
                                         <span class="money-action-content">
@@ -763,8 +755,11 @@ document.addEventListener(
             event => {
 
                 if (
-                    event.key !==
-                    "Escape"
+                    !quickAddMenu
+                        ?.classList
+                        .contains(
+                            "active"
+                        )
                 ) {
 
                     return;
@@ -773,17 +768,190 @@ document.addEventListener(
 
 
                 if (
-                    quickAddMenu
-                        ?.classList
-                        .contains(
-                            "active"
-                        )
+                    event.key ===
+                    "Escape"
                 ) {
 
                     event.preventDefault();
 
 
                     closeQuickAdd();
+
+
+                    return;
+
+                }
+
+
+                /* Keep Tab focus inside the open chooser */
+
+                if (
+                    event.key !==
+                    "Tab"
+                ) {
+
+                    return;
+
+                }
+
+
+                const focusable =
+                    [
+                        ...quickAddMenu.querySelectorAll(
+                            "button:not([disabled]), [href], [tabindex]:not([tabindex='-1'])"
+                        )
+                    ].filter(
+                        element =>
+                            element.offsetParent !== null
+                    );
+
+
+                if (
+                    focusable.length === 0
+                ) {
+
+                    return;
+
+                }
+
+
+                const first =
+                    focusable[0];
+
+                const last =
+                    focusable[
+                        focusable.length - 1
+                    ];
+
+
+                if (
+                    event.shiftKey &&
+                    (
+                        document.activeElement === first ||
+                        !quickAddMenu.contains(
+                            document.activeElement
+                        )
+                    )
+                ) {
+
+                    event.preventDefault();
+
+                    last.focus();
+
+                }
+
+                else if (
+                    !event.shiftKey &&
+                    (
+                        document.activeElement === last ||
+                        !quickAddMenu.contains(
+                            document.activeElement
+                        )
+                    )
+                ) {
+
+                    event.preventDefault();
+
+                    first.focus();
+
+                }
+
+            }
+        );
+
+
+        /*
+            Keep Tab focus inside whichever modal dialog
+            (aria-modal="true") currently holds focus.
+            Dialogs with their own trap handle Tab first
+            and call preventDefault, so they are skipped.
+        */
+
+        document.addEventListener(
+            "keydown",
+            event => {
+
+                if (
+                    event.key !== "Tab" ||
+                    event.defaultPrevented
+                ) {
+
+                    return;
+
+                }
+
+
+                const dialog =
+                    document.activeElement?.closest?.(
+                        '[aria-modal="true"]'
+                    );
+
+
+                if (
+                    !dialog
+                ) {
+
+                    return;
+
+                }
+
+
+                const focusable =
+                    [
+                        ...dialog.querySelectorAll(
+                            "a[href], button:not([disabled]), input:not([disabled]):not([type='hidden']), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+                        )
+                    ].filter(
+                        element =>
+                            element.getClientRects().length > 0 &&
+                            !element.closest("[hidden]")
+                    );
+
+
+                if (
+                    focusable.length === 0
+                ) {
+
+                    return;
+
+                }
+
+
+                const first =
+                    focusable[0];
+
+                const last =
+                    focusable[
+                        focusable.length - 1
+                    ];
+
+
+                const active =
+                    document.activeElement;
+
+
+                if (
+                    event.shiftKey &&
+                    (
+                        active === first ||
+                        !focusable.includes(active)
+                    )
+                ) {
+
+                    event.preventDefault();
+
+                    last.focus();
+
+                }
+
+                else if (
+                    !event.shiftKey &&
+                    active === last
+                ) {
+
+                    event.preventDefault();
+
+                    first.focus();
 
                 }
 
@@ -857,6 +1025,17 @@ document.addEventListener(
                 "reports";
 
 
+            /*
+                Settings and M-Cash are not tied to a month,
+                so the month picker is hidden there too.
+            */
+
+            const hidesMonth =
+                isReports ||
+                pageName === "settings" ||
+                pageName === "m-cash";
+
+
             /* ---------------------------------------------
                NORMAL MONTH / YEAR NAVIGATION
                --------------------------------------------- */
@@ -866,7 +1045,7 @@ document.addEventListener(
             ) {
 
                 standardMonthNavigation.hidden =
-                    isReports;
+                    hidesMonth;
 
             }
 
@@ -1000,6 +1179,10 @@ document.addEventListener(
                         "active"
                     );
 
+                    button.removeAttribute(
+                        "aria-current"
+                    );
+
                 }
             );
 
@@ -1023,6 +1206,11 @@ document.addEventListener(
 
                 activeNavButton.classList.add(
                     "active"
+                );
+
+                activeNavButton.setAttribute(
+                    "aria-current",
+                    "page"
                 );
 
             }

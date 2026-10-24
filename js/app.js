@@ -1015,8 +1015,8 @@ const BudgetApp = {
                 return `
                     <article class="transaction-item">
 
-                        <div class="transaction-icon">
-                            🧾
+                        <div class="transaction-icon" aria-hidden="true">
+                            ${this.getTransactionIcon({ sourceType: "bill" })}
                         </div>
 
                         <div class="transaction-info">
@@ -3126,19 +3126,30 @@ const BudgetApp = {
 
     getTransactionIcon(transaction) {
 
+        const icons = {
+            income: '<svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg>',
+            bill: '<svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
+            expense: '<svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 7h14l-1.5 12a2 2 0 0 1-2 1.8h-7a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
+            savings: '<svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>',
+            undo: '<svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>',
+            plus: '<svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>',
+            minus: '<svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg>',
+            dollar: '<svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v18"/><path d="M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 2.6 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3"/></svg>'
+        };
+
         switch (
             transaction.sourceType
         ) {
 
             case "income":
             case "paycheck":
-                return "💵";
+                return icons.income;
 
             case "bill":
-                return "🧾";
+                return icons.bill;
 
             case "expense":
-                return "🛒";
+                return icons.expense;
 
             case "savings-deposit":
 
@@ -3146,10 +3157,10 @@ const BudgetApp = {
                     transaction.direction ===
                     "savings-to-checking"
                 ) {
-                    return "↩";
+                    return icons.undo;
                 }
 
-                return "🏦";
+                return icons.savings;
 
             case "transaction":
 
@@ -3157,12 +3168,12 @@ const BudgetApp = {
                     Number(
                         transaction.amount
                     ) >= 0
-                        ? "+"
-                        : "−"
+                        ? icons.plus
+                        : icons.minus
                 );
 
             default:
-                return "$";
+                return icons.dollar;
         }
     },
 

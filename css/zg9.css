@@ -1,6 +1,6 @@
 /* =========================================================
    M-WALLET  ·  ZEVARYN GRID
-   ZG9 — Responsive + Accessibility pass
+   ZG9 — Responsive + Accessibility pass  ·  App shell
 
    Loads LAST, after every page stylesheet, so these fixes win
    the cascade without !important. ZG9 is a quality pass only:
@@ -119,6 +119,535 @@
    .app-content already caps at min(1100px, 100%). Nothing to
    change — recorded here so ZG10 knows it was reviewed.
    ========================================================= */
+
+
+/* =========================================================
+   5. APP SHELL — header + navigation
+   The single source for the header and the main navigation.
+   < 1024px : compact header + bottom bar (6 items, Add centred)
+   >= 1024px: full-width header + left sidebar (all 8 items)
+   ========================================================= */
+
+:root {
+    --nav-height: 64px;
+}
+
+body {
+    font-variant-numeric: tabular-nums;
+}
+
+.month-navigation[hidden] {
+    display: none !important;
+}
+
+
+/* ---- Header ---- */
+
+.app-header {
+    background: rgba(8, 10, 15, 0.9);
+    border-bottom: 1px solid var(--z-border);
+}
+
+.header-content {
+    width: min(var(--content-max), 100%);
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto 40px;
+    grid-template-areas:
+        "brand brand today action"
+        "prev  month year  next";
+    align-items: center;
+    gap: var(--space-2) 6px;
+    padding: var(--space-3) var(--space-4);
+}
+
+.header-month-area,
+.month-navigation {
+    display: contents;
+}
+
+.header-brand {
+    grid-area: brand;
+    justify-self: start;
+    margin: 0;
+    padding: 0;
+    gap: var(--space-2);
+}
+
+.header-button {
+    grid-area: action;
+    position: static;
+    justify-self: end;
+    width: var(--tap);
+    height: var(--tap);
+    margin: 0;
+    color: var(--z-text-secondary);
+    background: var(--z-panel);
+    box-shadow: none;
+}
+
+.header-button:hover {
+    color: var(--z-text);
+    transform: none;
+}
+
+#previous-month { grid-area: prev; }
+#month-select   { grid-area: month; }
+#year-select    { grid-area: year; }
+#next-month     { grid-area: next; }
+#today-month    { grid-area: today; justify-self: end; }
+
+.month-arrow {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    color: var(--z-text-secondary);
+    background: var(--z-panel);
+}
+
+.month-arrow:hover {
+    color: var(--z-text);
+    transform: none;
+}
+
+.month-select,
+.year-select {
+    min-width: 0;
+    height: 40px;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-shadow: none;
+}
+
+.month-select {
+    width: 100%;
+}
+
+.year-select {
+    width: 84px;
+}
+
+.today-button {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--z-border-strong);
+    background: transparent;
+    color: var(--z-text);
+    font-size: var(--text-xs);
+    font-weight: 700;
+}
+
+.today-button:hover {
+    background: var(--z-violet-soft);
+    transform: none;
+}
+
+.report-navigation {
+    grid-area: month;
+}
+
+@media (max-width: 359px) {
+
+    .header-content {
+        column-gap: var(--space-1);
+        padding-left: var(--space-3);
+        padding-right: var(--space-3);
+    }
+
+    .year-select {
+        width: 76px;
+    }
+
+    /* the native select arrow already reserves its own space */
+    .month-select,
+    .year-select {
+        padding-left: 10px;
+        padding-right: 4px;
+    }
+
+    .today-button {
+        padding: 0 10px;
+    }
+}
+
+@media (min-width: 640px) {
+
+    .header-content {
+        grid-template-columns: minmax(0, 1fr) 40px 150px 96px 40px auto var(--tap);
+        grid-template-areas: "brand prev month year next today action";
+        column-gap: var(--space-2);
+    }
+
+    .year-select {
+        width: 100%;
+    }
+
+    #today-month {
+        justify-self: start;
+        margin-left: var(--space-1);
+    }
+}
+
+
+/* ---- Bottom bar (< 1024px) ---- */
+
+.bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    width: auto;
+    max-width: 640px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-items: stretch;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--z-border);
+    background: rgba(13, 16, 23, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+@media (min-width: 641px) {
+    .bottom-nav {
+        border: 1px solid var(--z-border);
+        border-bottom: 0;
+        border-radius: var(--z-radius-lg) var(--z-radius-lg) 0 0;
+    }
+}
+
+.bottom-nav > .nav-button { order: 4; }
+.bottom-nav > .nav-button[data-page="home"] { order: 1; }
+.bottom-nav > .nav-button[data-page="budget"] { order: 2; }
+.bottom-nav > .nav-button[data-quick-add-toggle] { order: 3; }
+
+.nav-button {
+    position: relative;
+    min-width: 0;
+    min-height: 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 4px 2px;
+    border: 0;
+    border-radius: var(--z-radius-sm);
+    background: transparent;
+    color: var(--z-text-secondary);
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.1;
+    cursor: pointer;
+    transition: color var(--transition), background var(--transition);
+}
+
+.nav-button--extra {
+    display: none;
+}
+
+.nav-icon {
+    width: 36px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+}
+
+.nav-svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nav-button:hover {
+    color: var(--z-text);
+    background: var(--z-hover-soft);
+}
+
+.nav-button.active,
+.nav-button[aria-current="page"] {
+    color: var(--z-violet-bright);
+    font-weight: 750;
+}
+
+.nav-button.active::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 24px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 0 0 3px 3px;
+    background: var(--z-violet-bright);
+}
+
+.nav-button.active .nav-icon {
+    background: var(--z-violet-soft);
+}
+
+/* Add — the primary action, not a destination */
+.nav-button[data-quick-add-toggle] {
+    color: var(--z-text);
+}
+
+.nav-button[data-quick-add-toggle] .nav-icon {
+    width: 36px;
+    height: 36px;
+    margin-bottom: -2px;
+    background: var(--z-violet);
+    color: #ffffff;
+}
+
+.nav-button[data-quick-add-toggle]:hover .nav-icon {
+    background: var(--z-violet-strong);
+}
+
+.nav-button[data-quick-add-toggle] .nav-svg {
+    transition: transform var(--transition);
+}
+
+.nav-button[data-quick-add-toggle][aria-expanded="true"] .nav-svg {
+    transform: rotate(45deg);
+}
+
+.app-content {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+    padding-bottom: calc(var(--nav-height) + var(--space-10) + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 640px) {
+    .app-content {
+        padding-left: var(--space-6);
+        padding-right: var(--space-6);
+    }
+}
+
+
+/* ---- Sidebar (>= 1024px) ---- */
+
+@media (min-width: 1024px) {
+
+    .app-header {
+        height: calc(var(--header-h) + env(safe-area-inset-top));
+    }
+
+    .header-content {
+        width: 100%;
+        height: var(--header-h);
+        grid-template-columns: calc(var(--sidebar-w) - var(--space-5)) 40px 160px 100px 40px auto 1fr;
+        grid-template-areas: "brand prev month year next today .";
+        padding: 0 var(--space-8) 0 var(--space-5);
+    }
+
+    /* Settings lives in the sidebar on desktop */
+    .header-button {
+        display: none;
+    }
+
+    .bottom-nav {
+        top: calc(var(--header-h) + env(safe-area-inset-top));
+        right: auto;
+        width: var(--sidebar-w);
+        max-width: none;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: var(--space-5) var(--space-3) calc(var(--space-5) + env(safe-area-inset-bottom));
+        overflow-y: auto;
+        border: 0;
+        border-right: 1px solid var(--z-border);
+        border-radius: 0;
+        background: rgba(8, 10, 15, 0.6);
+    }
+
+    .bottom-nav > .nav-button,
+    .bottom-nav > .nav-button[data-page],
+    .bottom-nav > .nav-button[data-quick-add-toggle] {
+        order: 0;
+    }
+
+    .nav-button,
+    .nav-button--extra {
+        min-height: var(--tap);
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: var(--space-3);
+        padding: 0 var(--space-3);
+        font-size: var(--text-sm);
+        line-height: 1;
+    }
+
+    .nav-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 0;
+    }
+
+    .nav-svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .nav-button.active,
+    .nav-button[aria-current="page"] {
+        color: var(--z-text);
+        background: var(--z-violet-soft);
+    }
+
+    .nav-button.active::before {
+        top: 50%;
+        left: 0;
+        width: 3px;
+        height: 20px;
+        transform: translateY(-50%);
+        border-radius: 0 3px 3px 0;
+    }
+
+    .nav-button.active .nav-icon {
+        background: none;
+        color: var(--z-violet-bright);
+    }
+
+    .nav-button[data-quick-add-toggle] {
+        justify-content: center;
+        gap: var(--space-2);
+        margin-bottom: var(--space-4);
+        background: var(--z-violet);
+        color: #ffffff;
+        font-weight: 750;
+    }
+
+    .nav-button[data-quick-add-toggle]:hover {
+        background: var(--z-violet-strong);
+        color: #ffffff;
+    }
+
+    .nav-button[data-quick-add-toggle] .nav-icon,
+    .nav-button[data-quick-add-toggle]:hover .nav-icon {
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        background: none;
+    }
+
+    .nav-button[data-page="settings"] {
+        margin-top: auto;
+    }
+
+    .app-content {
+        width: auto;
+        max-width: none;
+        margin: 0 0 0 var(--sidebar-w);
+        padding:
+            var(--space-8)
+            max(var(--space-8), calc((100% - var(--sidebar-w) - var(--content-max)) / 2))
+            var(--space-10);
+    }
+}
+
+@media (display-mode: standalone) {
+    html {
+        background: var(--z-bg);
+    }
+}
+
+
+/* =========================================================
+   6. SHARED ACTION BUTTONS
+   Destructive actions read as secondary: outlined, not filled,
+   and never wider than the actions they sit beside.
+   ========================================================= */
+
+#budget-page .zg-bill-actions {
+    flex-wrap: nowrap;
+}
+
+#budget-page .zg-bill-actions .zg-bill-btn {
+    flex: 0 0 auto;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 var(--space-4);
+}
+
+#budget-page .zg-bill-actions .zg-bill-btn--pay {
+    flex: 1 1 auto;
+}
+
+@media (min-width: 620px) {
+    #budget-page .zg-bill-actions .zg-bill-btn--pay {
+        flex: 0 0 auto;
+    }
+}
+
+
+/* =========================================================
+   7. INLINE ICONS
+   One stroke icon set (inline SVG, currentColor) replaces the
+   emoji / Unicode glyphs. Containers keep their existing size
+   and tone; the icon just centres inside them.
+   ========================================================= */
+
+.mw-icon {
+    display: block;
+    flex: none;
+}
+
+.transaction-icon,
+.zg-tx-row-icon,
+.money-action-icon,
+.savings-quick-action-icon,
+.zg-account-icon,
+.zg-set-row-go {
+    display: inline-grid;
+    place-items: center;
+    line-height: 1;
+}
+
+.zg-mc-action .mw-icon,
+.mw-migration-badge .mw-icon {
+    display: inline-block;
+    vertical-align: -0.2em;
+}
+
+
+/* =========================================================
+   8. PAGE RHYTHM
+   Every screen: eyebrow → title → one line of context, then the
+   same gap before the first module. Section-level "Add" actions
+   share one compact size.
+   ========================================================= */
+
+#home-page .page-heading,
+#budget-page .page-heading,
+#transactions-page .page-heading,
+#savings-page .page-heading,
+#reports-page .page-heading,
+#settings-page .page-heading,
+#m-cash-page .zg-mc-heading {
+    margin-bottom: var(--space-5);
+}
+
+#budget-page .add-button {
+    min-height: 40px;
+    padding: 0 var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    line-height: 1;
+}
 
 
 /* =========================================================

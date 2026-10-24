@@ -406,14 +406,64 @@
         return JSON.stringify(canonicalize(value));
     }
 
+    /* ---------------------------------------------------------------
+       DERIVED / BOOKKEEPING FIELDS excluded from CHANGE DETECTION.
+
+       Two devices holding the SAME user-authored month can still
+       legitimately disagree on:
+         - updatedAt / createdAt   (a fresh timestamp from a read, or
+           a recurring occurrence materialized at local device time)
+         - endingBalance           (a pure function of startingBalance
+           + income - bills - expenses - savings, recomputed at a
+           different moment on each device)
+       These are volatile, never user-authored, and always
+       reproducible. They are stripped from the fingerprint so that
+       merely viewing / rolling a month forward never makes it look
+       edited — but they are NOT removed from the stored payload or
+       the uploaded cloud document.
+       --------------------------------------------------------------- */
+    var MONTH_VOLATILE_FIELDS = ["updatedAt", "createdAt", "endingBalance"];
+    var MONTH_RECORD_ARRAYS = [
+        "bills", "paychecks", "expenses", "transactions",
+        "savingsDeposits", "savingsTransfers"
+    ];
+    var RECORD_VOLATILE_FIELDS = ["createdAt", "updatedAt"];
+
+    function withoutKeys(obj, keys) {
+        var out = {};
+        Object.keys(obj).forEach(function (k) {
+            if (keys.indexOf(k) === -1) { out[k] = obj[k]; }
+        });
+        return out;
+    }
+
+    /* a change-detection view of a month payload: user-authored content
+       only, with volatile/derived fields removed at the month level and
+       from each activity record */
+    function monthFingerprintPayload(payload) {
+        if (!isPlainObject(payload)) { return payload; }
+        var view = withoutKeys(payload, MONTH_VOLATILE_FIELDS);
+        MONTH_RECORD_ARRAYS.forEach(function (arrKey) {
+            if (!Array.isArray(view[arrKey])) { return; }
+            view[arrKey] = view[arrKey].map(function (rec) {
+                return isPlainObject(rec) ? withoutKeys(rec, RECORD_VOLATILE_FIELDS) : rec;
+            });
+        });
+        return view;
+    }
+
     /* the exact bytes the sync engine fingerprints for one document */
     function documentFingerprintInput(doc) {
         if (!isPlainObject(doc)) { return null; }
+        var payload = doc.payload;
+        if (doc.documentType === MONTH_TYPE) {
+            payload = monthFingerprintPayload(payload);
+        }
         return canonicalStringify({
             documentType: doc.documentType,
             documentKey: doc.documentKey,
             schemaVersion: doc.schemaVersion,
-            payload: doc.payload
+            payload: payload
         });
     }
 
