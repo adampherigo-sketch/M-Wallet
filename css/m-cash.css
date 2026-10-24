@@ -485,12 +485,12 @@
 
 #m-cash-page .zg-mc-btn--danger {
 	border-color: rgba(255, 101, 119, 0.3);
-	background: rgba(255, 101, 119, 0.14);
+	background: transparent;
 	color: var(--z-danger);
 }
 
 #m-cash-page .zg-mc-btn--danger:hover {
-	background: rgba(255, 101, 119, 0.24);
+	background: var(--z-danger-soft);
 }
 
 #m-cash-page .zg-mc-link {

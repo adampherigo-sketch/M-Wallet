@@ -82,6 +82,58 @@
         0 0 26px rgba(155, 92, 255, 0.22);
 
     --z-grid-line: rgba(255, 255, 255, 0.018);
+
+    /* Derived states (existing hues only) */
+    --z-violet-strong: #8c53e6;   /* --z-violet shaded 10%: white text 4.7:1 */
+    --z-danger-soft: rgba(255, 101, 119, 0.12);
+    --z-warning-soft: rgba(245, 190, 98, 0.12);
+    --z-success-soft: rgba(66, 223, 168, 0.12);
+    --z-hover-soft: rgba(255, 255, 255, 0.04);
+    --z-focus-ring: 0 0 0 3px rgba(155, 92, 255, 0.55);
+
+    /* Aliases used by the auth / account / beta / sync sheets.
+       They were never defined, so those sheets fell back to
+       light-theme values (#fff surfaces, #3d5afe focus, dark-red
+       ink) whenever the OS was in light mode. */
+    --z-surface: var(--z-panel);
+    --z-surface-2: var(--z-panel-hover);
+    --z-surface-muted: var(--z-hover-soft);
+    --z-overlay: rgba(4, 6, 10, 0.66);
+    --z-radius: var(--z-radius-md);
+    --z-text-soft: var(--z-text-secondary);
+    --z-focus: var(--z-violet-bright);
+    --z-link: var(--z-violet-bright);
+    --z-good: var(--z-success);
+    --z-good-ink: var(--z-success);
+    --z-bad: var(--z-danger);
+    --z-bad-ink: var(--z-danger-bright);
+    --z-warn: var(--z-warning);
+
+    /* Spacing scale (4px base) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+
+    /* Type scale */
+    --text-xs: 0.72rem;
+    --text-sm: 0.84rem;
+    --text-base: 0.95rem;
+    --text-lg: 1.1rem;
+    --text-xl: 1.4rem;
+    --text-2xl: 1.85rem;
+    --leading-tight: 1.2;
+    --leading-normal: 1.5;
+
+    /* Layout */
+    --content-max: 1100px;
+    --header-h: 64px;
+    --sidebar-w: 232px;
+    --tap: 44px;
 }
 
 
@@ -290,91 +342,6 @@ a:focus-visible,
 
 .current-month-title {
     color: var(--z-text);
-}
-
-
-/* =========================================================
-   5. BOTTOM NAVIGATION
-   Dark graphite surface · thin top border · violet active
-   ========================================================= */
-
-.bottom-nav {
-    background: rgba(13, 16, 23, 0.9);
-
-    border-color: var(--z-border);
-    border-bottom: none;
-
-    box-shadow:
-        0 -10px 34px
-        rgba(0, 0, 0, 0.5);
-}
-
-.bottom-nav::after {
-    background: #0d1017;
-}
-
-.nav-button:hover {
-    color: var(--z-text);
-    background: var(--z-violet-soft);
-}
-
-.nav-button.active {
-    color: var(--z-violet-bright);
-    background: var(--z-violet-soft);
-}
-
-.nav-button[data-quick-add-toggle] .nav-icon {
-    border-color: #0b0e14;
-
-    background:
-        linear-gradient(
-            135deg,
-            var(--z-violet),
-            var(--z-violet-bright)
-        );
-
-    box-shadow:
-        0 8px 22px
-        rgba(155, 92, 255, 0.35);
-}
-
-.nav-button[data-quick-add-toggle]:hover .nav-icon {
-    box-shadow:
-        0 11px 26px
-        rgba(155, 92, 255, 0.42);
-}
-
-.nav-button[data-quick-add-toggle][aria-expanded="true"] .nav-icon {
-    background:
-        linear-gradient(
-            135deg,
-            var(--z-violet-bright),
-            #c98cff
-        );
-}
-
-.nav-button[data-quick-add-toggle] > span:last-child {
-    color: var(--z-text-secondary);
-}
-
-/* Mobile: active pill + center action */
-
-@media (max-width: 600px) {
-
-    .nav-button.active:not([data-quick-add-toggle]) > span:last-child {
-        color: var(--z-violet-bright);
-    }
-
-    .nav-button.active:not([data-quick-add-toggle]) .nav-icon {
-        background: var(--z-violet-soft);
-        color: var(--z-violet-bright);
-    }
-
-    .nav-button[data-quick-add-toggle] .nav-icon {
-        box-shadow:
-            0 7px 18px
-            rgba(155, 92, 255, 0.32);
-    }
 }
 
 
@@ -736,7 +703,7 @@ textarea::placeholder {
    ========================================================= */
 
 .money-modal-overlay {
-    background: rgba(4, 6, 10, 0.66);
+    background: var(--z-overlay);
 }
 
 .money-modal-content {
@@ -763,15 +730,20 @@ textarea::placeholder {
     color: var(--z-violet-bright);
 }
 
+/* Closing is not destructive — neutral, not danger red */
 .money-modal-close {
-    border: 1px solid rgba(255, 101, 119, 0.28);
-    background: rgba(255, 101, 119, 0.16);
-    color: var(--z-danger);
+    width: var(--tap);
+    height: var(--tap);
+    border: 1px solid var(--z-border);
+    background: var(--z-panel-hover);
+    color: var(--z-text-secondary);
 }
 
 .money-modal-close:hover {
-    background: var(--z-danger);
-    color: #ffffff;
+    border-color: var(--z-border-strong);
+    background: var(--z-hover-soft);
+    color: var(--z-text);
+    transform: none;
 }
 
 .money-modal-status {

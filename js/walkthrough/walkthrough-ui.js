@@ -299,6 +299,9 @@
         try {
             if (navEl && typeof navEl.getBoundingClientRect === "function") {
                 var r = navEl.getBoundingClientRect();
+                /* >= 1024px the nav is a left sidebar, not a bottom bar */
+                var vh = win && win.innerHeight;
+                if (vh && r.top < vh / 2) { return readInset("--sat-bottom", 0) + 8; }
                 if (isFinite(r.height) && r.height > 0) { h = r.height; }
             }
         } catch (e) { /* keep default */ }

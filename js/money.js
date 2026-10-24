@@ -3169,7 +3169,7 @@ function openMoneyModal(
 
 
         moneyModalSave.textContent =
-            "💾 Save Changes";
+            "Save Changes";
 
     }
 
@@ -3182,7 +3182,7 @@ function openMoneyModal(
 
 
         moneyModalSave.textContent =
-            "💾 Save Changes";
+            "Save Changes";
 
     }
 
@@ -3195,7 +3195,7 @@ function openMoneyModal(
 
 
         moneyModalSave.textContent =
-            "💾 Save Changes";
+            "Save Changes";
 
     }
 
@@ -3208,7 +3208,7 @@ function openMoneyModal(
 
 
         moneyModalSave.textContent =
-            "💾 Save Changes";
+            "Save Changes";
 
     }
 
@@ -3224,7 +3224,7 @@ function openMoneyModal(
         ) {
 
             moneyModalSave.textContent =
-                "💾 Save";
+                "Save";
 
         }
 
@@ -3652,7 +3652,7 @@ function closeMoneyModal() {
     ) {
 
         moneyModalSave.textContent =
-            "💾 Save";
+            "Save";
 
     }
 
