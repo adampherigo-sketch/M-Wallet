@@ -4434,6 +4434,53 @@ function createMoneyId() {
    32. VALIDATE SAVINGS ACTION
    ========================================================= */
 
+/*
+    Whole-cent comparison (same rule as MWalletStorage.toCents),
+    so a stored balance like 30.299999999999997 still allows
+    moving the $30.30 the screen shows.
+*/
+function toMoneyCents(
+    value
+) {
+
+    const storage =
+        getMoneyStorage();
+
+
+    if (
+        storage &&
+        typeof storage.toCents ===
+            "function"
+    ) {
+
+        return storage.toCents(
+            value
+        );
+
+    }
+
+
+    const number =
+        Number(
+            value
+        );
+
+
+    return Number.isFinite(
+        number
+    )
+        ? Math.round(
+            Number(
+                (number * 100).toPrecision(
+                    15
+                )
+            )
+        )
+        : 0;
+
+}
+
+
 function validateSavingsRecord(
     record
 ) {
@@ -4466,8 +4513,12 @@ function validateSavingsRecord(
 
 
         if (
-            record.amount >
-            available
+            toMoneyCents(
+                record.amount
+            ) >
+            toMoneyCents(
+                available
+            )
         ) {
 
             throw new Error(
@@ -4496,8 +4547,12 @@ function validateSavingsRecord(
 
 
         if (
-            record.amount >
-            available
+            toMoneyCents(
+                record.amount
+            ) >
+            toMoneyCents(
+                available
+            )
         ) {
 
             throw new Error(
@@ -4543,8 +4598,12 @@ function validateSavingsRecord(
 
 
         if (
-            record.amount >
-            available
+            toMoneyCents(
+                record.amount
+            ) >
+            toMoneyCents(
+                available
+            )
         ) {
 
             throw new Error(

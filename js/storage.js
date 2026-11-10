@@ -283,6 +283,294 @@ const BudgetStorage = {
     },
 
 
+    /* -----------------------------------------------------
+       MONEY PRECISION — WHOLE CENTS
+
+       Amounts are stored as dollars, but every balance
+       change, balance check and total is worked out in
+       integer CENTS and converted back. Plain float math
+       drifts (0.1 + 0.2 = 0.30000000000000004; $10.10 +
+       $20.20 = 30.299999999999997), which made valid moves
+       fail — e.g. allocating the exact General Savings
+       balance was refused.
+       ----------------------------------------------------- */
+
+    toCents(value) {
+
+        /* toPrecision(15) strips binary noise before
+           rounding: 30.299999999999997 -> 3030 cents */
+        return Math.round(
+            Number(
+                (
+                    this.toNumber(
+                        value
+                    ) * 100
+                ).toPrecision(
+                    15
+                )
+            )
+        );
+
+    },
+
+
+    fromCents(cents) {
+
+        const dollars =
+            Math.round(
+                this.toNumber(
+                    cents
+                )
+            ) / 100;
+
+
+        /* never hand out -0 (it formats as "-$0.00") */
+        return dollars === 0
+            ? 0
+            : dollars;
+
+    },
+
+
+    roundMoney(value) {
+
+        return this.fromCents(
+            this.toCents(
+                value
+            )
+        );
+
+    },
+
+
+    /* a fund is complete when its balance reaches the
+       target, compared in whole cents */
+    isGoalFunded(goal) {
+
+        const targetCents =
+            this.toCents(
+                this.toPositiveNumber(
+                    goal?.targetAmount
+                )
+            );
+
+
+        return (
+            targetCents > 0 &&
+            this.toCents(
+                this.toPositiveNumber(
+                    goal?.currentAmount
+                )
+            ) >= targetCents
+        );
+
+    },
+
+
+    /* -----------------------------------------------------
+       MONEY PRECISION CLEANUP — EXPLICIT, NEVER AUTOMATIC
+
+       Older saves could leave float residue in stored money
+       (e.g. a General Savings balance of 30.299999999999997).
+       The money math above no longer creates it; this tidies
+       values that were already saved. It is NOT run on load —
+       call it deliberately, e.g. from the browser console:
+
+         MWalletStorage.cleanupStoredMoneyPrecision({ dryRun: true })
+         MWalletStorage.cleanupStoredMoneyPrecision()
+
+       - Only a value within 1/1000 of a cent of a whole cent
+         is rounded. A real sub-cent amount (e.g. an imported
+         1.005) is listed in `skipped` and left alone.
+       - Only those money fields change: the stored wallet is
+         edited as saved, not re-normalized.
+       - Before writing, the untouched wallet JSON is copied to
+         moneyPrecisionBackupKey ("Erase this device" removes it).
+       - Idempotent: a second run finds nothing and writes nothing.
+       ----------------------------------------------------- */
+
+    moneyPrecisionBackupKey:
+        "mWalletData-backup-before-cents-cleanup",
+
+
+    cleanupStoredMoneyPrecision(
+        options = {}
+    ) {
+
+        const result = {
+            ok: true,
+            dryRun: options.dryRun === true,
+            applied: false,
+            changes: [],
+            skipped: [],
+            backupKey: null
+        };
+
+
+        const raw =
+            localStorage.getItem(
+                this.storageKey
+            );
+
+
+        if (!raw) {
+
+            return result;
+
+        }
+
+
+        let data;
+
+        try {
+
+            data = JSON.parse(raw);
+
+        }
+        catch (error) {
+
+            data = null;
+
+        }
+
+
+        if (
+            !data ||
+            typeof data !== "object"
+        ) {
+
+            return { ...result, ok: false, code: "unreadable" };
+
+        }
+
+
+        if (
+            data.recoveryMode === true
+        ) {
+
+            return { ...result, ok: false, code: "recovery_mode" };
+
+        }
+
+
+        const visit = (holder, field, path) => {
+
+            if (!holder || typeof holder !== "object") {
+                return;
+            }
+
+            const value = holder[field];
+
+            if (typeof value !== "number" || !Number.isFinite(value)) {
+                return;
+            }
+
+            const rounded = this.roundMoney(value);
+
+            if (rounded === value) {
+                return;
+            }
+
+            if (Math.abs(value - rounded) * 100 < 0.001) {
+                result.changes.push({ path, from: value, to: rounded });
+                holder[field] = rounded;
+            }
+            else {
+                result.skipped.push({ path, value });
+            }
+
+        };
+
+
+        const visitList = (list, field, path) => {
+
+            if (!Array.isArray(list)) {
+                return;
+            }
+
+            list.forEach((item, index) =>
+                visit(item, field, `${path}[${index}].${field}`)
+            );
+
+        };
+
+
+        visit(data.accounts?.checking, "balance", "accounts.checking.balance");
+        visit(data.accounts?.savings, "balance", "accounts.savings.balance");
+        visitList(data.savingsGoals, "currentAmount", "savingsGoals");
+        visitList(data.savingsGoals, "targetAmount", "savingsGoals");
+        visitList(data.savingsTransfers, "amount", "savingsTransfers");
+        visitList(data.income, "amount", "income");
+        visitList(data.expenses, "amount", "expenses");
+
+
+        Object.keys(data.months || {}).sort().forEach(monthKey => {
+
+            const month = data.months[monthKey];
+            const base = `months.${monthKey}`;
+
+            visit(month, "startingBalance", `${base}.startingBalance`);
+            visit(month, "endingBalance", `${base}.endingBalance`);
+
+            [
+                "paychecks",
+                "bills",
+                "expenses",
+                "transactions",
+                "savingsDeposits",
+                "savingsTransfers"
+            ].forEach(listName =>
+                visitList(month?.[listName], "amount", `${base}.${listName}`)
+            );
+
+        });
+
+
+        if (
+            result.dryRun ||
+            result.changes.length === 0
+        ) {
+
+            return result;
+
+        }
+
+
+        /* no backup -> no write */
+        try {
+
+            localStorage.setItem(
+                this.moneyPrecisionBackupKey,
+                raw
+            );
+
+        }
+        catch (error) {
+
+            return { ...result, ok: false, code: "backup_failed" };
+
+        }
+
+
+        if (
+            !this.save(
+                data
+            )
+        ) {
+
+            return { ...result, ok: false, code: "save_failed" };
+
+        }
+
+
+        result.applied = true;
+        result.backupKey = this.moneyPrecisionBackupKey;
+
+        return result;
+
+    },
+
+
     normalizeString(
         value,
         fallback = ""
@@ -4976,7 +5264,7 @@ const BudgetStorage = {
                 )
             ) {
 
-                return this.toNumber(
+                return this.roundMoney(
                     target.startingBalance
                 );
 
@@ -4993,7 +5281,8 @@ const BudgetStorage = {
                     .sort();
 
 
-            let carry =
+            /* running balance in whole cents — see toCents() */
+            let carryCents =
                 0;
 
 
@@ -5006,27 +5295,29 @@ const BudgetStorage = {
                     data.months[key];
 
 
-                const priorStart =
+                const priorStartCents =
                     this.isManualStartingBalance(
                         priorMonth
                     )
-                        ? this.toNumber(
+                        ? this.toCents(
                             priorMonth.startingBalance
                         )
-                        : carry;
+                        : carryCents;
 
 
-                carry =
-                    priorStart
-                    + this.getTotalIncome(key)
-                    - this.getTotalBills(key)
-                    - this.getTotalExpenses(key)
-                    - this.getTotalSavingsDeposits(key);
+                carryCents =
+                    priorStartCents
+                    + this.toCents(this.getTotalIncome(key))
+                    - this.toCents(this.getTotalBills(key))
+                    - this.toCents(this.getTotalExpenses(key))
+                    - this.toCents(this.getTotalSavingsDeposits(key));
 
             }
 
 
-            return carry;
+            return this.fromCents(
+                carryCents
+            );
 
         }
 
@@ -5762,23 +6053,25 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        return this
-            .getIncomeForMonth(
-                monthKey
-            )
-            .reduce(
-                (
-                    total,
-                    income
-                ) =>
+        return this.fromCents(
+            this
+                .getIncomeForMonth(
+                    monthKey
+                )
+                .reduce(
+                    (
+                        totalCents,
+                        income
+                    ) =>
 
-                    total +
-                    this.toNumber(
-                        income.amount
-                    ),
+                        totalCents +
+                        this.toCents(
+                            income.amount
+                        ),
 
-                0
-            );
+                    0
+                )
+        );
 
     },
 
@@ -5787,23 +6080,25 @@ const BudgetStorage = {
         year
     ) {
 
-        return this
-            .getIncomeForYear(
-                year
-            )
-            .reduce(
-                (
-                    total,
-                    income
-                ) =>
+        return this.fromCents(
+            this
+                .getIncomeForYear(
+                    year
+                )
+                .reduce(
+                    (
+                        totalCents,
+                        income
+                    ) =>
 
-                    total +
-                    this.toNumber(
-                        income.amount
-                    ),
+                        totalCents +
+                        this.toCents(
+                            income.amount
+                        ),
 
-                0
-            );
+                    0
+                )
+        );
 
     },
 
@@ -6153,23 +6448,25 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        return this
-            .getPaychecks(
-                monthKey
-            )
-            .reduce(
-                (
-                    total,
-                    paycheck
-                ) =>
+        return this.fromCents(
+            this
+                .getPaychecks(
+                    monthKey
+                )
+                .reduce(
+                    (
+                        totalCents,
+                        paycheck
+                    ) =>
 
-                    total +
-                    this.toNumber(
-                        paycheck.amount
-                    ),
+                        totalCents +
+                        this.toCents(
+                            paycheck.amount
+                        ),
 
-                0
-            );
+                    0
+                )
+        );
 
     },
 
@@ -7026,23 +7323,25 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        return this
-            .getExpensesForMonth(
-                monthKey
-            )
-            .reduce(
-                (
-                    total,
-                    expense
-                ) =>
+        return this.fromCents(
+            this
+                .getExpensesForMonth(
+                    monthKey
+                )
+                .reduce(
+                    (
+                        totalCents,
+                        expense
+                    ) =>
 
-                    total +
-                    this.toNumber(
-                        expense.amount
-                    ),
+                        totalCents +
+                        this.toCents(
+                            expense.amount
+                        ),
 
-                0
-            );
+                    0
+                )
+        );
 
     },
 
@@ -7051,23 +7350,25 @@ const BudgetStorage = {
         year
     ) {
 
-        return this
-            .getExpensesForYear(
-                year
-            )
-            .reduce(
-                (
-                    total,
-                    expense
-                ) =>
+        return this.fromCents(
+            this
+                .getExpensesForYear(
+                    year
+                )
+                .reduce(
+                    (
+                        totalCents,
+                        expense
+                    ) =>
 
-                    total +
-                    this.toNumber(
-                        expense.amount
-                    ),
+                        totalCents +
+                        this.toCents(
+                            expense.amount
+                        ),
 
-                0
-            );
+                    0
+                )
+        );
 
     },
 
@@ -7278,29 +7579,31 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        return this
-            .getManualTransactions(
-                monthKey
-            )
-            .filter(
-                transaction =>
-                    this.toNumber(
-                        transaction.amount
-                    ) > 0
-            )
-            .reduce(
-                (
-                    total,
-                    transaction
-                ) =>
+        return this.fromCents(
+            this
+                .getManualTransactions(
+                    monthKey
+                )
+                .filter(
+                    transaction =>
+                        this.toNumber(
+                            transaction.amount
+                        ) > 0
+                )
+                .reduce(
+                    (
+                        totalCents,
+                        transaction
+                    ) =>
 
-                    total +
-                    this.toNumber(
-                        transaction.amount
-                    ),
+                        totalCents +
+                        this.toCents(
+                            transaction.amount
+                        ),
 
-                0
-            );
+                    0
+                )
+        );
 
     },
 
@@ -7310,31 +7613,35 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        return this
-            .getManualTransactions(
-                monthKey
-            )
-            .filter(
-                transaction =>
-                    this.toNumber(
-                        transaction.amount
-                    ) < 0
-            )
-            .reduce(
-                (
-                    total,
-                    transaction
-                ) =>
-
-                    total +
-                    Math.abs(
+        return this.fromCents(
+            this
+                .getManualTransactions(
+                    monthKey
+                )
+                .filter(
+                    transaction =>
                         this.toNumber(
                             transaction.amount
-                        )
-                    ),
+                        ) < 0
+                )
+                .reduce(
+                    (
+                        totalCents,
+                        transaction
+                    ) =>
 
-                0
-            );
+                        totalCents +
+                        this.toCents(
+                            Math.abs(
+                                this.toNumber(
+                                    transaction.amount
+                                )
+                            )
+                        ),
+
+                    0
+                )
+        );
 
     },
 
@@ -7351,7 +7658,7 @@ const BudgetStorage = {
 
         return Math.max(
             0,
-            this.toNumber(
+            this.roundMoney(
                 data.accounts
                     ?.savings
                     ?.balance
@@ -7363,7 +7670,7 @@ const BudgetStorage = {
 
     getCheckingAccountBalance() {
 
-        return this.toNumber(
+        return this.roundMoney(
             this.load()
                 .accounts
                 ?.checking
@@ -7375,34 +7682,42 @@ const BudgetStorage = {
 
     getAllocatedSavingsTotal() {
 
-        return this
-            .getSavingsGoals()
-            .reduce(
-                (
-                    total,
-                    goal
-                ) =>
+        return this.fromCents(
+            this
+                .getSavingsGoals()
+                .reduce(
+                    (
+                        totalCents,
+                        goal
+                    ) =>
 
-                    total +
-                    this.toPositiveNumber(
-                        goal.currentAmount
-                    ),
+                        totalCents +
+                        this.toCents(
+                            this.toPositiveNumber(
+                                goal.currentAmount
+                            )
+                        ),
 
-                0
-            );
+                    0
+                )
+        );
 
     },
 
 
     getTotalSavingsBalance() {
 
-        return (
+        return this.fromCents(
 
-            this.getSavingsBalance()
+            this.toCents(
+                this.getSavingsBalance()
+            )
 
             +
 
-            this.getAllocatedSavingsTotal()
+            this.toCents(
+                this.getAllocatedSavingsTotal()
+            )
 
         );
 
@@ -7425,7 +7740,7 @@ const BudgetStorage = {
 
 
         data.accounts.checking.balance =
-            this.toNumber(
+            this.roundMoney(
                 endingBalance
             );
 
@@ -7632,9 +7947,12 @@ const BudgetStorage = {
         }
 
 
-        const oldCurrent =
-            this.toPositiveNumber(
-                goal.currentAmount
+        /* whole cents — see toCents() */
+        const oldCurrentCents =
+            this.toCents(
+                this.toPositiveNumber(
+                    goal.currentAmount
+                )
             );
 
 
@@ -7647,36 +7965,40 @@ const BudgetStorage = {
                 );
 
 
-        const newCurrent =
+        const newCurrentCents =
             hasCurrentAmountUpdate
 
-                ? this.toPositiveNumber(
-                    updates.currentAmount
+                ? this.toCents(
+                    this.toPositiveNumber(
+                        updates.currentAmount
+                    )
                 )
 
-                : oldCurrent;
+                : oldCurrentCents;
 
 
-        const difference =
-            newCurrent -
-            oldCurrent;
+        const differenceCents =
+            newCurrentCents -
+            oldCurrentCents;
 
 
         if (
-            difference > 0
+            differenceCents > 0
         ) {
 
-            const available =
-                this.toPositiveNumber(
-                    data.accounts
-                        .savings
-                        .balance
+            const availableCents =
+                this.toCents(
+                    this.toPositiveNumber(
+                        data.accounts
+                            .savings
+                            .balance
+                    )
                 );
 
 
             if (
-                difference >
-                available
+                differenceCents >
+                availableCents
             ) {
 
                 throw new Error(
@@ -7688,8 +8010,15 @@ const BudgetStorage = {
 
             data.accounts
                 .savings
-                .balance -=
-                    difference;
+                .balance =
+                    this.fromCents(
+                        this.toCents(
+                            data.accounts
+                                .savings
+                                .balance
+                        ) -
+                        differenceCents
+                    );
 
 
             data.savingsTransfers.push(
@@ -7706,7 +8035,9 @@ const BudgetStorage = {
                         goal.name,
 
                     amount:
-                        difference,
+                        this.fromCents(
+                            differenceCents
+                        ),
 
                     date:
                         updates?.date ||
@@ -7723,19 +8054,26 @@ const BudgetStorage = {
 
 
         if (
-            difference < 0
+            differenceCents < 0
         ) {
 
             const returnedAmount =
-                Math.abs(
-                    difference
+                this.fromCents(
+                    -differenceCents
                 );
 
 
             data.accounts
                 .savings
-                .balance +=
-                    returnedAmount;
+                .balance =
+                    this.fromCents(
+                        this.toCents(
+                            data.accounts
+                                .savings
+                                .balance
+                        ) -
+                        differenceCents
+                    );
 
 
             data.savingsTransfers.push(
@@ -7782,19 +8120,23 @@ const BudgetStorage = {
 
 
         goal.targetAmount =
-            this.toPositiveNumber(
-                goal.targetAmount
+            this.roundMoney(
+                this.toPositiveNumber(
+                    goal.targetAmount
+                )
             );
 
 
         goal.currentAmount =
-            newCurrent;
+            this.fromCents(
+                newCurrentCents
+            );
 
 
         goal.completed =
-            goal.targetAmount > 0 &&
-            goal.currentAmount >=
-                goal.targetAmount;
+            this.isGoalFunded(
+                goal
+            );
 
 
         goal.updatedAt =
@@ -7913,8 +8255,10 @@ const BudgetStorage = {
         */
 
         const returnedAmount =
-            this.toPositiveNumber(
-                goal.currentAmount
+            this.roundMoney(
+                this.toPositiveNumber(
+                    goal.currentAmount
+                )
             );
 
 
@@ -7925,8 +8269,17 @@ const BudgetStorage = {
 
             data.accounts
                 .savings
-                .balance +=
-                    returnedAmount;
+                .balance =
+                    this.fromCents(
+                        this.toCents(
+                            data.accounts
+                                .savings
+                                .balance
+                        ) +
+                        this.toCents(
+                            returnedAmount
+                        )
+                    );
 
 
             data.savingsTransfers.push(
@@ -8057,19 +8410,28 @@ const BudgetStorage = {
 
 
             normalized.amount =
-                this.toPositiveNumber(
-                    amount
+                this.roundMoney(
+                    this.toPositiveNumber(
+                        amount
+                    )
                 );
 
 
-            goal.currentAmount +=
-                normalized.amount;
+            goal.currentAmount =
+                this.fromCents(
+                    this.toCents(
+                        goal.currentAmount
+                    ) +
+                    this.toCents(
+                        normalized.amount
+                    )
+                );
 
 
             goal.completed =
-                goal.targetAmount > 0 &&
-                goal.currentAmount >=
-                    goal.targetAmount;
+                this.isGoalFunded(
+                    goal
+                );
 
 
             goal.updatedAt =
@@ -8088,23 +8450,27 @@ const BudgetStorage = {
             amount < 0
         ) {
 
-            const withdrawalAmount =
-                this.toPositiveNumber(
-                    amount
+            const withdrawalCents =
+                this.toCents(
+                    this.toPositiveNumber(
+                        amount
+                    )
                 );
 
 
-            const currentSavings =
-                this.toPositiveNumber(
-                    data.accounts
-                        .savings
-                        .balance
+            const currentSavingsCents =
+                this.toCents(
+                    this.toPositiveNumber(
+                        data.accounts
+                            .savings
+                            .balance
+                    )
                 );
 
 
             if (
-                withdrawalAmount >
-                currentSavings
+                withdrawalCents >
+                currentSavingsCents
             ) {
 
                 throw new Error(
@@ -8123,13 +8489,22 @@ const BudgetStorage = {
 
 
             normalized.amount =
-                -withdrawalAmount;
+                this.fromCents(
+                    -withdrawalCents
+                );
 
 
             data.accounts
                 .savings
-                .balance -=
-                    withdrawalAmount;
+                .balance =
+                    this.fromCents(
+                        this.toCents(
+                            data.accounts
+                                .savings
+                                .balance
+                        ) -
+                        withdrawalCents
+                    );
 
         }
 
@@ -8141,8 +8516,10 @@ const BudgetStorage = {
         else {
 
             const depositAmount =
-                this.toPositiveNumber(
-                    amount
+                this.roundMoney(
+                    this.toPositiveNumber(
+                        amount
+                    )
                 );
 
 
@@ -8160,8 +8537,17 @@ const BudgetStorage = {
 
             data.accounts
                 .savings
-                .balance +=
-                    depositAmount;
+                .balance =
+                    this.fromCents(
+                        this.toCents(
+                            data.accounts
+                                .savings
+                                .balance
+                        ) +
+                        this.toCents(
+                            depositAmount
+                        )
+                    );
 
         }
 
@@ -8278,8 +8664,12 @@ const BudgetStorage = {
 
 
         if (
-            withdrawalAmount >
-            this.getSavingsBalance()
+            this.toCents(
+                withdrawalAmount
+            ) >
+            this.toCents(
+                this.getSavingsBalance()
+            )
         ) {
 
             throw new Error(
@@ -8516,22 +8906,28 @@ const BudgetStorage = {
             ) {
 
                 goal.currentAmount =
-                    Math.max(
-                        0,
-                        this.toPositiveNumber(
-                            goal.currentAmount
-                        )
-                        -
-                        this.toPositiveNumber(
-                            deposit.amount
+                    this.fromCents(
+                        Math.max(
+                            0,
+                            this.toCents(
+                                this.toPositiveNumber(
+                                    goal.currentAmount
+                                )
+                            )
+                            -
+                            this.toCents(
+                                this.toPositiveNumber(
+                                    deposit.amount
+                                )
+                            )
                         )
                     );
 
 
                 goal.completed =
-                    goal.targetAmount > 0 &&
-                    goal.currentAmount >=
-                        goal.targetAmount;
+                    this.isGoalFunded(
+                        goal
+                    );
 
 
                 goal.updatedAt =
@@ -8554,9 +8950,18 @@ const BudgetStorage = {
 
             data.accounts
                 .savings
-                .balance +=
-                    this.toPositiveNumber(
-                        deposit.amount
+                .balance =
+                    this.fromCents(
+                        this.toCents(
+                            data.accounts
+                                .savings
+                                .balance
+                        ) +
+                        this.toCents(
+                            this.toPositiveNumber(
+                                deposit.amount
+                            )
+                        )
                     );
 
         }
@@ -8572,17 +8977,25 @@ const BudgetStorage = {
                 negative.
             */
 
-            const amount =
-                this.toPositiveNumber(
-                    deposit.amount
+            const amountCents =
+                this.toCents(
+                    this.toPositiveNumber(
+                        deposit.amount
+                    )
+                );
+
+
+            const balanceCents =
+                this.toCents(
+                    data.accounts
+                        .savings
+                        .balance
                 );
 
 
             if (
-                amount >
-                data.accounts
-                    .savings
-                    .balance
+                amountCents >
+                balanceCents
             ) {
 
                 throw new Error(
@@ -8594,8 +9007,11 @@ const BudgetStorage = {
 
             data.accounts
                 .savings
-                .balance -=
-                    amount;
+                .balance =
+                    this.fromCents(
+                        balanceCents -
+                        amountCents
+                    );
 
         }
 
@@ -8653,14 +9069,22 @@ const BudgetStorage = {
         options = {}
     ) {
 
+        const allocationCents =
+            this.toCents(
+                this.toPositiveNumber(
+                    amount
+                )
+            );
+
+
         const allocationAmount =
-            this.toPositiveNumber(
-                amount
+            this.fromCents(
+                allocationCents
             );
 
 
         if (
-            allocationAmount <=
+            allocationCents <=
             0
         ) {
 
@@ -8694,17 +9118,19 @@ const BudgetStorage = {
         }
 
 
-        const availableSavings =
-            this.toPositiveNumber(
-                data.accounts
-                    .savings
-                    .balance
+        const availableCents =
+            this.toCents(
+                this.toPositiveNumber(
+                    data.accounts
+                        .savings
+                        .balance
+                )
             );
 
 
         if (
-            allocationAmount >
-            availableSavings
+            allocationCents >
+            availableCents
         ) {
 
             throw new Error(
@@ -8716,22 +9142,32 @@ const BudgetStorage = {
 
         data.accounts
             .savings
-            .balance -=
-                allocationAmount;
+            .balance =
+                this.fromCents(
+                    this.toCents(
+                        data.accounts
+                            .savings
+                            .balance
+                    ) -
+                    allocationCents
+                );
 
 
         goal.currentAmount =
-            this.toPositiveNumber(
-                goal.currentAmount
-            )
-            +
-            allocationAmount;
+            this.fromCents(
+                this.toCents(
+                    this.toPositiveNumber(
+                        goal.currentAmount
+                    )
+                ) +
+                allocationCents
+            );
 
 
         goal.completed =
-            goal.targetAmount > 0 &&
-            goal.currentAmount >=
-                goal.targetAmount;
+            this.isGoalFunded(
+                goal
+            );
 
 
         goal.updatedAt =
@@ -8792,22 +9228,28 @@ const BudgetStorage = {
                     .balance,
 
             totalSavings:
-                data.accounts
-                    .savings
-                    .balance
-                +
-                data.savingsGoals.reduce(
-                    (
-                        total,
-                        item
-                    ) =>
+                this.fromCents(
+                    this.toCents(
+                        data.accounts
+                            .savings
+                            .balance
+                    )
+                    +
+                    data.savingsGoals.reduce(
+                        (
+                            totalCents,
+                            item
+                        ) =>
 
-                        total +
-                        this.toPositiveNumber(
-                            item.currentAmount
-                        ),
+                            totalCents +
+                            this.toCents(
+                                this.toPositiveNumber(
+                                    item.currentAmount
+                                )
+                            ),
 
-                    0
+                        0
+                    )
                 )
 
         };
@@ -8821,14 +9263,22 @@ const BudgetStorage = {
         options = {}
     ) {
 
+        const releaseCents =
+            this.toCents(
+                this.toPositiveNumber(
+                    amount
+                )
+            );
+
+
         const releaseAmount =
-            this.toPositiveNumber(
-                amount
+            this.fromCents(
+                releaseCents
             );
 
 
         if (
-            releaseAmount <=
+            releaseCents <=
             0
         ) {
 
@@ -8862,15 +9312,17 @@ const BudgetStorage = {
         }
 
 
-        const currentGoalAmount =
-            this.toPositiveNumber(
-                goal.currentAmount
+        const currentGoalCents =
+            this.toCents(
+                this.toPositiveNumber(
+                    goal.currentAmount
+                )
             );
 
 
         if (
-            releaseAmount >
-            currentGoalAmount
+            releaseCents >
+            currentGoalCents
         ) {
 
             throw new Error(
@@ -8880,14 +9332,17 @@ const BudgetStorage = {
         }
 
 
-        goal.currentAmount -=
-            releaseAmount;
+        goal.currentAmount =
+            this.fromCents(
+                currentGoalCents -
+                releaseCents
+            );
 
 
         goal.completed =
-            goal.targetAmount > 0 &&
-            goal.currentAmount >=
-                goal.targetAmount;
+            this.isGoalFunded(
+                goal
+            );
 
 
         goal.updatedAt =
@@ -8896,8 +9351,15 @@ const BudgetStorage = {
 
         data.accounts
             .savings
-            .balance +=
-                releaseAmount;
+            .balance =
+                this.fromCents(
+                    this.toCents(
+                        data.accounts
+                            .savings
+                            .balance
+                    ) +
+                    releaseCents
+                );
 
 
         const transfer =
@@ -9200,16 +9662,20 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        return (
+        return this.fromCents(
 
-            this.getMonthlyIncomeTotal(
-                monthKey
+            this.toCents(
+                this.getMonthlyIncomeTotal(
+                    monthKey
+                )
             )
 
             +
 
-            this.getManualTransactionIncome(
-                monthKey
+            this.toCents(
+                this.getManualTransactionIncome(
+                    monthKey
+                )
             )
 
         );
@@ -9222,23 +9688,25 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        return this
-            .getBills(
-                monthKey
-            )
-            .reduce(
-                (
-                    total,
-                    bill
-                ) =>
+        return this.fromCents(
+            this
+                .getBills(
+                    monthKey
+                )
+                .reduce(
+                    (
+                        totalCents,
+                        bill
+                    ) =>
 
-                    total +
-                    this.toNumber(
-                        bill.amount
-                    ),
+                        totalCents +
+                        this.toCents(
+                            bill.amount
+                        ),
 
-                0
-            );
+                    0
+                )
+        );
 
     },
 
@@ -9248,16 +9716,20 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        return (
+        return this.fromCents(
 
-            this.getMonthlyExpenseTotal(
-                monthKey
+            this.toCents(
+                this.getMonthlyExpenseTotal(
+                    monthKey
+                )
             )
 
             +
 
-            this.getManualTransactionExpenses(
-                monthKey
+            this.toCents(
+                this.getManualTransactionExpenses(
+                    monthKey
+                )
             )
 
         );
@@ -9280,23 +9752,25 @@ const BudgetStorage = {
             this.getSelectedMonthKey()
     ) {
 
-        return this
-            .getSavingsDeposits(
-                monthKey
-            )
-            .reduce(
-                (
-                    total,
-                    deposit
-                ) =>
+        return this.fromCents(
+            this
+                .getSavingsDeposits(
+                    monthKey
+                )
+                .reduce(
+                    (
+                        totalCents,
+                        deposit
+                    ) =>
 
-                    total +
-                    this.toNumber(
-                        deposit.amount
-                    ),
+                        totalCents +
+                        this.toCents(
+                            deposit.amount
+                        ),
 
-                0
-            );
+                    0
+                )
+        );
 
     },
 
@@ -9326,33 +9800,46 @@ const BudgetStorage = {
 
 
         const endingBalance =
+            this.fromCents(
 
-            this.resolveMonthStartingBalance(
-                monthKey
-            )
+                this.toCents(
+                    this.resolveMonthStartingBalance(
+                        monthKey
+                    )
+                )
 
-            +
+                +
 
-            this.getTotalIncome(
-                monthKey
-            )
+                this.toCents(
+                    this.getTotalIncome(
+                        monthKey
+                    )
+                )
 
-            -
+                -
 
-            this.getTotalBills(
-                monthKey
-            )
+                this.toCents(
+                    this.getTotalBills(
+                        monthKey
+                    )
+                )
 
-            -
+                -
 
-            this.getTotalExpenses(
-                monthKey
-            )
+                this.toCents(
+                    this.getTotalExpenses(
+                        monthKey
+                    )
+                )
 
-            -
+                -
 
-            this.getTotalSavingsDeposits(
-                monthKey
+                this.toCents(
+                    this.getTotalSavingsDeposits(
+                        monthKey
+                    )
+                )
+
             );
 
 
@@ -9418,17 +9905,23 @@ const BudgetStorage = {
             );
 
 
+        /* whole cents — see toCents() */
+        const remainingCents =
+
+            this.toCents(income)
+
+            - this.toCents(bills)
+
+            - this.toCents(expenses)
+
+            - this.toCents(savings);
+
+
         const endingBalance =
-
-            startingBalance
-
-            + income
-
-            - bills
-
-            - expenses
-
-            - savings;
+            this.fromCents(
+                this.toCents(startingBalance) +
+                remainingCents
+            );
 
 
         return {
@@ -9448,14 +9941,9 @@ const BudgetStorage = {
             endingBalance,
 
             remaining:
-
-                income
-
-                - bills
-
-                - expenses
-
-                - savings
+                this.fromCents(
+                    remainingCents
+                )
 
         };
 
