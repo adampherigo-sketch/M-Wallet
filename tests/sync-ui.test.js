@@ -295,6 +295,44 @@ test("index.html: conflict + bootstrap markup carries full dialog semantics, and
     assert.match(css, /min-height:\s*44px/);
 });
 
+test("index.html: every element id sync-ui.js looks up exists in the REAL markup (bootstrap Retry / Continue Offline)", () => {
+    /* Regression. The DOM-stub tests above build their own markup, which
+       gives the two bootstrap buttons their ids, so they passed while the
+       shipped index.html had the buttons WITHOUT ids. sync-ui.js could then
+       never un-hide them: a signed-in user opening a new device while
+       offline (or during a cloud error) was stuck on "Couldn't check your
+       cloud wallet" with no Retry and no Continue Offline. This checks the
+       real file, not a stub. */
+    const lookedUp = new Set();
+    const lookupPatterns = [
+        /getElementById\(\s*"([A-Za-z0-9_-]+)"\s*\)/g,
+        /setText\(\s*"([A-Za-z0-9_-]+)"/g,
+        /\b[A-Z_]+_ID\s*=\s*"([A-Za-z0-9_-]+)"/g
+    ];
+    for (const re of lookupPatterns) {
+        for (const m of SYNC_UI_SRC.matchAll(re)) { lookedUp.add(m[1]); }
+    }
+    assert.ok(
+        lookedUp.has("mw-sync-bootstrap-retry") && lookedUp.has("mw-sync-bootstrap-offline"),
+        "the scan sees sync-ui.js's bootstrap button lookups"
+    );
+    for (const id of lookedUp) {
+        assert.ok(INDEX_HTML.includes(`id="${id}"`), `index.html is missing id="${id}", which sync-ui.js looks up`);
+    }
+
+    /* each bootstrap button carries BOTH its id (show / hide) and its
+       data-sync-action (click handler) on the same <button>, hidden by default */
+    for (const [id, action] of [
+        ["mw-sync-bootstrap-retry", "bootstrap-retry"],
+        ["mw-sync-bootstrap-offline", "bootstrap-offline"]
+    ]) {
+        const tag = INDEX_HTML.match(new RegExp(`<button\\b[^>]*\\bid="${id}"[^>]*>`));
+        assert.ok(tag, `index.html has <button id="${id}">`);
+        assert.match(tag[0], new RegExp(`data-sync-action="${action}"`), `${id} keeps its click action`);
+        assert.match(tag[0], /\shidden[\s>]/, `${id} starts hidden; sync-ui shows it only for needs_decision`);
+    }
+});
+
 
 /* ================================================================
    SETTINGS "CLOUD SYNC" ROW
