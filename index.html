@@ -7,6 +7,29 @@
 
 
     <!-- =====================================================
+         CONTENT SECURITY POLICY
+         The session token and the wallet live in this origin's
+         localStorage, so injected script must never run here.
+         - script-src 'self': only M-Wallet's own files (the
+           Supabase library is vendored). No inline script, no
+           inline event handlers, no eval.
+         - style-src 'unsafe-inline': progress bars are drawn with
+           style="width: N%" attributes. Styles only, never script.
+         - connect-src: this origin + Supabase projects (the same
+           hosts js/auth/auth-config.js accepts). When a beta
+           feedback endpoint is configured, add its origin here.
+         - frame-ancestors cannot be set from a <meta> tag.
+         Dev note: VS Code Live Server's injected auto-reload
+         script is inline, so it is blocked; refresh manually.
+    ====================================================== -->
+
+    <meta
+        http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.supabase.net; object-src 'none'; base-uri 'self'; form-action 'self'"
+    >
+
+
+    <!-- =====================================================
          MOBILE DISPLAY
     ====================================================== -->
 
