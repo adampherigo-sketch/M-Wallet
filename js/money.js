@@ -1081,6 +1081,15 @@ let lastFocusedElement =
     null;
 
 
+/*
+    Duplicate-save guard (see saveMoneyForm). True from the
+    moment a save is attempted until the modal closes after a
+    success, or the save fails and the user may retry.
+*/
+let moneySaveLocked =
+    false;
+
+
 /* =========================================================
    4. DOM REFERENCES
    ========================================================= */
@@ -3069,6 +3078,12 @@ function openMoneyModal(
     }
 
 
+    /* every newly opened form starts with Save available */
+    setMoneySaveLocked(
+        false
+    );
+
+
     currentMoneyAction =
         normalizedAction;
 
@@ -3655,6 +3670,12 @@ function closeMoneyModal() {
             "Save";
 
     }
+
+
+    /* release the duplicate-save guard for the next form */
+    setMoneySaveLocked(
+        false
+    );
 
 
     if (
@@ -4543,11 +4564,55 @@ function validateSavingsRecord(
    33. SAVE MONEY FORM
    ========================================================= */
 
+/*
+    Lock / unlock Save. The flag is the real guard (it also
+    covers Enter-key and programmatic submits); disabling the
+    button is the visible cue and stops further clicks.
+*/
+function setMoneySaveLocked(
+    locked
+) {
+
+    moneySaveLocked =
+        locked === true;
+
+
+    if (
+        moneyModalSave
+    ) {
+
+        moneyModalSave.disabled =
+            moneySaveLocked;
+
+    }
+
+}
+
+
 function saveMoneyForm(
     event
 ) {
 
     event.preventDefault();
+
+
+    /*
+        ONE SAVE PER FORM.
+        After a successful save the modal stays open for ~450 ms to
+        show its success message. A double-tap, double-click or a
+        repeated Enter inside that window used to submit the same
+        form again and write the record a second time (a duplicate
+        expense, or a Checking <-> Savings transfer applied twice).
+        Once a save has been attempted, further submits are ignored
+        until the modal closes or the save fails.
+    */
+    if (
+        moneySaveLocked
+    ) {
+
+        return;
+
+    }
 
 
     updateConditionalMoneyFields();
@@ -4635,6 +4700,11 @@ function saveMoneyForm(
         return;
 
     }
+
+
+    setMoneySaveLocked(
+        true
+    );
 
 
     try {
@@ -4802,6 +4872,12 @@ function saveMoneyForm(
     }
 
     catch (error) {
+
+        /* the save was refused or failed: let the user correct and retry */
+        setMoneySaveLocked(
+            false
+        );
+
 
         console.error(
             "Unable to save M-Wallet money entry:",
