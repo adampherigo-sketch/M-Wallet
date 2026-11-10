@@ -48,7 +48,7 @@
 
     /* ---- committed shipping state (BP12 flips this, nothing else) ---- */
     var BASE = {
-        enabled: true,
+        enabled: false,
         verificationPhase: "BP12",
         reason: "live_security_verification_pending"
     };
