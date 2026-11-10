@@ -291,14 +291,14 @@
     /* ---- curated release notes (no runtime GitHub fetch) ---- */
 
     var RELEASE_NOTES = {
-        version: "0.9.0-beta.10",
+        version: "0.9.0-beta.11",
         title: "What's new in this beta",
         highlights: [
-            "New Beta Hub in Settings — version, limitations, known issues, and what's new in one place.",
-            "Report a beta problem: a structured bug / feedback form with optional privacy-safe technical diagnostics.",
-            "Copy or download any report as a file — nothing is sent unless you choose Send (and only when a feedback destination is configured).",
-            "The same report action is available from the sign-in screen if you're locked out.",
-            "No analytics, no tracking, no automatic crash reporting — feedback is only ever sent when you press Send."
+            "Money is now worked out to the exact cent, so moving your full balance between Checking, Savings and your funds always works.",
+            "Each month's opening balance now counts recurring bills, income and spending in every month — including months you haven't opened — so your Total Balance no longer changes depending on which months you've viewed.",
+            "Months open noticeably faster.",
+            "Tapping Save twice no longer saves an entry or transfer twice.",
+            "Updates now reach the installed app reliably, including when you're offline."
         ],
         note: "CHANGELOG.md remains the full developer history."
     };

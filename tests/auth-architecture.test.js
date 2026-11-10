@@ -1050,7 +1050,7 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 test("service-worker precaches the auth + migration + setup + walkthrough + cloud + sync + passkey modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw), "cache bumped to v30");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw), "cache bumped to v31");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1137,20 +1137,20 @@ test("changed modules are re-versioned in index.html", () => {
     assert.ok(/js\/setup\/setup-ui\.js\?v=\d+/.test(html), "setup-ui.js has a ?v");
     assert.ok(/js\/walkthrough\/guided-walkthrough\.js\?v=\d+/.test(html), "guided-walkthrough.js has a ?v");
     assert.ok(/js\/walkthrough\/walkthrough-ui\.js\?v=\d+/.test(html), "walkthrough-ui.js has a ?v");
-    assert.ok(/js\/cloud\/cloud-financial-codec\.js\?v=2/.test(html), "cloud-financial-codec.js at ?v=2");
+    assert.ok(/js\/cloud\/cloud-financial-codec\.js\?v=3/.test(html), "cloud-financial-codec.js at ?v=3");
     assert.ok(/js\/cloud\/cloud-financial-store\.js\?v=2/.test(html), "cloud-financial-store.js at ?v=2");
     assert.ok(/js\/sync\/sync-engine\.js\?v=\d+/.test(html), "sync-engine.js has a ?v");
-    assert.ok(/js\/storage\.js\?v=8/.test(html), "storage.js at ?v=8");
+    assert.ok(/js\/storage\.js\?v=9/.test(html), "storage.js at ?v=9");
     assert.ok(/js\/auth\/passkey-release\.js\?v=\d+/.test(html), "passkey-release.js has a ?v");
     assert.ok(/js\/auth\/passkeys\.js\?v=\d+/.test(html), "passkeys.js has a ?v");
     assert.ok(/js\/auth\/passkey-ui\.js\?v=\d+/.test(html), "passkey-ui.js has a ?v");
 });
 
-test("app version bumped to 0.9.0-beta.10 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.11 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.10"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.10", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.11"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.11", "package.json");
 });
 
 test("BP4 migration modules load after auth, before the financial engine", () => {
@@ -1724,11 +1724,11 @@ test("BP9: no passkey source file touches financial data", () => {
     }
 });
 
-test("BP9: version beta.10, cache v30, docs mention passkeys are not E2EE", () => {
+test("BP9: version beta.11, cache v31, docs mention passkeys are not E2EE", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.10"/.test(av));
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.11"/.test(av));
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
     const doc = fs.readFileSync(path.join(ROOT, "docs/BP9-PASSKEYS.md"), "utf8");
     assert.ok(/not end-to-end encrypt|not.{0,10}E2EE|RLS.{0,4}(≠|!=|is not).{0,4}E2EE/i.test(doc), "BP9 doc keeps the RLS ≠ E2EE line");
     assert.ok(/does not receive your fingerprint|does not receive.*face/i.test(doc), "biometric-privacy statement present");
@@ -1896,7 +1896,7 @@ test("BP10: settings-ui.js + app.js no longer carry the raw import/export/reset 
 
 test("BP10: service-worker precaches the account bundle at cache v29", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
     for (const asset of ["./css/account.css", "./js/account/account-controls.js", "./js/account/account-ui.js"]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
     }
@@ -2040,7 +2040,7 @@ test("BP11: relative asset paths only (GitHub Pages safe)", () => {
 
 test("BP11: service-worker precaches the beta bundle at cache v30 and never caches non-GET", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
     for (const asset of [
         "./css/beta.css",
         "./js/beta/beta-config.js", "./js/beta/beta-known-issues.js",

@@ -11,6 +11,65 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP12 (in progress) + beta-readiness fixes (`0.9.0-beta.10` → `0.9.0-beta.11`)
+
+BP12 live verification so far, plus a round of fixes from a full beta-readiness
+review. Live authentication, local ownership isolation and two-user cloud RLS
+checks have passed; live multi-device sync verification continues. **The sync
+release gate ships OFF** again in this build.
+
+**BP12 work (already on the branch)**
+
+- **BP12.3 — live RLS verification.** `scripts/bp7-live-rls-check.mjs` reads the
+  document revision right before tombstoning and checks the tombstone bumps it
+  by exactly one; the live run passed 22/22.
+- **BP12.4 — automatic month balance rollover.** A month without a manual
+  opening balance opens at the previous month's ending balance; manual
+  balances (including first-run setup) still win; `startingBalanceManual`
+  records which is which.
+- **BP12.4J — false / repetitive month sync conflicts.** Month navigation and
+  read-only access no longer rewrite month data; derived timestamps and the
+  ending balance are left out of sync change fingerprints.
+- **Navigation + layout overhaul.** One app shell (`css/zg9.css` §5): bottom
+  bar under 1024 px, left sidebar at 1024 px and wider, inline SVG icons,
+  `aria-current` and focus traps in `js/nav.js`.
+
+**Beta-readiness fixes**
+
+- **Sync release gate OFF again.** `enabled: true` had been swept into the
+  layout commit by accident; `js/sync/sync-release.js` ships `enabled: false`
+  until multi-device verification is complete (fixes 3 failing tests).
+- **Sync bootstrap buttons.** The "Couldn't check your cloud wallet" screen's
+  Retry / Continue Offline buttons now have the ids `sync-ui.js` looks for, so
+  they appear instead of leaving a button-less screen.
+- **One save per money form.** A double-tap, double-click or repeated Enter in
+  the ~450 ms success window no longer writes an entry — or a Checking ↔
+  Savings transfer — twice.
+- **Exact-cent money math.** Every balance change, balance check and total in
+  `js/storage.js` is worked out in whole cents (`toCents` / `fromCents` /
+  `roundMoney`). Fixes valid moves being refused, e.g. allocating the full
+  $30.30 after depositing $10.10 + $20.20 (stored as 30.299999999999997). The
+  savings form's own pre-checks use the same rule.
+- **Explicit money cleanup.** `MWalletStorage.cleanupStoredMoneyPrecision({
+  dryRun })` tidies float residue already saved in a wallet. Never automatic;
+  dry-run first; rounds only values within 1/1000 of a cent and reports real
+  sub-cent amounts instead of changing them; backs up the untouched wallet to
+  `mWalletData-backup-before-cents-cleanup` (now also removed by "Erase wallet
+  from this device"); idempotent.
+- **Rollover counts every calendar month.** The opening balance now includes
+  recurring bills / income / expenses in months that were never opened, so it
+  no longer depends on navigation ($1,000 in Aug + $100/month rent: December
+  showed $900 or $800 depending on what had been opened; now $600). It is
+  read-only and about 10× faster (two years of history: month snapshot 281 ms
+  → 32 ms).
+- **Updates reach installed apps.** `CACHE_NAME` `m-wallet-v30` → `m-wallet-v31`;
+  the app shell is precached with `cache: "reload"`; offline, the exact
+  versioned file is served before the precached copy; every changed file got
+  a new `?v=`.
+- **Version** — `0.9.0-beta.10` → `0.9.0-beta.11`; in-app "What's new" updated.
+- **Tests** — 873 → 899 (`money-form-double-submit`, `money-precision`, new
+  rollover cases, and a real-`index.html` check for sync-ui's element ids).
+
 ### BP11 — Beta operations + feedback (`0.9.0-beta.9` → `0.9.0-beta.10`)
 
 Tooling to run M-Wallet as a professional closed beta: a **Beta Hub** in

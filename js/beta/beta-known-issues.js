@@ -20,13 +20,13 @@
     var STATUSES = ["open", "investigating", "workaround", "fixed-next-build"];
 
     /* -------------------------------------------------------
-       REGISTRY — developer-curated. Empty for 0.9.0-beta.10.
+       REGISTRY — developer-curated. Empty for 0.9.0-beta.11.
        Example shape:
          {
            id: "MW-BETA-001",
            title: "Short human summary",
            status: "workaround",
-           affectedVersions: ["0.9.0-beta.10"],
+           affectedVersions: ["0.9.0-beta.11"],
            workaround: "What the tester can do meanwhile."
          }
        ------------------------------------------------------- */

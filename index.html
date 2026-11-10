@@ -4712,7 +4712,7 @@
          MOBILE NAV HOTFIX CACHE VERSION
     ========================================= -->
 
-    <script src="./js/app-version.js?v=1"></script>
+    <script src="./js/app-version.js?v=2"></script>
 
     <!-- Authentication (BP2 architecture + BP3 account UI).
          Loads before the financial engine, initializes detached,
@@ -4764,7 +4764,7 @@
          layer (reuses MWalletAuth._getClient()). The codec is pure;
          the store makes ZERO network calls on load / navigation /
          render. -->
-    <script src="./js/cloud/cloud-financial-codec.js?v=2"></script>
+    <script src="./js/cloud/cloud-financial-codec.js?v=3"></script>
     <script src="./js/cloud/cloud-financial-store.js?v=2"></script>
 
     <!-- Local-first sync engine (BP8). Built but OFF: the release
@@ -4772,13 +4772,13 @@
          ZERO cloud requests — no bootstrap check, no upload, no
          download, no timers. A local save never depends on it.
          BP12 flips the gate on after live security verification. -->
-    <script src="./js/sync/sync-release.js?v=1"></script>
+    <script src="./js/sync/sync-release.js?v=2"></script>
     <script src="./js/sync/sync-state.js?v=1"></script>
     <script src="./js/sync/sync-planner.js?v=1"></script>
     <script src="./js/sync/sync-engine.js?v=1"></script>
     <script src="./js/sync/sync-ui.js?v=1"></script>
 
-    <script src="./js/storage.js?v=8"></script>
+    <script src="./js/storage.js?v=9"></script>
 
     <script src="./js/nav.js?v=8"></script>
 
@@ -4801,7 +4801,7 @@
          export + restore the local wallet, erase this device's wallet.
          Never mutates mWalletData for an account action; no second
          Supabase client; no browser-side account deletion. -->
-    <script src="./js/account/account-controls.js?v=1"></script>
+    <script src="./js/account/account-controls.js?v=2"></script>
     <script src="./js/account/account-ui.js?v=1"></script>
 
     <!-- Beta operations + feedback (BP11). User-initiated feedback only;
@@ -4810,14 +4810,14 @@
          analytics, no telemetry, no automatic transmission, no
          localStorage. Fails open — a beta bug never locks the user out. -->
     <script src="./js/beta/beta-config.js?v=1"></script>
-    <script src="./js/beta/beta-known-issues.js?v=1"></script>
-    <script src="./js/beta/beta-ops.js?v=1"></script>
+    <script src="./js/beta/beta-known-issues.js?v=2"></script>
+    <script src="./js/beta/beta-ops.js?v=2"></script>
     <script src="./js/beta/beta-feedback.js?v=1"></script>
     <script src="./js/beta/beta-ui.js?v=1"></script>
 
     <script src="./js/app.js?v=12"></script>
 
-    <script src="./js/money.js?v=7"></script>
+    <script src="./js/money.js?v=8"></script>
 
     <script src="./js/pwa.js?v=7"></script>
 

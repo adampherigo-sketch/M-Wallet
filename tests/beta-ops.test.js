@@ -112,9 +112,9 @@ test("generateReportId is report-scoped (MWB- prefix), injectable, never a user 
 });
 
 test("releaseNotes are curated, match the build, and never fetch GitHub", () => {
-    const { Ops } = createBetaEnv({ appVersion: "0.9.0-beta.10" });
+    const { Ops } = createBetaEnv({ appVersion: "0.9.0-beta.11" });
     const n = Ops.releaseNotes();
-    assert.equal(n.version, "0.9.0-beta.10");
+    assert.equal(n.version, "0.9.0-beta.11");
     assert.equal(n.matchesBuild, true);
     assert.ok(Array.isArray(n.highlights) && n.highlights.length > 0);
     assert.match(n.note, /CHANGELOG/);
