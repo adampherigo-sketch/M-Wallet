@@ -5216,30 +5216,148 @@ const BudgetStorage = {
     },
 
 
+    /* "2026-12" shifted by -1 -> "2026-11"; by +1 -> "2027-01" */
+    shiftMonthKey(
+        monthKey,
+        delta
+    ) {
+
+        const [
+            year,
+            month
+        ] =
+            String(monthKey)
+                .split("-")
+                .map(Number);
+
+
+        const index =
+            (year * 12) + (month - 1) + delta;
+
+
+        return (
+            `${Math.floor(index / 12)}-` +
+            `${String((index % 12) + 1).padStart(2, "0")}`
+        );
+
+    },
+
+
+    /* every calendar month key from firstKey to lastKey, inclusive
+       (capped at 100 years so corrupt keys cannot stall a read) */
+    listMonthKeysBetween(
+        firstKey,
+        lastKey
+    ) {
+
+        const keys =
+            [];
+
+
+        let key =
+            firstKey;
+
+
+        while (
+            key <= lastKey &&
+            keys.length < 1200
+        ) {
+
+            keys.push(
+                key
+            );
+
+
+            key =
+                this.shiftMonthKey(
+                    key,
+                    1
+                );
+
+        }
+
+
+        return keys;
+
+    },
+
+
+    sumCents(
+        items
+    ) {
+
+        return (Array.isArray(items) ? items : [])
+            .reduce(
+                (totalCents, item) =>
+                    totalCents + this.toCents(item?.amount),
+                0
+            );
+
+    },
+
+
+    /* { "2026-09": cents, ... } from dated occurrences */
+    sumCentsByMonth(
+        occurrences
+    ) {
+
+        const byMonth =
+            {};
+
+
+        (Array.isArray(occurrences) ? occurrences : [])
+            .forEach(occurrence => {
+
+                const key =
+                    String(occurrence?.date || "").slice(0, 7);
+
+
+                byMonth[key] =
+                    (byMonth[key] || 0) +
+                    this.toCents(occurrence?.amount);
+
+            });
+
+
+        return byMonth;
+
+    },
+
+
     /*
         The effective opening (checking) balance for a month.
 
         AUTOMATIC MONTH-TO-MONTH CONTINUITY
         -----------------------------------
-        A month without a manual override opens at the resulting
-        ending balance of the most recent earlier month that has
-        data. This is computed FRESH on every read from the
-        canonical monthly formula — it is never a one-time copied
-        value — so a later correction to an earlier month flows
-        forward automatically.
+        A month without a manual override opens at the PREVIOUS
+        CALENDAR MONTH's resulting ending balance. This is computed
+        FRESH on every read from the canonical monthly formula —
+        never a one-time copied value — so a later correction to an
+        earlier month flows forward automatically.
 
-        - Deterministic single forward pass over the existing
-          month keys in chronological order; no recursion, no
-          re-entrancy into this method.
-        - Calendar-year boundaries (Dec -> Jan) work because
-          YYYY-MM keys sort chronologically.
+        - EVERY calendar month from the earliest stored month up to
+          the month before `monthKey` counts, including months that
+          were never opened. Recurring bills, income and expenses
+          happen in those months too; walking only stored months made
+          the result depend on which months had been viewed ($1,000
+          in Aug + $100/mo rent: December showed $900 when opened
+          straight from August, $800 after opening November; the
+          right answer is $600).
+        - READ-ONLY. Months never opened are worked out in an
+          in-memory copy and never saved, so viewing one month never
+          creates, changes or syncs another.
+        - One pass: the wallet is loaded once, and income / expense
+          occurrences for the whole span are generated once and
+          bucketed by month (it used to re-load the whole wallet
+          about four times per earlier month).
+        - Whole cents throughout (see toCents()).
+        - Dec -> Jan works: the walk steps month by month.
         - Negative / overdraft balances carry forward unchanged
           (never clamped to zero).
         - A manual month in the chain is used verbatim and the
           running balance resumes from its ending balance.
-        - Reads are event-suppressed: calculating a carry-forward
-          never emits "mwallet:financial-saved" and so never
-          creates cloud-sync churn just from viewing a month.
+        - Event-suppressed: calculating a carry-forward never emits
+          "mwallet:financial-saved", so it never causes sync churn.
     */
     resolveMonthStartingBalance(
         monthKey =
@@ -5271,7 +5389,7 @@ const BudgetStorage = {
             }
 
 
-            const priorKeys =
+            const storedKeys =
                 Object.keys(data.months)
                     .filter(
                         key =>
@@ -5281,6 +5399,65 @@ const BudgetStorage = {
                     .sort();
 
 
+            if (
+                storedKeys.length === 0
+            ) {
+
+                return 0;
+
+            }
+
+
+            const monthKeys =
+                this.listMonthKeysBetween(
+                    storedKeys[0],
+                    this.shiftMonthKey(
+                        monthKey,
+                        -1
+                    )
+                );
+
+
+            const rangeStart =
+                this.getMonthStart(
+                    monthKeys[0]
+                );
+
+
+            const rangeEnd =
+                this.getMonthEnd(
+                    monthKeys[monthKeys.length - 1]
+                );
+
+
+            const incomeCentsByMonth =
+                this.sumCentsByMonth(
+                    this.getIncomeOccurrencesForRange(
+                        rangeStart,
+                        rangeEnd
+                    )
+                );
+
+
+            const expenseCentsByMonth =
+                this.sumCentsByMonth(
+                    this.getExpenseOccurrencesForRange(
+                        rangeStart,
+                        rangeEnd
+                    )
+                );
+
+
+            /* recurring bills, manual transactions and savings moves
+               live on the month itself: read them from a throwaway
+               copy, where a never-opened month is filled in exactly
+               as opening it would, without saving anything */
+            const scratch =
+                this.cloneJSON(
+                    data
+                );
+
+
             /* running balance in whole cents — see toCents() */
             let carryCents =
                 0;
@@ -5288,29 +5465,68 @@ const BudgetStorage = {
 
             for (
                 const key
-                of priorKeys
+                of monthKeys
             ) {
 
-                const priorMonth =
+                const stored =
                     data.months[key];
 
 
-                const priorStartCents =
+                const startCents =
                     this.isManualStartingBalance(
-                        priorMonth
+                        stored
                     )
                         ? this.toCents(
-                            priorMonth.startingBalance
+                            stored.startingBalance
                         )
                         : carryCents;
 
 
+                this.ensureRecurringBillsInData(
+                    scratch,
+                    key
+                );
+
+
+                const month =
+                    scratch.months[key] || {};
+
+
+                let transactionsInCents =
+                    0;
+
+
+                let transactionsOutCents =
+                    0;
+
+
+                (month.transactions || [])
+                    .forEach(transaction => {
+
+                        const amount =
+                            this.toNumber(
+                                transaction?.amount
+                            );
+
+
+                        if (amount > 0) {
+                            transactionsInCents += this.toCents(amount);
+                        }
+                        else if (amount < 0) {
+                            transactionsOutCents += this.toCents(Math.abs(amount));
+                        }
+
+                    });
+
+
                 carryCents =
-                    priorStartCents
-                    + this.toCents(this.getTotalIncome(key))
-                    - this.toCents(this.getTotalBills(key))
-                    - this.toCents(this.getTotalExpenses(key))
-                    - this.toCents(this.getTotalSavingsDeposits(key));
+                    startCents
+                    + (incomeCentsByMonth[key] || 0)
+                    + transactionsInCents
+                    - this.sumCents(month.bills)
+                    - (expenseCentsByMonth[key] || 0)
+                    - transactionsOutCents
+                    - this.sumCents(month.savingsDeposits);
 
             }
 
