@@ -133,9 +133,12 @@ JavaScript.** It belongs in Supabase project configuration
 > Changing the RP ID later makes every passkey enrolled before the change
 > **unusable**. This warning must stay on the BP12 release checklist.
 
-The current deployment is a GitHub Pages **project URL**
-(`https://adampherigo-sketch.github.io/M-Wallet/`). This is **not** automatically
-the final RP ID. Before any real passkey is enrolled, the operator must choose
+The beta now deploys to its own host, **`mwallet.zevarynsystems.com`** (GitHub
+Pages custom domain; previously the project URL
+`https://adampherigo-sketch.github.io/M-Wallet/`). That host — or the
+registrable domain `zevarynsystems.com`, if passkeys should work across other
+Zevaryn subdomains — is the RP ID candidate, but it is **not** final until the
+operator records the decision. Before any real passkey is enrolled, the operator must choose
 the permanent production host. WebAuthn is origin / RP based:
 
 - the relying-party configuration must match the production host
