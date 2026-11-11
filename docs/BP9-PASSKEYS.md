@@ -133,7 +133,7 @@ JavaScript.** It belongs in Supabase project configuration
 > Changing the RP ID later makes every passkey enrolled before the change
 > **unusable**. This warning must stay on the BP12 release checklist.
 
-The beta now deploys to its own host, **`wallet.zevarynsystems.com`** (GitHub
+The beta now deploys to its own host, **`mwallet.zevarynsystems.com`** (GitHub
 Pages custom domain; previously the project URL
 `https://adampherigo-sketch.github.io/M-Wallet/`). That host — or the
 registrable domain `zevarynsystems.com`, if passkeys should work across other

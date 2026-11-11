@@ -337,7 +337,7 @@ real feedback ever sent**.
 ## Deployment
 
 The beta is served by **GitHub Pages** from `main` at
-**https://wallet.zevarynsystems.com/** (the `CNAME` file at the repo root).
+**https://mwallet.zevarynsystems.com/** (the `CNAME` file at the repo root).
 The old project URL `https://adampherigo-sketch.github.io/M-Wallet/` redirects
 there.
 
@@ -348,13 +348,13 @@ account shares the `<user>.github.io` origin, and with it `localStorage`
 One-time setup outside the repo:
 
 1. **DNS** (at the `zevarynsystems.com` registrar): a `CNAME` record
-   `wallet` → `adampherigo-sketch.github.io`.
+   `mwallet` → `adampherigo-sketch.github.io`.
 2. **GitHub** → repo **Settings → Pages**: custom domain
-   `wallet.zevarynsystems.com`, then **Enforce HTTPS** once the certificate
+   `mwallet.zevarynsystems.com`, then **Enforce HTTPS** once the certificate
    is issued.
 3. **Supabase** → **Authentication → URL Configuration**: Site URL
-   `https://wallet.zevarynsystems.com/`; Redirect URLs include
-   `https://wallet.zevarynsystems.com/**`.
+   `https://mwallet.zevarynsystems.com/`; Redirect URLs include
+   `https://mwallet.zevarynsystems.com/**`.
 
 `localStorage` is per-origin, so a wallet stored under the old github.io
 address does not appear at the new one by itself. Signed-in users get it back

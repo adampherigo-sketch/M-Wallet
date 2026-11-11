@@ -10,9 +10,9 @@ const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
 
-test("CNAME pins the GitHub Pages custom domain to wallet.zevarynsystems.com", () => {
+test("CNAME pins the GitHub Pages custom domain to mwallet.zevarynsystems.com", () => {
     const cname = fs.readFileSync(path.join(ROOT, "CNAME"), "utf8");
-    assert.equal(cname.trim(), "wallet.zevarynsystems.com");
+    assert.equal(cname.trim(), "mwallet.zevarynsystems.com");
     assert.equal(cname.trim().split(/\s+/).length, 1, "exactly one domain, no scheme or path");
 });
 
