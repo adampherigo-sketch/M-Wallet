@@ -495,7 +495,7 @@ data, uses `localStorage`, needs an auth token, or contains analytics / a global
 crash handler / an unsafe HTML sink / a front-end access allowlist; `index.html`
 loads the beta bundle + `beta.css`, has the Beta Hub and the auth-gate report
 control, and three `role="dialog"` + `aria-modal` dialogs; the SW precaches the
-bundle at `m-wallet-v30` and returns early for the non-GET feedback `POST`;
+bundle at `m-wallet-v31` and returns early for the non-GET feedback `POST`;
 version is `0.9.0-beta.10`; the docs stay precise (no false E2EE claim, an
 honest IP-address note).
 

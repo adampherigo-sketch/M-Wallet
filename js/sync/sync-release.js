@@ -8,49 +8,57 @@
    The single source of truth for whether automatic cloud
    financial synchronization is ACTIVATED in this build.
 
-   BP8 ships the complete sync engine but leaves it OFF:
+   BP8 shipped the complete sync engine OFF. BP12 completed
+   live verification and turned it ON for the closed beta:
 
-       enabled: false
+       enabled: true
 
    This is NOT a security boundary — Row Level Security (BP7)
-   is the cloud security boundary. This switch exists so
-   M-Wallet does not begin transferring real financial data
-   before BP12:
+   is the cloud security boundary. The switch held sync off
+   until BP12 had:
 
-     1. applies the BP7 wallet_documents migration to a real
-        Supabase project
-     2. live-verifies RLS isolation (two-user attack test)
-     3. live-verifies BP8 sync across multiple real devices
-     4. attack-tests conflicts / account boundaries / offline
-     5. only then flips this switch on for BP13 closed beta
+     1. applied the BP7 wallet_documents migration to the
+        real Supabase project                          (PASS)
+     2. live-verified RLS isolation (two-user attack test,
+        npm run bp7:verify-rls — 22/22)                (PASS)
+     3. live-verified BP8 sync across real devices
+        (Mac + iPhone, BP12.4J false-conflict fix)     (PASS)
 
-   While disabled, the engine makes ZERO cloud requests:
-   no bootstrap check, no upload, no download, no timers, no
+   Sync only ever runs for a signed-in, ownership-verified
+   user on a build with a configured Supabase project. In
+   auth-unconfigured (local-only) mode it makes ZERO cloud
+   requests regardless of this switch.
+
+   To turn sync off again (e.g. an emergency rollback), set
+   `BASE.enabled` to false and ship a new build. While
+   disabled, the engine makes ZERO cloud requests: no
+   bootstrap check, no upload, no download, no timers, no
    online-event sync, no financial-saved-event sync.
 
    ---------------------------------------------------------
-   NO PRODUCTION ENABLE PATH.
+   NO RUNTIME SWITCH.
 
-   A normal browser runtime CANNOT enable sync. There is no
-   query-string switch, no localStorage switch, no Settings
-   switch, and no console-accessible override — `setOverride`
-   is not even present on the object unless a test harness set
+   A normal browser runtime CANNOT change this setting. There
+   is no query-string switch, no localStorage switch, no
+   Settings switch, and no console-accessible override —
+   `setOverride` is not even present on the object unless a
+   test harness set
 
        window.__MWALLET_TEST_ENV__ = true
 
-   BEFORE this module loaded. BP12 will flip `BASE.enabled`
-   itself after live verification; nothing else can.
+   BEFORE this module loaded. Only a committed change to
+   `BASE.enabled` changes it.
 
    This file contains NO credentials.
    ========================================================= */
 
 (function (global) {
 
-    /* ---- committed shipping state (BP12 flips this, nothing else) ---- */
+    /* ---- committed shipping state (enabled after BP12 live verification) ---- */
     var BASE = {
         enabled: true,
         verificationPhase: "BP12",
-        reason: "live_security_verification_pending"
+        reason: "disabled_by_release_gate"
     };
 
     /* The test harness must opt in BEFORE this script runs. Checked
@@ -62,8 +70,10 @@
     var override = null;   /* only ever set in a test env */
 
     function resolved() {
-        var enabled = (TEST_ENV && override && override.enabled === true)
-            ? true
+        /* a test-env override forces the gate either way; otherwise
+           the committed default applies */
+        var enabled = (TEST_ENV && override != null)
+            ? override.enabled === true
             : BASE.enabled;
         return {
             enabled: enabled === true,
@@ -89,7 +99,7 @@
 
     /* setOverride EXISTS ONLY under an explicit pre-load test opt-in.
        In every normal browser build MWalletSyncRelease.setOverride is
-       undefined, so no runtime path can turn sync on. */
+       undefined, so no runtime path can change the gate. */
     if (TEST_ENV) {
         api.setOverride = function setOverride(next) {
             if (next == null) { override = null; return resolved(); }

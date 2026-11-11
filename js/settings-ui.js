@@ -623,6 +623,12 @@
         unconfigured: "Not configured"
     };
 
+    function syncReleaseOn() {
+        var r = global.MWalletSyncRelease;
+        try { return !!(r && typeof r.isEnabled === "function" && r.isEnabled()); }
+        catch (e) { return false; }
+    }
+
     function renderCloudFinancialStatus(authStateSnapshot) {
         var panel = document.getElementById("settings-cloud-panel");
         var statusEl = document.getElementById("settings-cloud-status");
@@ -652,7 +658,7 @@
         var diag = typeof cloud.diagnostics === "function" ? cloud.diagnostics() : null;
         var label = (state && CLOUD_LABELS[state.status]) || "—";
         if (diag && diag.lastCheck) {
-            if (diag.lastCheck.ok) { label = "Available — sync not enabled"; }
+            if (diag.lastCheck.ok) { label = syncReleaseOn() ? "Available — sync on" : "Available — sync not enabled"; }
             else if (CLOUD_CHECK_LABELS[diag.lastCheck.code]) { label = CLOUD_CHECK_LABELS[diag.lastCheck.code]; }
         }
         if (statusEl) { statusEl.textContent = label; }

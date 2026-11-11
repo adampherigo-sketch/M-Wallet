@@ -31,6 +31,15 @@ const MEANINGFUL_WALLET = {
 };
 
 
+test("getSummary.privacy.cloudSyncActive is true only with the sync gate on AND a configured, signed-in account", () => {
+    assert.equal(createAccountEnv({ syncReleaseEnabled: true }).A.getSummary().privacy.cloudSyncActive, true);
+    assert.equal(createAccountEnv({ syncReleaseEnabled: false }).A.getSummary().privacy.cloudSyncActive, false);
+    assert.equal(createAccountEnv({ syncReleaseEnabled: true, auth: { status: "signed_out", user: null } })
+        .A.getSummary().privacy.cloudSyncActive, false, "signed out -> no sync");
+    assert.equal(createAccountEnv({ syncReleaseEnabled: true, auth: { configured: false } })
+        .A.getSummary().privacy.cloudSyncActive, false, "local-only build -> no sync");
+});
+
 test("getSummary exposes account/security/privacy state — never a user id or token", () => {
     const env = createAccountEnv({ preloadedData: MEANINGFUL_WALLET });
     const s = env.A.getSummary();

@@ -11,6 +11,29 @@ used in their commits.
 
 ## [Unreleased]
 
+### BP12 — Cloud sync enabled for the closed beta
+
+BP12 live-verified Supabase RLS (`npm run bp7:verify-rls` 22/22) and multi-device
+sync (Mac + iPhone, BP12.4J false-conflict fix), so the BP8 sync release gate now
+ships **ON** (`js/sync/sync-release.js`, `BASE.enabled: true`). Sync still runs
+only for a signed-in, ownership-verified user on a build with a configured
+Supabase project; a local-only build makes zero cloud requests.
+
+- **Tests** — the release-gate tests now assert the committed default is ON. The
+  test-only `setOverride` can force the gate either way, so suites can still
+  exercise the disabled path. New checks: `getSummary().privacy.cloudSyncActive`
+  is true only with the gate on + a configured, signed-in account; Beta Hub
+  limitations follow the gate; `index.html` carries no "never uploaded" /
+  "sync is off" copy. `873` → `876`.
+- **Copy** — every "nothing is uploaded / sync is off" message (welcome,
+  local-data claim, setup wizard, privacy, cloud-storage row, erase row and
+  erase dialog) now describes sync truthfully. The erase warnings explain that
+  synced data stays in the account while unsynced changes are lost. The Settings
+  cloud status reads "Available — sync on"; the Beta Hub tells testers that
+  erasing the device does not delete their cloud copy.
+- **Cache** — `m-wallet-v30` → `m-wallet-v31`; `sync-release.js` `?v=2`,
+  `settings-ui.js` `?v=12`, `account-controls.js` `?v=2`, `beta-ops.js` `?v=2`.
+
 ### BP11 — Beta operations + feedback (`0.9.0-beta.9` → `0.9.0-beta.10`)
 
 Tooling to run M-Wallet as a professional closed beta: a **Beta Hub** in

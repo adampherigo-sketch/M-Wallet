@@ -1050,7 +1050,7 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 test("service-worker precaches the auth + migration + setup + walkthrough + cloud + sync + passkey modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw), "cache bumped to v30");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw), "cache bumped to v31");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1132,7 +1132,7 @@ test("changed modules are re-versioned in index.html", () => {
     assert.ok(/js\/auth\/auth-ui\.js\?v=7/.test(html), "auth-ui.js bumped to ?v=7");
     assert.ok(/js\/auth\/auth\.js\?v=5/.test(html), "auth.js bumped to ?v=5");
     assert.ok(/js\/auth\/auth-client\.js\?v=3/.test(html), "auth-client.js bumped to ?v=3");
-    assert.ok(/js\/settings-ui\.js\?v=11/.test(html), "settings-ui.js bumped to ?v=11");
+    assert.ok(/js\/settings-ui\.js\?v=12/.test(html), "settings-ui.js bumped to ?v=12 (BP12 sync-on wording)");
     assert.ok(/js\/setup\/first-run-setup\.js\?v=2/.test(html), "first-run-setup.js bumped to ?v=2");
     assert.ok(/js\/setup\/setup-ui\.js\?v=\d+/.test(html), "setup-ui.js has a ?v");
     assert.ok(/js\/walkthrough\/guided-walkthrough\.js\?v=\d+/.test(html), "guided-walkthrough.js has a ?v");
@@ -1461,16 +1461,28 @@ test(".gitignore excludes the local auth config override + BP7 verifier env file
    BP8 — LOCAL-FIRST SYNC  (static / deployment)
    ========================================================= */
 
-test("BP8: the sync release gate ships DISABLED and carries no credential", () => {
+test("BP8/BP12: the sync release gate ships ENABLED (post-BP12 verification) and carries no credential", () => {
     const src = fs.readFileSync(path.join(ROOT, "js/sync/sync-release.js"), "utf8");
-    assert.ok(/enabled:\s*false/.test(src), "committed default is enabled:false");
-    assert.ok(/verificationPhase:\s*["']BP12["']/.test(src), "points at BP12 verification");
+    /* BP12 live-verified RLS + multi-device sync, then enabled sync for the closed beta */
+    assert.ok(/BASE\s*=\s*\{[^}]*enabled:\s*true/.test(src), "committed BASE is enabled:true");
+    assert.ok(/verificationPhase:\s*["']BP12["']/.test(src), "records BP12 as the verification phase");
     assert.ok(!/sb_secret_|service_role|eyJ[A-Za-z0-9_-]{20,}\./.test(src), "no credential");
-    /* the only 'true' near enabled must be a test override, never the base */
-    assert.ok(!/BASE\s*=\s*\{[^}]*enabled:\s*true/.test(src), "BASE never enables sync");
 });
 
-test("BP8: a NORMAL browser build has NO way to enable sync (no public override, no runtime switch)", () => {
+test("BP12: with sync shipped ON, the user-facing copy never claims financial data is not uploaded", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    for (const stale of [
+        /never uploaded in this build/i,
+        /nothing financial is uploaded/i,
+        /Nothing is (being )?uploaded/i,
+        /Cloud sync is off/i,
+        /Cloud sync is not active/i
+    ]) {
+        assert.ok(!stale.test(html), "index.html still says: " + stale);
+    }
+});
+
+test("BP8: a NORMAL browser build has NO way to change the sync gate (no public override, no runtime switch)", () => {
     const src = fs.readFileSync(path.join(ROOT, "js/sync/sync-release.js"), "utf8");
     const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
 
@@ -1484,13 +1496,14 @@ test("BP8: a NORMAL browser build has NO way to enable sync (no public override,
     vm.createContext(prod);
     vm.runInContext(src, prod, { filename: "sync-release.js" });
     const R = prod.window.MWalletSyncRelease;
-    assert.equal(R.isEnabled(), false, "disabled by default");
+    assert.equal(R.isEnabled(), true, "enabled by the committed default");
+    assert.equal(R.COMMITTED_DEFAULT.enabled, true);
     assert.equal(typeof R.setOverride, "undefined", "no setOverride in a normal build");
     assert.ok(!("__testEnv" in R), "not flagged as a test env");
     /* even setting the flag AFTER load does nothing */
     prod.window.__MWALLET_TEST_ENV__ = true;
     assert.equal(typeof R.setOverride, "undefined", "the flag is read once, at load — too late now");
-    assert.equal(R.isEnabled(), false);
+    assert.equal(R.isEnabled(), true, "still the committed default");
 
     /* WITH the pre-load opt-in -> the test override is available */
     const testEnv = { window: { __MWALLET_TEST_ENV__: true }, console, __MWALLET_TEST_ENV__: true };
@@ -1498,12 +1511,16 @@ test("BP8: a NORMAL browser build has NO way to enable sync (no public override,
     vm.createContext(testEnv);
     vm.runInContext(src, testEnv, { filename: "sync-release.js" });
     const RT = testEnv.window.MWalletSyncRelease;
-    assert.equal(typeof RT.setOverride, "function", "test harness can still enable the engine");
-    assert.equal(RT.isEnabled(), false, "still off until explicitly overridden");
+    assert.equal(typeof RT.setOverride, "function", "test harness can still drive the engine");
+    assert.equal(RT.isEnabled(), true, "follows the committed default until overridden");
+    RT.setOverride({ enabled: false });
+    assert.equal(RT.isEnabled(), false, "a test can force sync off");
+    RT.setOverride({ enabled: "yes" });
+    assert.equal(RT.isEnabled(), false, "only a real boolean true enables");
     RT.setOverride({ enabled: true });
-    assert.equal(RT.isEnabled(), true, "enabled test mode works");
+    assert.equal(RT.isEnabled(), true, "a test can force sync on");
     RT.setOverride(null);
-    assert.equal(RT.isEnabled(), false);
+    assert.equal(RT.isEnabled(), true, "clearing the override restores the committed default");
 });
 
 test("BP8: no js/ file reads a sync-enable switch from url / localStorage / a setting", () => {
@@ -1728,7 +1745,7 @@ test("BP9: version beta.10, cache v30, docs mention passkeys are not E2EE", () =
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.10"/.test(av));
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
     const doc = fs.readFileSync(path.join(ROOT, "docs/BP9-PASSKEYS.md"), "utf8");
     assert.ok(/not end-to-end encrypt|not.{0,10}E2EE|RLS.{0,4}(≠|!=|is not).{0,4}E2EE/i.test(doc), "BP9 doc keeps the RLS ≠ E2EE line");
     assert.ok(/does not receive your fingerprint|does not receive.*face/i.test(doc), "biometric-privacy statement present");
@@ -1896,7 +1913,7 @@ test("BP10: settings-ui.js + app.js no longer carry the raw import/export/reset 
 
 test("BP10: service-worker precaches the account bundle at cache v29", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
     for (const asset of ["./css/account.css", "./js/account/account-controls.js", "./js/account/account-ui.js"]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
     }
@@ -2040,7 +2057,7 @@ test("BP11: relative asset paths only (GitHub Pages safe)", () => {
 
 test("BP11: service-worker precaches the beta bundle at cache v30 and never caches non-GET", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v30"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
     for (const asset of [
         "./css/beta.css",
         "./js/beta/beta-config.js", "./js/beta/beta-known-issues.js",

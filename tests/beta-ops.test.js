@@ -101,6 +101,20 @@ test("currentLimitations is derived truthfully from the live release gates", () 
     assert.ok(ids.includes("verification"), "the BP12 verification note is always present");
 });
 
+test("currentLimitations wording follows the sync gate (no 'stays on this device only' claim while sync is on)", () => {
+    const text = (env, id) => env.Ops.currentLimitations().find((l) => l.id === id).text;
+
+    const on = createBetaEnv({ syncReleaseEnabled: true });
+    assert.ok(/does not delete the copy synced to your account/.test(text(on, "account-deletion")));
+    assert.ok(/live-verified/.test(text(on, "verification")));
+    assert.ok(!on.Ops.currentLimitations().some((l) => /stays on this device only/.test(l.text)));
+
+    const off = createBetaEnv({ syncReleaseEnabled: false });
+    assert.ok(/stays on this device only/.test(text(off, "sync")));
+    assert.ok(!/synced/.test(text(off, "account-deletion")));
+    assert.ok(/still pending/.test(text(off, "verification")));
+});
+
 test("generateReportId is report-scoped (MWB- prefix), injectable, never a user id", () => {
     const { Ops } = createBetaEnv();
     assert.match(Ops.generateReportId(), /^MWB-[0-9a-f-]{36}$/);

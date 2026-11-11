@@ -124,7 +124,7 @@ class SyncDevice {
             getState: () => ({
                 enabled: self._releaseEnabled === true,
                 verificationPhase: "BP12",
-                reason: self._releaseEnabled ? null : "live_security_verification_pending"
+                reason: self._releaseEnabled ? null : "disabled_by_release_gate"
             })
         };
 

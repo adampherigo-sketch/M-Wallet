@@ -2552,8 +2552,9 @@
                             <span class="zg-set-row-text">
                                 <strong>Erase wallet from this device</strong>
                                 <small>
-                                    Removes this device's wallet and setup state. Cloud sync is off, so
-                                    this may destroy your only copy — export a backup first.
+                                    Removes this device's wallet and setup state. Your synced copy stays
+                                    in your account, but changes that haven't synced yet will be lost —
+                                    export a backup first.
                                 </small>
                             </span>
                             <span class="zg-set-row-go" aria-hidden="true"><svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
@@ -2593,9 +2594,10 @@
                             <span class="zg-set-row-text">
                                 <strong>Where your financial data lives</strong>
                                 <small>
-                                    Your wallet is stored locally in this browser. Cloud sync is
-                                    built but stays off until pre-beta security verification is
-                                    complete, so nothing financial is uploaded in this build.
+                                    Your wallet is stored in this browser and works offline. While
+                                    you're signed in, it also syncs to your M-Wallet account so it's
+                                    backed up and available on your other devices. Synced data is
+                                    encrypted in transit and only your account can read it.
                                 </small>
                             </span>
                         </div>
@@ -2848,8 +2850,8 @@
                             <span class="zg-set-row-text">
                                 <strong>Cloud Financial Storage</strong>
                                 <small id="settings-cloud-note">
-                                    Cloud sync is not active yet. Your current financial
-                                    data remains local on this device.
+                                    Cloud sync is on. Your wallet is kept on this device and
+                                    synced to your account.
                                 </small>
                             </span>
                             <span class="zg-set-row-value" id="settings-cloud-status">—</span>
@@ -3184,9 +3186,9 @@
                     Welcome to M-Wallet
                 </h1>
                 <p class="mw-auth-sub">
-                    Your money stays on this device. An account is only used to
-                    sign you in and, later, sync sign-in across devices — your
-                    balances and transactions are never uploaded in this build.
+                    Sign in to keep your wallet backed up and in sync across your
+                    devices. Your data stays on this device too, so M-Wallet keeps
+                    working offline.
                 </p>
 
                 <div class="mw-auth-msg" data-auth-msg="welcome" role="alert" aria-live="assertive" hidden></div>
@@ -3537,8 +3539,8 @@
 
                 <ul class="mw-migration-points">
                     <li>Nothing will be deleted.</li>
-                    <li>Nothing is being uploaded — your financial data stays on this device.</li>
                     <li>This step connects the local workspace to your signed-in account.</li>
+                    <li>Once connected, your wallet syncs to your account so it's backed up and available on your other devices.</li>
                 </ul>
 
                 <div class="mw-auth-msg" data-migration-msg role="alert" aria-live="assertive" hidden></div>
@@ -3779,7 +3781,7 @@
                 </form>
 
                 <p class="mw-setup-later">
-                    Nothing is uploaded. Your data stays on this device.
+                    Your wallet is saved on this device and synced to your account.
                 </p>
             </section>
 
@@ -4157,9 +4159,11 @@
             </p>
 
             <p class="mw-acct-warn">
-                <strong>Cloud sync is off in this build.</strong>
-                If you have not exported a backup, this is your only copy and it will be
-                gone. This does not delete your account.
+                <strong>Changes that haven't synced yet will be lost.</strong>
+                Anything already synced stays in your account and downloads again when you
+                sign back in. If you're not sure everything has synced (for example, you
+                made changes offline), export a backup first. This does not delete your
+                account or its cloud copy.
             </p>
 
             <div class="mw-acct-dialog-actions" style="justify-content:flex-start;margin-bottom:12px;">
@@ -4772,7 +4776,7 @@
          ZERO cloud requests — no bootstrap check, no upload, no
          download, no timers. A local save never depends on it.
          BP12 flips the gate on after live security verification. -->
-    <script src="./js/sync/sync-release.js?v=1"></script>
+    <script src="./js/sync/sync-release.js?v=2"></script>
     <script src="./js/sync/sync-state.js?v=1"></script>
     <script src="./js/sync/sync-planner.js?v=1"></script>
     <script src="./js/sync/sync-engine.js?v=1"></script>
@@ -4794,14 +4798,14 @@
 
     <script src="./js/reports-analytics.js?v=1"></script>
 
-    <script src="./js/settings-ui.js?v=11"></script>
+    <script src="./js/settings-ui.js?v=12"></script>
 
     <!-- Account / privacy / recovery controls (BP10). Safe account
          management: change email, sign out (this device / all),
          export + restore the local wallet, erase this device's wallet.
          Never mutates mWalletData for an account action; no second
          Supabase client; no browser-side account deletion. -->
-    <script src="./js/account/account-controls.js?v=1"></script>
+    <script src="./js/account/account-controls.js?v=2"></script>
     <script src="./js/account/account-ui.js?v=1"></script>
 
     <!-- Beta operations + feedback (BP11). User-initiated feedback only;
@@ -4811,7 +4815,7 @@
          localStorage. Fails open — a beta bug never locks the user out. -->
     <script src="./js/beta/beta-config.js?v=1"></script>
     <script src="./js/beta/beta-known-issues.js?v=1"></script>
-    <script src="./js/beta/beta-ops.js?v=1"></script>
+    <script src="./js/beta/beta-ops.js?v=2"></script>
     <script src="./js/beta/beta-feedback.js?v=1"></script>
     <script src="./js/beta/beta-ui.js?v=1"></script>
 

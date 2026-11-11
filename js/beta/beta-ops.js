@@ -261,12 +261,16 @@
             out.push({ id: "passkeys", text: "Passkeys are not active in this build. Sign in with your email and password." });
         }
         if (!accountDeletionAvailable()) {
-            out.push({ id: "account-deletion", text: "Self-service account deletion is not yet available. You can erase this device's wallet in Settings > My Data." });
+            out.push({ id: "account-deletion", text: syncReleaseEnabled()
+                ? "Self-service account deletion is not yet available. Erasing this device's wallet (Settings > My Data) does not delete the copy synced to your account — contact the beta team to have your account and cloud data deleted."
+                : "Self-service account deletion is not yet available. You can erase this device's wallet in Settings > My Data." });
         }
         if (!feedbackConfigured()) {
             out.push({ id: "feedback-delivery", text: "In-app feedback delivery is not configured yet — you can still copy or download a report to send manually." });
         }
-        out.push({ id: "verification", text: "Live cloud, sync, passkey and account-recovery verification is still pending (planned for the pre-beta security pass)." });
+        out.push({ id: "verification", text: syncReleaseEnabled()
+            ? "Cloud storage and sync have been live-verified. Passkey and account-recovery verification is still in progress."
+            : "Live cloud, sync, passkey and account-recovery verification is still pending (planned for the pre-beta security pass)." });
         return out;
     }
 
