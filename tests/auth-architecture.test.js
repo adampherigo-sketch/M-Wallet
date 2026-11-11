@@ -2031,11 +2031,11 @@ test("BP11: content-security sinks are absent from beta code", () => {
     }
 });
 
-test("BP11: beta-config ships null delivery fields and no provider secret", () => {
+test("BP11: beta-config ships no feedback endpoint, only the public support address, and no provider secret", () => {
     const src = fs.readFileSync(path.join(ROOT, "js/beta/beta-config.js"), "utf8");
     const clean = stripJs(src);
     assert.ok(/feedbackEndpoint:\s*null/.test(clean), "feedbackEndpoint null by default");
-    assert.ok(/supportEmail:\s*null/.test(clean), "supportEmail null by default");
+    assert.ok(/supportEmail:\s*"[^"@\s]+@zevarynsystems\.com"/.test(clean), "supportEmail is a public zevarynsystems.com address");
     assert.ok(!/(resend|formspree|sendgrid|mailgun|supabase)[_-]?(key|secret|token|password)\s*[:=]/i.test(clean));
 });
 

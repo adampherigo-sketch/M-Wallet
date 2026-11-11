@@ -161,10 +161,10 @@ changed.
 
 ## Support expectations
 
-This is a small closed beta. We read every report. Response times vary. If a
-support email is configured for your build it's shown in **Settings → Beta Hub →
-Support**; if not, use the in-app report form (Copy / Download and send it to
-whoever invited you).
+This is a small closed beta. We read every report. Response times vary. Email
+**beta@zevarynsystems.com** (also shown in **Settings → Beta Hub → Support**).
+To send a bug report, use the in-app report form: **Copy** or **Download** the
+report and attach or paste it into your email.
 
 We will **never** ask you for your password, a passkey, a sign-in token, or your
 full wallet file.
