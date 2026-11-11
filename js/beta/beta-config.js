@@ -15,10 +15,11 @@
      - No secret ever lives here: no Resend / Formspree /
        Supabase service_role key, no SMTP password, no GitHub
        token. A feedback endpoint is a PUBLIC POST target.
-     - The committed build ships `feedbackEndpoint: null` and
-       `supportEmail: null` until a production destination is
-       chosen and verified in BP12. The app stays fully useful
-       with neither — feedback can still be copied / downloaded.
+     - The committed build ships `feedbackEndpoint: null` (no
+       verified destination yet — feedback is copied / downloaded)
+       and the public beta support address
+       `beta@zevarynsystems.com`, which Cloudflare Email Routing
+       forwards to the beta inbox.
      - No localStorage. This is static deploy-time config only.
    ========================================================= */
 
@@ -34,7 +35,7 @@
        ------------------------------------------------------- */
     var DEPLOY = {
         feedbackEndpoint: null,   /* e.g. "https://example.com/m-wallet-beta-feedback" */
-        supportEmail: null,       /* e.g. "beta@example.com" */
+        supportEmail: "beta@zevarynsystems.com",   /* public; forwarded via Cloudflare Email Routing */
         programName: PROGRAM_NAME
     };
 
