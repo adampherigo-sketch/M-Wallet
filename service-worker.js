@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v30";
+const CACHE_NAME = "m-wallet-v31";
 
 
 /* =========================================================
@@ -118,11 +118,30 @@ const APP_SHELL = [
 /*
     M-Wallet asset URLs carry a version query string (for example
     ./js/app.js?v=N or ./css/style.css?v=N). The app shell
-    precaches the clean URLs; ignoreSearch lets those versioned
-    requests resolve to the same cached files offline.
+    precaches the clean URLs, and every versioned file fetched
+    online is cached under its exact URL.
+
+    Offline, the EXACT versioned copy wins. Only if it was never
+    fetched does ignoreSearch fall back to the precached clean
+    URL. (ignoreSearch alone returns the OLDEST match — the copy
+    precached at install — so an installed app could run an older
+    file than the page asked for.)
 */
 
 async function matchCachedRequest(request) {
+
+    const exact =
+        await caches.match(
+            request
+        );
+
+
+    if (exact) {
+
+        return exact;
+
+    }
+
 
     return caches.match(
         request,
@@ -155,7 +174,19 @@ self.addEventListener(
                         "[Service Worker] Caching app shell"
                     );
 
-                    return cache.addAll(APP_SHELL);
+                    /* cache: "reload" skips the browser's HTTP cache,
+                       so a new version never precaches stale files */
+                    return cache.addAll(
+                        APP_SHELL.map(
+                            url =>
+                                new Request(
+                                    url,
+                                    {
+                                        cache: "reload"
+                                    }
+                                )
+                        )
+                    );
                 })
         );
 

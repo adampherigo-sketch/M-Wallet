@@ -180,7 +180,9 @@
                 ownershipVerified: owner === "owned" || owner === "fresh_claimed" || !configured
             },
             privacy: {
-                cloudSyncActive: false,
+                /* sync actually runs only when the release gate is on AND
+                   this build has a Supabase project AND the user is signed in */
+                cloudSyncActive: syncReleaseEnabled() && configured && signedIn,
                 cloudSyncReleaseEnabled: syncReleaseEnabled(),
                 passkeyReleaseEnabled: passkeySummary().releaseEnabled,
                 analytics: "none",
@@ -697,6 +699,9 @@
             keyOf(d().syncState, "KEY", "mwallet.sync.state.v1"),
             /* B */
             "budgetTrackerData", "budgetTrackerMoneyEntries", "mWalletMoneyEntries",
+            /* the money-precision cleanup's pre-cleanup copy of the wallet
+               (storage.js moneyPrecisionBackupKey) */
+            "mWalletData-backup-before-cents-cleanup",
             /* C */
             keyOf(d().migration, "OWNER_KEY", "mwallet.local.owner.v1")
         ]);

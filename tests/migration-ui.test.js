@@ -16,6 +16,7 @@
    ========================================================= */
 
 const test = require("node:test");
+const { readSource } = require("./helpers/read-source");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -119,7 +120,7 @@ function makeEnv(options) {
     };
 
     vm.createContext(sandbox);
-    FILES.forEach((f) => vm.runInContext(fs.readFileSync(path.join(ROOT, f), "utf8"), sandbox, { filename: f }));
+    FILES.forEach((f) => vm.runInContext(readSource(ROOT, f), sandbox, { filename: f }));
 
     return {
         sandbox, dom, store, writes, removes,

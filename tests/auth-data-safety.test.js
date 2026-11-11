@@ -16,6 +16,7 @@
    ========================================================= */
 
 const test = require("node:test");
+const { readSource } = require("./helpers/read-source");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -107,7 +108,7 @@ function makeEnv(options) {
 
     vm.createContext(sandbox);
     ["js/auth/auth-config.js", "js/auth/auth-client.js", "js/auth/auth.js", "js/auth/auth-ui.js"].forEach((f) => {
-        vm.runInContext(fs.readFileSync(path.join(ROOT, f), "utf8"), sandbox, { filename: f });
+        vm.runInContext(readSource(ROOT, f), sandbox, { filename: f });
     });
 
     return {

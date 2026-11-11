@@ -418,3 +418,104 @@ test("a manual month's own ending balance and downstream rollover both use the s
     assert.equal(start(s, "2026-09"), 500);
     assert.equal(s.calculateEndingBalance("2026-08"), 500, "calculateEndingBalance agrees");
 });
+
+
+/* ---- L. months that were never opened still count ----------------
+
+   Regression: the rollover used to walk only months already saved,
+   but recurring bills / income / expenses also happen in months the
+   user never opened. With $1,000 in on Aug 5 and $100/month rent,
+   December showed $900 when opened straight from August and $800
+   after opening November. The right answer is $600, whatever was
+   opened. */
+
+function rentExample() {
+    const h = freshH();
+    addActivity(h.storage, "2026-08", 1000, "2026-08-05");
+    h.storage.addBill(
+        { name: "Rent", amount: 100, dueDate: "2026-08-01", recurring: true, category: "Housing" },
+        "2026-08"
+    );
+    return h;
+}
+
+test("L. recurring rent in never-opened months counts: Aug -> Dec opens at $600, not $900", () => {
+    const expected = { "2026-09": 900, "2026-10": 800, "2026-11": 700, "2026-12": 600, "2027-01": 500 };
+    for (const [monthKey, opening] of Object.entries(expected)) {
+        const s = rentExample().storage;          /* only August has ever been opened */
+        assert.equal(start(s, monthKey), opening, `${monthKey} opened straight from August`);
+    }
+
+    const s = rentExample().storage;
+    assert.equal(s.getMonthSnapshot("2026-12").startingBalance, 600, "the Budget-page snapshot agrees");
+    assert.equal(s.getStartingBalance("2026-12"), 600, "the public getter agrees");
+});
+
+test("L2. the opening balance does not depend on which months were opened, or in what order", () => {
+    const jumped = rentExample().storage;
+    const decFirst = start(jumped, "2026-12");
+    start(jumped, "2026-11");                     /* now open November */
+    assert.equal(start(jumped, "2026-12"), decFirst, "December is unchanged after opening November");
+
+    const walked = rentExample().storage;
+    ["2026-09", "2026-10", "2026-11"].forEach((m) => walked.getMonthlySummary(m));
+    assert.equal(start(walked, "2026-12"), decFirst, "same as visiting every month in order");
+    assert.equal(decFirst, 600);
+});
+
+test("L3. working out an opening balance never creates or changes a stored month", () => {
+    const h = rentExample();
+    const before = h.localStorage.getItem(storageKey);
+
+    h.storage.resolveMonthStartingBalance("2026-12");
+    h.storage.resolveMonthStartingBalance("2027-03");
+
+    assert.equal(h.localStorage.getItem(storageKey), before, "stored wallet byte-identical");
+    assert.deepEqual(Object.keys(rawBlob(h).months).sort(), ["2026-08"], "no in-between month was saved");
+});
+
+test("L4. recurring INCOME and EXPENSES in never-opened months count too", () => {
+    const s = fresh();
+    s.setStartingBalance(0, "2026-08");
+    s.addIncome({ source: "Pay", amount: 500, type: "salary", date: "2026-08-01", recurring: true, frequency: "monthly" });
+    s.addExpense({ name: "Phone", amount: 120, date: "2026-08-10", category: "Phone", recurring: true, frequency: "monthly" });
+
+    assert.equal(start(s, "2026-12"), 4 * (500 - 120), "Aug..Nov: four months of +$500 - $120");
+});
+
+test("L5. a manual month inside a never-opened stretch still resets the chain", () => {
+    const s = rentExample().storage;
+    s.setStartingBalance(2000, "2026-10");        /* September and November never opened */
+
+    assert.equal(start(s, "2026-10"), 2000);
+    assert.equal(start(s, "2026-12"), 1800, "Oct opens at the manual $2,000; Oct + Nov rent -> $1,800");
+});
+
+test("L6. a recurring bill's end date is honoured in never-opened months", () => {
+    const s = fresh();
+    addActivity(s, "2026-08", 1000, "2026-08-05");
+    s.addBill(
+        { name: "Trial", amount: 100, dueDate: "2026-08-01", recurring: true, endDate: "2026-10-15", category: "Other" },
+        "2026-08"
+    );
+
+    assert.equal(start(s, "2027-01"), 700, "only Aug, Sep and Oct are billed");
+});
+
+test("L7. two years of history is read in a handful of loads, and a negative balance still carries", () => {
+    const s = rentExample().storage;
+    let loads = 0;
+    const realLoad = s.load;
+    s.load = function countedLoad() {
+        loads += 1;
+        return realLoad.apply(this, arguments);
+    };
+    try {
+        s.resolveMonthStartingBalance("2028-08");   /* 24 months, none of them opened */
+    } finally {
+        s.load = realLoad;
+    }
+
+    assert.ok(loads <= 5, `${loads} wallet loads for 24 months (was ~6 per month)`);
+    assert.equal(start(s, "2028-08"), 1000 - 100 * 24, "24 months of rent: -$1,400 carries forward");
+});

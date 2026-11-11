@@ -69,15 +69,18 @@ test("under the pre-load test opt-in, the engine can be exercised — but still 
     assert.equal(R.isEnabled(), false);
 });
 
-test("the BP8 sync release gate is a SEPARATE switch and stays false regardless", () => {
+test("the BP8 sync release gate is a SEPARATE switch from passkeys (sync on does not turn passkeys on)", () => {
     const syncSrc = fs.readFileSync(path.join(ROOT, "js/sync/sync-release.js"), "utf8");
     const sandbox = { window: {}, console };
     sandbox.self = sandbox.window;
     vm.createContext(sandbox);
     vm.runInContext(syncSrc, sandbox, { filename: "sync-release.js" });
     vm.runInContext(SRC, sandbox, { filename: "passkey-release.js" });
-    /* even if a test env enables passkeys, sync stays off (independent) */
-    assert.equal(sandbox.window.MWalletSyncRelease.isEnabled(), false);
+    /* the two gates are independent: sync follows its own committed
+       default (on since BP12) while passkeys stay off */
+    const S = sandbox.window.MWalletSyncRelease;
+    assert.equal(S.isEnabled(), S.COMMITTED_DEFAULT.enabled);
+    assert.equal(S.isEnabled(), true);
     assert.equal(sandbox.window.MWalletPasskeyRelease.isEnabled(), false);
 });
 

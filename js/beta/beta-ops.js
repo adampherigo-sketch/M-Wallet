@@ -261,12 +261,16 @@
             out.push({ id: "passkeys", text: "Passkeys are not active in this build. Sign in with your email and password." });
         }
         if (!accountDeletionAvailable()) {
-            out.push({ id: "account-deletion", text: "Self-service account deletion is not yet available. You can erase this device's wallet in Settings > My Data." });
+            out.push({ id: "account-deletion", text: syncReleaseEnabled()
+                ? "Self-service account deletion is not yet available. Erasing this device's wallet (Settings > My Data) does not delete the copy synced to your account — contact the beta team to have your account and cloud data deleted."
+                : "Self-service account deletion is not yet available. You can erase this device's wallet in Settings > My Data." });
         }
         if (!feedbackConfigured()) {
             out.push({ id: "feedback-delivery", text: "In-app feedback delivery is not configured yet — you can still copy or download a report to send manually." });
         }
-        out.push({ id: "verification", text: "Live cloud, sync, passkey and account-recovery verification is still pending (planned for the pre-beta security pass)." });
+        out.push({ id: "verification", text: syncReleaseEnabled()
+            ? "Cloud storage and sync have been live-verified. Passkey and account-recovery verification is still in progress."
+            : "Live cloud, sync, passkey and account-recovery verification is still pending (planned for the pre-beta security pass)." });
         return out;
     }
 
@@ -291,14 +295,15 @@
     /* ---- curated release notes (no runtime GitHub fetch) ---- */
 
     var RELEASE_NOTES = {
-        version: "0.9.0-beta.10",
+        version: "0.9.0-beta.11",
         title: "What's new in this beta",
         highlights: [
-            "New Beta Hub in Settings — version, limitations, known issues, and what's new in one place.",
-            "Report a beta problem: a structured bug / feedback form with optional privacy-safe technical diagnostics.",
-            "Copy or download any report as a file — nothing is sent unless you choose Send (and only when a feedback destination is configured).",
-            "The same report action is available from the sign-in screen if you're locked out.",
-            "No analytics, no tracking, no automatic crash reporting — feedback is only ever sent when you press Send."
+            "Cloud sync is on: while you're signed in, your wallet is backed up to your account and kept in sync across your devices.",
+            "Money is now worked out to the exact cent, so moving your full balance between Checking, Savings and your funds always works.",
+            "Each month's opening balance now counts recurring bills, income and spending in every month — including months you haven't opened — so your Total Balance no longer changes depending on which months you've viewed.",
+            "Months open noticeably faster.",
+            "Tapping Save twice no longer saves an entry or transfer twice.",
+            "Updates now reach the installed app reliably, including when you're offline."
         ],
         note: "CHANGELOG.md remains the full developer history."
     };
