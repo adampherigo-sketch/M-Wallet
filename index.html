@@ -7,6 +7,29 @@
 
 
     <!-- =====================================================
+         CONTENT SECURITY POLICY
+         The session token and the wallet live in this origin's
+         localStorage, so injected script must never run here.
+         - script-src 'self': only M-Wallet's own files (the
+           Supabase library is vendored). No inline script, no
+           inline event handlers, no eval.
+         - style-src 'unsafe-inline': progress bars are drawn with
+           style="width: N%" attributes. Styles only, never script.
+         - connect-src: this origin + Supabase projects (the same
+           hosts js/auth/auth-config.js accepts). When a beta
+           feedback endpoint is configured, add its origin here.
+         - frame-ancestors cannot be set from a <meta> tag.
+         Dev note: VS Code Live Server's injected auto-reload
+         script is inline, so it is blocked; refresh manually.
+    ====================================================== -->
+
+    <meta
+        http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.supabase.net; object-src 'none'; base-uri 'self'; form-action 'self'"
+    >
+
+
+    <!-- =====================================================
          MOBILE DISPLAY
     ====================================================== -->
 
@@ -3911,10 +3934,10 @@
                 One moment — making sure this device has your latest M-Wallet data.
             </p>
 
-            <button type="button" class="z-btn z-btn-primary mw-auth-block" data-sync-action="bootstrap-retry" hidden>
+            <button type="button" id="mw-sync-bootstrap-retry" class="z-btn z-btn-primary mw-auth-block" data-sync-action="bootstrap-retry" hidden>
                 Retry
             </button>
-            <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-sync-action="bootstrap-offline" hidden>
+            <button type="button" id="mw-sync-bootstrap-offline" class="z-btn z-btn-secondary mw-auth-block" data-sync-action="bootstrap-offline" hidden>
                 Continue Offline
             </button>
 
@@ -4716,7 +4739,7 @@
          MOBILE NAV HOTFIX CACHE VERSION
     ========================================= -->
 
-    <script src="./js/app-version.js?v=1"></script>
+    <script src="./js/app-version.js?v=2"></script>
 
     <!-- Authentication (BP2 architecture + BP3 account UI).
          Loads before the financial engine, initializes detached,
@@ -4768,7 +4791,7 @@
          layer (reuses MWalletAuth._getClient()). The codec is pure;
          the store makes ZERO network calls on load / navigation /
          render. -->
-    <script src="./js/cloud/cloud-financial-codec.js?v=2"></script>
+    <script src="./js/cloud/cloud-financial-codec.js?v=3"></script>
     <script src="./js/cloud/cloud-financial-store.js?v=2"></script>
 
     <!-- Local-first sync engine (BP8). Built but OFF: the release
@@ -4782,7 +4805,7 @@
     <script src="./js/sync/sync-engine.js?v=1"></script>
     <script src="./js/sync/sync-ui.js?v=1"></script>
 
-    <script src="./js/storage.js?v=8"></script>
+    <script src="./js/storage.js?v=9"></script>
 
     <script src="./js/nav.js?v=8"></script>
 
@@ -4814,14 +4837,14 @@
          analytics, no telemetry, no automatic transmission, no
          localStorage. Fails open — a beta bug never locks the user out. -->
     <script src="./js/beta/beta-config.js?v=1"></script>
-    <script src="./js/beta/beta-known-issues.js?v=1"></script>
+    <script src="./js/beta/beta-known-issues.js?v=2"></script>
     <script src="./js/beta/beta-ops.js?v=2"></script>
     <script src="./js/beta/beta-feedback.js?v=1"></script>
     <script src="./js/beta/beta-ui.js?v=1"></script>
 
     <script src="./js/app.js?v=12"></script>
 
-    <script src="./js/money.js?v=7"></script>
+    <script src="./js/money.js?v=8"></script>
 
     <script src="./js/pwa.js?v=7"></script>
 

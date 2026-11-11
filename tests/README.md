@@ -495,14 +495,45 @@ data, uses `localStorage`, needs an auth token, or contains analytics / a global
 crash handler / an unsafe HTML sink / a front-end access allowlist; `index.html`
 loads the beta bundle + `beta.css`, has the Beta Hub and the auth-gate report
 control, and three `role="dialog"` + `aria-modal` dialogs; the SW precaches the
-bundle at `m-wallet-v31` and returns early for the non-GET feedback `POST`;
-version is `0.9.0-beta.10`; the docs stay precise (no false E2EE claim, an
-honest IP-address note).
+bundle at the current `CACHE_NAME` and returns early for the non-GET feedback
+`POST`; the version pins follow `js/app-version.js`; the docs stay precise (no
+false E2EE claim, an honest IP-address note).
 
 **Not run by `npm test`, and deferred to BP12:** configuring + verifying a real
 feedback destination. No test sends real feedback; there is no live endpoint
 verification yet. The committed build ships with no endpoint. See
 [`../docs/BP11-BETA-OPERATIONS.md`](../docs/BP11-BETA-OPERATIONS.md).
+
+## BP12 + beta-readiness tests (`0.9.0-beta.11`)
+
+`month-rollover.test.js` — each month opens at the previous calendar month's
+ending balance: Dec → Jan, gaps, negative carry, corrections flowing forward,
+manual overrides, legacy data, cloud encode/decode. The **L** cases cover months
+that were never opened: recurring rent, income and expenses (and bill end dates)
+in those months still count, the result does not depend on which months were
+opened, working it out saves nothing, and two years of history takes a handful
+of wallet loads.
+
+`sync-false-conflicts.test.js` — month navigation and read-only access do not
+rewrite month data or raise Local / Cloud conflicts between devices, while real
+same-month concurrent edits still do.
+
+`money-precision.test.js` — every balance change, check and total is whole
+cents: the two reproduced refusals ($30.30 after $10.10 + $20.20; $1.00 after
+ten $0.10 deposits), money conservation across mixed moves, exact totals, and
+fund completion. `cleanupStoredMoneyPrecision()` is tested against a wallet
+saved by the old float engine: never automatic, dry run writes nothing, apply
+changes only the reported fields and backs up the original byte-for-byte, a
+second run changes nothing, real sub-cent values are left alone, and "Erase
+this device" removes the backup.
+
+`money-form-double-submit.test.js` — loads the real `js/money.js` against the
+DOM stub (with a few DOM features added in that file only): a double submit of
+"Add Money to Savings" writes once, later forms still save, closing the modal
+any way releases the guard, and a failed save can be retried.
+
+`sync-ui.test.js` also checks the **real** `index.html` contains every element
+id `sync-ui.js` looks up (the bootstrap Retry / Continue Offline buttons).
 
 ## Running
 

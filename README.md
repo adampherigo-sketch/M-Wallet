@@ -2,7 +2,7 @@
 
 A local‑first personal budgeting **Progressive Web App** by Zevaryn Systems.
 
-> **Status: Beta Preparation — `0.9.0-beta.10`.** M-Wallet is a pre‑release build.
+> **Status: Beta Preparation — `0.9.0-beta.11`.** M-Wallet is a pre‑release build.
 > It is **not production‑ready**. Accounts, sign-in, non-destructive local
 > data ownership, a first‑run setup wizard, an optional guided walkthrough,
 > a row-level-secured cloud data schema, a complete local‑first **sync engine**,
@@ -55,6 +55,8 @@ Only features that exist today are listed.
 | **Monthly recurring bills** | A monthly bill carries forward to future months automatically, with no duplicate occurrences when navigating between months or reloading |
 | **Optional recurring end date** | A recurring bill can stop on a chosen date; later months show no occurrence |
 | **Paid‑state isolation** | Marking one month's occurrence paid does not affect any other month |
+| **Opening balance rollover** | Each month opens at the previous month's ending balance, counting recurring bills / income / expenses in every month — including months not yet opened. A manual opening balance overrides it for that month |
+| **Exact-cent money** | Every balance change, balance check and total is worked out in whole cents, so moving an exact balance always works |
 | **Transactions** | Derived activity feed; text search (description / merchant / category / notes); All / Income / Expenses filters; category filter; date grouping |
 | **Categories & subcategories** | 21 system categories, 127 system subcategories; add / rename / enable‑disable / delete custom ones (system categories can be renamed and disabled but not deleted); legacy category strings resolve to IDs without being rewritten |
 | **Savings** | General Savings balance; Checking ↔ Savings transfers |
@@ -354,18 +356,31 @@ files on their next launch.
 
 ## Data Architecture
 
-**Today, M-Wallet is local‑only.** All financial data is stored in the browser's
+**Local‑first.** All financial data is stored on the device, in the browser's
 `localStorage` under the key `mWalletData` (with one‑way migration from the
-legacy `budgetTrackerData` key). There is **no account system and no cloud sync
-yet** — those are the subject of upcoming Beta Preparation phases.
+legacy `budgetTrackerData` key). Amounts are stored in dollars, but every
+balance change, balance check and total is worked out in **whole cents**
+(`toCents` in `js/storage.js`).
 
-Consequences of the current model:
+Accounts (BP2–BP4), a row‑level‑secured cloud schema (BP7) and a sync engine
+(BP8) exist once a Supabase project is configured, but **cloud sync ships OFF**
+until its live multi‑device verification (BP12) is complete. For now:
 
 - Data lives on **one device, in one browser profile**. It does not follow you
   to another device or browser.
 - Clearing site data, using a private window, or uninstalling removes it.
-- **Export** (Settings → Data & Storage) produces a full JSON backup; **Import**
-  replaces all current data with a backup file.
+- **Export wallet backup** (Settings → My Data) produces a full JSON backup;
+  **Restore from a backup** replaces this device's wallet with one; **Erase
+  wallet from this device** removes it.
+
+**Tidying older saves.** Wallets saved before `0.9.0-beta.11` can hold float
+residue (for example a balance stored as `30.299999999999997`). The app already
+reads and moves those amounts correctly. To tidy the stored values, run
+`MWalletStorage.cleanupStoredMoneyPrecision({ dryRun: true })` in the browser
+console to preview, then run it without `dryRun` to apply. It never runs
+automatically, moves each value by less than 1/1000 of a cent, keeps the
+original under `mWalletData-backup-before-cents-cleanup` (removed by "Erase
+wallet from this device"), and is safe to run more than once.
 
 ---
 
@@ -793,8 +808,15 @@ detection, sign-in / registration / management, confirmation dialogs). The BP8
 sync **and** BP9 passkey **release gates ship OFF**; live two‑user RLS
 verification, live multi‑device sync verification, and live WebAuthn / passkey
 verification (with the final RP ID) are all **deferred to BP12** and are hard
-gates before BP13. Still planned: account/privacy/recovery controls (BP10) and a
-beta feedback system (BP11).
+gates before BP13. Also done: account / privacy / recovery controls (BP10) and
+beta operations + feedback (BP11).
+
+**BP12 (security / device / release QA) is in progress.** Live authentication,
+local ownership isolation and two‑user cloud RLS checks have passed; live
+multi‑device sync verification is under way. A round of beta‑readiness fixes
+(exact‑cent money math, the opening‑balance rollover, a double‑save guard, the
+sync release gate back OFF, and reliable updates for installed apps) landed in
+`0.9.0-beta.11` — see [CHANGELOG.md](CHANGELOG.md).
 
 It is **not production‑ready** and should not be treated as a finished product.
 
@@ -824,7 +846,9 @@ once the recovery story is finished (a later phase will say so explicitly).
   on pull requests, but running it locally first keeps `main` clean.
 - Bump the version in **`js/app-version.js`** *and* **`package.json`**
   (identical strings) for each release; update **`CHANGELOG.md`**.
-- Bump `CACHE_NAME` in `service-worker.js` whenever a cached asset changes.
+- Whenever a cached asset changes, bump its `?v=N` in `index.html` **and**
+  `CACHE_NAME` in `service-worker.js` — otherwise installed apps can keep
+  running the old file.
 
 ---
 

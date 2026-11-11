@@ -23,7 +23,7 @@ when to be careful.
 
 Open **Settings → Beta Hub**. It shows:
 
-- **Version** — e.g. `0.9.0-beta.10`
+- **Version** — e.g. `0.9.0-beta.11`
 - **Feedback delivery** — whether reports can be sent in-app or must be copied /
   downloaded
 - **Known issues** — issues the team has already acknowledged for this build

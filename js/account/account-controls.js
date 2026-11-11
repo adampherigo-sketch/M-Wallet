@@ -699,6 +699,9 @@
             keyOf(d().syncState, "KEY", "mwallet.sync.state.v1"),
             /* B */
             "budgetTrackerData", "budgetTrackerMoneyEntries", "mWalletMoneyEntries",
+            /* the money-precision cleanup's pre-cleanup copy of the wallet
+               (storage.js moneyPrecisionBackupKey) */
+            "mWalletData-backup-before-cents-cleanup",
             /* C */
             keyOf(d().migration, "OWNER_KEY", "mwallet.local.owner.v1")
         ]);

@@ -1137,20 +1137,20 @@ test("changed modules are re-versioned in index.html", () => {
     assert.ok(/js\/setup\/setup-ui\.js\?v=\d+/.test(html), "setup-ui.js has a ?v");
     assert.ok(/js\/walkthrough\/guided-walkthrough\.js\?v=\d+/.test(html), "guided-walkthrough.js has a ?v");
     assert.ok(/js\/walkthrough\/walkthrough-ui\.js\?v=\d+/.test(html), "walkthrough-ui.js has a ?v");
-    assert.ok(/js\/cloud\/cloud-financial-codec\.js\?v=2/.test(html), "cloud-financial-codec.js at ?v=2");
+    assert.ok(/js\/cloud\/cloud-financial-codec\.js\?v=3/.test(html), "cloud-financial-codec.js at ?v=3");
     assert.ok(/js\/cloud\/cloud-financial-store\.js\?v=2/.test(html), "cloud-financial-store.js at ?v=2");
     assert.ok(/js\/sync\/sync-engine\.js\?v=\d+/.test(html), "sync-engine.js has a ?v");
-    assert.ok(/js\/storage\.js\?v=8/.test(html), "storage.js at ?v=8");
+    assert.ok(/js\/storage\.js\?v=9/.test(html), "storage.js at ?v=9");
     assert.ok(/js\/auth\/passkey-release\.js\?v=\d+/.test(html), "passkey-release.js has a ?v");
     assert.ok(/js\/auth\/passkeys\.js\?v=\d+/.test(html), "passkeys.js has a ?v");
     assert.ok(/js\/auth\/passkey-ui\.js\?v=\d+/.test(html), "passkey-ui.js has a ?v");
 });
 
-test("app version bumped to 0.9.0-beta.10 and mirrored in package.json", () => {
+test("app version bumped to 0.9.0-beta.11 and mirrored in package.json", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.10"/.test(av), "app-version.js");
-    assert.equal(pkg.version, "0.9.0-beta.10", "package.json");
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.11"/.test(av), "app-version.js");
+    assert.equal(pkg.version, "0.9.0-beta.11", "package.json");
 });
 
 test("BP4 migration modules load after auth, before the financial engine", () => {
@@ -1741,9 +1741,9 @@ test("BP9: no passkey source file touches financial data", () => {
     }
 });
 
-test("BP9: version beta.10, cache v30, docs mention passkeys are not E2EE", () => {
+test("BP9: version beta.11, cache v31, docs mention passkeys are not E2EE", () => {
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
-    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.10"/.test(av));
+    assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.11"/.test(av));
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
     assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
     const doc = fs.readFileSync(path.join(ROOT, "docs/BP9-PASSKEYS.md"), "utf8");

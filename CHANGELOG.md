@@ -11,7 +11,66 @@ used in their commits.
 
 ## [Unreleased]
 
-### BP12 — Cloud sync enabled for the closed beta
+### BP12 (in progress) + beta-readiness fixes (`0.9.0-beta.10` → `0.9.0-beta.11`)
+
+BP12 live verification so far, plus a round of fixes from a full beta-readiness
+review. Live authentication, local ownership isolation and two-user cloud RLS
+checks have passed, and live multi-device sync (Mac + iPhone) has been verified.
+**The sync release gate ships ON** in this build (see *Cloud sync enabled* below).
+
+**BP12 work (already on the branch)**
+
+- **BP12.3 — live RLS verification.** `scripts/bp7-live-rls-check.mjs` reads the
+  document revision right before tombstoning and checks the tombstone bumps it
+  by exactly one; the live run passed 22/22.
+- **BP12.4 — automatic month balance rollover.** A month without a manual
+  opening balance opens at the previous month's ending balance; manual
+  balances (including first-run setup) still win; `startingBalanceManual`
+  records which is which.
+- **BP12.4J — false / repetitive month sync conflicts.** Month navigation and
+  read-only access no longer rewrite month data; derived timestamps and the
+  ending balance are left out of sync change fingerprints.
+- **Navigation + layout overhaul.** One app shell (`css/zg9.css` §5): bottom
+  bar under 1024 px, left sidebar at 1024 px and wider, inline SVG icons,
+  `aria-current` and focus traps in `js/nav.js`.
+
+**Beta-readiness fixes**
+
+- **Sync release gate.** `enabled: true` had landed inside the layout commit
+  without its tests or wording; it was briefly set back to `false`, then
+  deliberately re-enabled with matching tests and copy (below).
+- **Sync bootstrap buttons.** The "Couldn't check your cloud wallet" screen's
+  Retry / Continue Offline buttons now have the ids `sync-ui.js` looks for, so
+  they appear instead of leaving a button-less screen.
+- **One save per money form.** A double-tap, double-click or repeated Enter in
+  the ~450 ms success window no longer writes an entry — or a Checking ↔
+  Savings transfer — twice.
+- **Exact-cent money math.** Every balance change, balance check and total in
+  `js/storage.js` is worked out in whole cents (`toCents` / `fromCents` /
+  `roundMoney`). Fixes valid moves being refused, e.g. allocating the full
+  $30.30 after depositing $10.10 + $20.20 (stored as 30.299999999999997). The
+  savings form's own pre-checks use the same rule.
+- **Explicit money cleanup.** `MWalletStorage.cleanupStoredMoneyPrecision({
+  dryRun })` tidies float residue already saved in a wallet. Never automatic;
+  dry-run first; rounds only values within 1/1000 of a cent and reports real
+  sub-cent amounts instead of changing them; backs up the untouched wallet to
+  `mWalletData-backup-before-cents-cleanup` (now also removed by "Erase wallet
+  from this device"); idempotent.
+- **Rollover counts every calendar month.** The opening balance now includes
+  recurring bills / income / expenses in months that were never opened, so it
+  no longer depends on navigation ($1,000 in Aug + $100/month rent: December
+  showed $900 or $800 depending on what had been opened; now $600). It is
+  read-only and about 10× faster (two years of history: month snapshot 281 ms
+  → 32 ms).
+- **Updates reach installed apps.** `CACHE_NAME` `m-wallet-v30` → `m-wallet-v31`;
+  the app shell is precached with `cache: "reload"`; offline, the exact
+  versioned file is served before the precached copy; every changed file got
+  a new `?v=`.
+- **Version** — `0.9.0-beta.10` → `0.9.0-beta.11`; in-app "What's new" updated.
+- **Tests** — 873 → 899 (`money-form-double-submit`, `money-precision`, new
+  rollover cases, and a real-`index.html` check for sync-ui's element ids).
+
+**Cloud sync enabled for the closed beta**
 
 BP12 live-verified Supabase RLS (`npm run bp7:verify-rls` 22/22) and multi-device
 sync (Mac + iPhone, BP12.4J false-conflict fix), so the BP8 sync release gate now
@@ -24,15 +83,15 @@ Supabase project; a local-only build makes zero cloud requests.
   exercise the disabled path. New checks: `getSummary().privacy.cloudSyncActive`
   is true only with the gate on + a configured, signed-in account; Beta Hub
   limitations follow the gate; `index.html` carries no "never uploaded" /
-  "sync is off" copy. `873` → `876`.
+  "sync is off" copy.
 - **Copy** — every "nothing is uploaded / sync is off" message (welcome,
   local-data claim, setup wizard, privacy, cloud-storage row, erase row and
   erase dialog) now describes sync truthfully. The erase warnings explain that
   synced data stays in the account while unsynced changes are lost. The Settings
   cloud status reads "Available — sync on"; the Beta Hub tells testers that
   erasing the device does not delete their cloud copy.
-- **Cache** — `m-wallet-v30` → `m-wallet-v31`; `sync-release.js` `?v=2`,
-  `settings-ui.js` `?v=12`, `account-controls.js` `?v=2`, `beta-ops.js` `?v=2`.
+- **Cache** — ships in the same `m-wallet-v31` build; `settings-ui.js` `?v=12`,
+  `account-controls.js` `?v=2`.
 
 ### BP11 — Beta operations + feedback (`0.9.0-beta.9` → `0.9.0-beta.10`)
 
