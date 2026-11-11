@@ -26,6 +26,7 @@
    ========================================================= */
 
 const test = require("node:test");
+const { readSource } = require("./helpers/read-source");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -281,7 +282,7 @@ function makeAuthEnv(options) {
 
     vm.createContext(sandbox);
     for (const file of AUTH_FILES.concat(["js/auth/auth-ui.js"])) {
-        const code = fs.readFileSync(path.join(ROOT, file), "utf8");
+        const code = readSource(ROOT, file);
         vm.runInContext(code, sandbox, { filename: file });
     }
 
@@ -1753,9 +1754,37 @@ test("BP9: version beta.11, cache v31, docs mention passkeys are not E2EE", () =
         "RP-ID-change warning present");
 });
 
+test("BP12: the deployed build ships the Beta project's PUBLIC config — publishable key + supabase.co URL only", () => {
+    const src = fs.readFileSync(path.join(ROOT, "js/auth/auth-config.js"), "utf8");
+    const block = (src.match(/var DEPLOY_CONFIG = \{[\s\S]*?\};/) || [""])[0];
+    assert.ok(block, "DEPLOY_CONFIG block present");
+    assert.ok(/supabaseUrl:\s*"https:\/\/[a-z0-9]+\.supabase\.co"/.test(block), "a project supabase.co URL");
+    assert.ok(/supabaseKey:\s*"sb_publishable_[A-Za-z0-9_-]{20,}"/.test(block), "a publishable key");
+    assert.ok(!/sb_secret_|service_role|eyJ/.test(block), "never a secret / service_role key");
+    /* outside DEPLOY_CONFIG the file carries no key literal at all */
+    assert.ok(!/sb_publishable_[A-Za-z0-9]{12,}/.test(src.replace(block, "")), "the key appears only in DEPLOY_CONFIG");
+
+    /* loaded exactly as shipped (no window / localStorage override) it resolves as configured */
+    const sandbox = { window: {}, console, atob: (b) => Buffer.from(b, "base64").toString("binary") };
+    vm.createContext(sandbox);
+    vm.runInContext(readSource(ROOT, "js/auth/auth-config.js", { keepDeployConfig: true }), sandbox);
+    const r = sandbox.window.MWalletAuthConfigResolved;
+    assert.equal(r.isConfigured, true);
+    assert.equal(r.keyType, "publishable");
+    assert.equal(r.configSource, "deploy");
+    assert.equal(r.keyProblem, null);
+});
+
 test("no auth source file contains a hard-coded credential or logs a session", () => {
     for (const file of AUTH_FILES.concat(["js/auth/auth-ui.js", "js/auth/auth-config.example.js"])) {
-        const src = fs.readFileSync(path.join(ROOT, file), "utf8");
+        const shipped = fs.readFileSync(path.join(ROOT, file), "utf8");
+        // no secret / service_role / JWT anywhere — including DEPLOY_CONFIG
+        assert.ok(!/sb_secret_[A-Za-z0-9]/.test(shipped), file + " ships no secret key");
+        assert.ok(!/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\./.test(shipped), file + " ships no JWT");
+        // the deployed Beta project's PUBLIC publishable key may live ONLY in
+        // auth-config.js's DEPLOY_CONFIG (covered by its own test); every
+        // other check runs with that block blanked
+        const src = readSource(ROOT, file);
         // no real JWT
         assert.ok(!/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\./.test(src), file + " embeds no JWT");
         // no real publishable / secret key literal (placeholders use <…>)

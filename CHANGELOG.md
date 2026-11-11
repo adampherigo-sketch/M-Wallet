@@ -70,6 +70,17 @@ checks have passed, and live multi-device sync (Mac + iPhone) has been verified.
 - **Tests** — 873 → 899 (`money-form-double-submit`, `money-precision`, new
   rollover cases, and a real-`index.html` check for sync-ui's element ids).
 
+**Sign-in enabled on the deployed build**
+
+- `js/auth/auth-config.js` `DEPLOY_CONFIG` now carries the M-Wallet Beta
+  project's **public** values (project URL + `sb_publishable_…` key), so the
+  live site shows the account gateway instead of running local-only. No secret
+  key is committed. `auth-config.js` `?v=2` → `?v=3`.
+- Tests load `auth-config.js` through `tests/helpers/read-source.js`, which
+  blanks `DEPLOY_CONFIG` so each auth scenario sets its own config; a new test
+  checks the shipped block is a publishable key + `supabase.co` URL only and
+  resolves as configured.
+
 **Cloud sync enabled for the closed beta**
 
 BP12 live-verified Supabase RLS (`npm run bp7:verify-rls` 22/22) and multi-device

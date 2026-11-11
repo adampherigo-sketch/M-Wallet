@@ -74,8 +74,8 @@
        NEVER put an "sb_secret_…" or service_role key here.
        ------------------------------------------------------- */
     var DEPLOY_CONFIG = {
-        supabaseUrl: "",
-        supabaseKey: ""
+        supabaseUrl: "https://lvvfjiwqledzststdykj.supabase.co",
+        supabaseKey: "sb_publishable_p7M03AqGTBQNPUpcdcpYGA_3bu1qK3D"
     };
     /* ----------------------------------------------------- */
 
