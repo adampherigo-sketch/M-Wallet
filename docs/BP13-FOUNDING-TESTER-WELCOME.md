@@ -209,8 +209,10 @@ grant execute on function public.beta_program_status() to authenticated;
   reports on the **caller's own** `auth.uid()`.
 - To move the launch date, update the `beta_program` row. **No app release is
   needed.**
-- To add your account, insert your user id from Authentication → Users into
-  `beta_staff`.
+- To add your account or a helper's, copy their user id from
+  Authentication → Users and insert it into `beta_staff` (Table Editor →
+  beta_staff → Insert row). To remove access, delete the row. Changes take
+  effect the next time that person opens the app.
 
 ### 4.3 Founding tester tracking (decision D3: approved)
 
@@ -552,4 +554,4 @@ SQL (live, after the migration):
 | D1 | No report option while locked; there is nothing to see yet. | Approved |
 | D2 | Keep the "I understand this is pre-release software" checkbox above Start. | Approved |
 | D3 | Add the `founding_testers` table, store in-app reports per tester, and send a monthly summary email. | Approved |
-| D4 | An admin unlock for the team before launch. | **Approach to be confirmed:** staff accounts (4.2) vs. an admin code typed on the lock screen (checked server-side). |
+| D4 | Team access before launch: **staff list only** (`beta_staff`, 4.2). Staff accounts skip the lock automatically, and there is no password box on the lock screen. Add or remove people in the Supabase dashboard. | Approved |
