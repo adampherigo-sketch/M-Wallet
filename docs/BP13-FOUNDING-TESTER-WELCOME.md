@@ -99,7 +99,8 @@ The screen shows when every one of these is true:
   does nothing.
 - **Sign out** stays reachable through a small text link in the header, so a
   tester on a shared device is never trapped.
-- **Report a beta problem** stays reachable (the existing BP11 dialog).
+- **No report option** while locked (decision D1): testers can't see the app
+  yet, so there is nothing to report. Reporting appears with the app at launch.
 - When the countdown reaches zero while the screen is open, the bar switches
   to the open state **without a reload**.
 
@@ -107,6 +108,8 @@ The screen shows when every one of these is true:
 
 - The bar shows "● BETA TESTING IS OPEN" and a **Start using M-Wallet**
   button.
+- Above the button is #15's checkbox, **"I understand this is pre-release
+  software"** (decision D2). **Start** stays disabled until it is ticked.
 - Tapping the button records the acknowledgement (per account, per device,
   as #15 already does), closes the screen, and lets BP5 setup run.
 - A tester who joins after launch sees the screen once, already in the open
@@ -209,10 +212,10 @@ grant execute on function public.beta_program_status() to authenticated;
 - To add your account, insert your user id from Authentication → Users into
   `beta_staff`.
 
-### 4.3 Optional: founding tester tracking (decision D3)
+### 4.3 Founding tester tracking (decision D3: approved)
 
 An admin-only table for checking off who qualifies. It has no browser access
-and is managed in the dashboard.
+and is managed in the dashboard. Add one row per tester when you invite them.
 
 ```sql
 create table public.founding_testers (
@@ -227,7 +230,85 @@ alter table public.founding_testers enable row level security;
 -- No policies: dashboard / service role only.
 ```
 
-### 4.4 Supabase dashboard settings (already planned)
+### 4.4 In-app reports stored per tester (decision D3)
+
+To count reports per tester, in-app reports go to Supabase instead of only
+being copied or downloaded.
+
+```sql
+create table public.beta_reports (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  report_id   text not null unique,            -- the existing MWB-<uuid>
+  category    text not null,
+  severity    text,
+  title       text not null,
+  report      jsonb not null,                  -- the BP11 report as sent
+  created_at  timestamptz not null default now()
+);
+alter table public.beta_reports enable row level security;
+-- No policies: written only by the Edge Function below, read in the dashboard.
+```
+
+**Edge Function `beta-feedback`** (`supabase/functions/beta-feedback/`):
+- Called with `client.functions.invoke("beta-feedback", { body: report })`
+  through the **one existing Supabase client**, so the tester's sign-in token
+  is sent automatically.
+- It verifies the token, takes `user_id` **from the token** (never from the
+  body), validates the BP11 format (`m-wallet-beta-feedback` v1, 48 KiB cap,
+  the same field limits), and inserts one row (an idempotent `report_id`, so a
+  double Send stays one row).
+- It forwards a copy to the beta inbox via Resend, so you still get every
+  report as an email.
+- It returns `{ reference: report_id }`.
+- **Secrets** (`RESEND_API_KEY`, `REPORT_INBOX`) are Supabase function
+  secrets. They are never in the repo or the app.
+
+**App changes for reports** (`js/beta/beta-feedback.js`, `beta-config.js`):
+- When signed in, Send uses `functions.invoke`. Copy and Download stay
+  available as fallbacks.
+- `feedbackConfigured` becomes true when signed in with auth configured.
+  The Beta Hub's "feedback delivery" status updates to match.
+- CSP: no change, because `https://<ref>.supabase.co/functions/v1/` is
+  already covered by `connect-src`.
+
+**Privacy change (must be disclosed).** BP11 promised that reports never
+carry a user id. Reports are now **linked to the tester's account so rewards
+can be credited**. The report body itself still never contains a user id,
+email, wallet data or tokens; the link comes from the sign-in token on the
+server. Update:
+- the Beta Hub feedback dialog: "Reports you send are linked to your account
+  so we can credit your Founding Tester rewards."
+- `docs/BETA-TESTER-GUIDE.md` and `docs/BP11-BETA-OPERATIONS.md`, plus the
+  related BP11 static tests.
+
+**Emails sent straight to beta@.** These aren't counted automatically,
+because Cloudflare forwards them to Outlook. Either mark them by hand in
+`founding_testers.notes`, or count them later with a Cloudflare Email Worker
+on `beta@` that logs the sender before forwarding (phase 2, not in this
+build).
+
+### 4.5 Monthly summary email (decision D3)
+
+**Edge Function `beta-monthly-summary`**, run by `pg_cron` on the **1st of
+every month** at `13 14 1 * *` UTC: 9:13 AM Eastern in winter (EST) and
+10:13 AM in summer (EDT). `pg_cron` schedules in UTC.
+
+The email goes to `REPORT_INBOX` via Resend, with the subject **"M-Wallet
+Founding Testers: <Month> summary"**. It contains one row per tester in
+`founding_testers`:
+
+| Tester (email) | Reports this month | Reports total | First report | Last active | Qualified so far |
+|---|---|---|---|---|---|
+
+- **"Last active"** = the last sign-in, from `auth.users.last_sign_in_at`.
+- **"Qualified so far"** = at least one report.
+- At the bottom are totals and any tester with **no report yet**, so you know
+  who to nudge.
+- The function runs with the service role inside Supabase only. The schedule
+  call uses a secret header, so only the cron job can trigger it.
+
+### 4.6 Supabase dashboard settings (already planned)
 
 - Public sign-ups **off**; testers are invited from Authentication → Users.
 - Site URL `https://mwallet.zevarynsystems.com/`; Redirect URLs include
@@ -271,15 +352,15 @@ alter table public.founding_testers enable row level security;
   attributes.
 - Add the pinned bar `<footer class="mw-bw-bar">` with three states:
   - `[data-bw-phase="locked"]`: the four countdown cells plus the date line.
-  - `[data-bw-phase="open"]`: the open indicator plus a **Start using
-    M-Wallet** button.
+  - `[data-bw-phase="open"]`: the open indicator, the pre-release
+    checkbox, and a **Start using M-Wallet** button.
   - `[data-bw-phase="manual"]`: a **Close** button.
 - Header: the logo, "M-WALLET / ZEVARYN SYSTEMS", a "PRIVATE BETA" pill, and
-  a **Sign out** text button.
+  a **Sign out** text button. While locked, the header has no "Report a beta
+  problem" link (D1).
 - Rename the Beta Hub row label to **Founding Tester welcome**.
-- Remove #15's "I understand this is pre-release software" checkbox. If you
-  want to keep it, it moves into the open state above the Start button
-  (decision D2).
+- Keep #15's "I understand this is pre-release software" checkbox. It moves
+  into the open state, above the Start button (decision D2).
 
 ### 5.3 `css/beta-welcome.css`
 
@@ -396,7 +477,7 @@ Box: **To earn your rewards**
   open."
 - All touch targets are at least 44 px. Text contrast is at least 4.5:1 using
   the token colors listed in 5.3.
-- Real `<button>` elements are used for Sign out, Start, Close and Report.
+- Real `<button>` elements are used for Sign out, Start and Close.
 
 ---
 
@@ -431,6 +512,15 @@ Static:
 - `LAUNCH_AT` fallback equals `2027-01-01T05:00:00Z`.
 - Version, `?v=` and `CACHE_NAME` bumps are present.
 
+Reports and summary:
+- `beta-feedback` rejects calls without a valid token, ignores any
+  `user_id` in the body, enforces the 48 KiB cap, and stores a duplicate
+  `report_id` once.
+- The app sends through `functions.invoke` only (no raw `fetch` to the
+  function URL) and still offers Copy and Download when offline or failing.
+- `beta-monthly-summary` runs only with the cron secret, and its counts per
+  tester match `beta_reports`.
+
 SQL (live, after the migration):
 - An anonymous call is denied.
 - An authenticated tester gets `bypass: false`.
@@ -455,10 +545,11 @@ SQL (live, after the migration):
 
 ---
 
-## 10. Decisions still needed
+## 10. Decisions
 
-| # | Question | Recommendation |
+| # | Decision | Status |
 |---|---|---|
-| D1 | Can a tester still open Settings → My Data → Export, or Report a problem, while locked? | Report: yes (as specified). Export: not needed, since nobody has data before launch. |
-| D2 | Keep #15's "I understand this is pre-release software" checkbox above Start? | Keep it. It's cheap, and it records consent before real use. |
-| D3 | Add the `founding_testers` tracking table now? | Yes. It's dashboard-only, and it gives you one place to mark who qualifies. |
+| D1 | No report option while locked; there is nothing to see yet. | Approved |
+| D2 | Keep the "I understand this is pre-release software" checkbox above Start. | Approved |
+| D3 | Add the `founding_testers` table, store in-app reports per tester, and send a monthly summary email. | Approved |
+| D4 | An admin unlock for the team before launch. | **Approach to be confirmed:** staff accounts (4.2) vs. an admin code typed on the lock screen (checked server-side). |
