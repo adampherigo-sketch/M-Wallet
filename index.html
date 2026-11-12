@@ -297,6 +297,12 @@
         href="./css/beta.css?v=2"
     >
 
+    <!-- Welcome, beta tester (one-time screen after sign-in) -->
+    <link
+        rel="stylesheet"
+        href="./css/beta-welcome.css?v=1"
+    >
+
 </head>
 
 
@@ -3026,6 +3032,19 @@
                             <span class="zg-set-row-go" aria-hidden="true"><svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></span>
                         </button>
 
+                        <button
+                            type="button"
+                            class="zg-set-row zg-set-row--link"
+                            id="mw-beta-welcome-replay-btn"
+                            data-bw-action="open"
+                        >
+                            <span class="zg-set-row-text">
+                                <strong>Beta welcome</strong>
+                                <small>See the beta tester welcome again &mdash; what to know, how to report, and what's coming.</small>
+                            </span>
+                            <span class="zg-set-row-go" aria-hidden="true"><svg class="mw-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></span>
+                        </button>
+
                         <div class="zg-set-row">
                             <span class="zg-set-row-text">
                                 <strong>Current beta limitations</strong>
@@ -3821,6 +3840,97 @@
                 <button type="button" class="z-btn z-btn-primary mw-auth-block" data-setup-action="retry">Retry</button>
                 <button type="button" class="z-btn z-btn-secondary mw-auth-block" data-setup-action="sign-out">Sign Out</button>
             </section>
+
+        </div>
+    </div>
+
+
+
+    <!-- ========================================
+         WELCOME, BETA TESTER
+         Shown once per tester after sign-in (before setup / the
+         tour) until 1 January 2027. The tester must confirm they
+         understand the build is pre-release before continuing.
+         Behaviour: js/beta/beta-welcome.js · Styles: css/beta-welcome.css
+    ========================================= -->
+
+    <div
+        id="mw-beta-welcome"
+        class="mw-auth-gate"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mw-beta-welcome-heading"
+        hidden
+        aria-hidden="true"
+    >
+
+        <div class="mw-auth-card mw-bw-card">
+
+            <img class="mw-auth-logo" src="./icons/m-wallet-icon-192.png" alt="">
+            <p class="mw-auth-brand">
+                M-Wallet
+                <span class="z-badge z-badge-violet">BETA</span>
+            </p>
+
+            <h1 id="mw-beta-welcome-heading" class="mw-auth-title" tabindex="-1">Welcome, beta tester!</h1>
+            <p class="mw-auth-sub">
+                Thank you for helping us test M-Wallet. Here&rsquo;s what to know
+                before you start.
+            </p>
+
+            <p class="mw-bw-build">
+                <span class="mw-bw-build-label">Your build</span>
+                <span class="mw-bw-build-value" data-bw-version>&mdash;</span>
+            </p>
+
+            <section class="mw-bw-section" aria-labelledby="mw-bw-h-beta">
+                <h2 class="mw-bw-heading" id="mw-bw-h-beta">What &ldquo;beta&rdquo; means</h2>
+                <ul class="mw-bw-list">
+                    <li>This is <strong>pre-release software</strong>. Some things may not work as expected yet, and features can change between builds.</li>
+                    <li>Data loss isn&rsquo;t expected, but please double-check your balances and <strong>export a backup</strong> regularly (Settings &rsaquo; My Data).</li>
+                    <li>If any financial information looks missing or changed, tell us right away.</li>
+                </ul>
+            </section>
+
+            <section class="mw-bw-section" aria-labelledby="mw-bw-h-report">
+                <h2 class="mw-bw-heading" id="mw-bw-h-report">How to report a problem</h2>
+                <ul class="mw-bw-list">
+                    <li>Open <strong>Settings &rsaquo; Beta Hub &rsaquo; Report a beta problem</strong>, or use the link on the sign-in screen if you can&rsquo;t get in.</li>
+                    <li>Say what you did, what you expected, and what actually happened. Nothing is sent until you press Send.</li>
+                    <li data-bw-support-wrap hidden>You can also email us at <a class="mw-bw-link" data-bw-support href="#"></a>.</li>
+                </ul>
+            </section>
+
+            <section class="mw-bw-section mw-bw-section--caution" aria-labelledby="mw-bw-h-share">
+                <h2 class="mw-bw-heading" id="mw-bw-h-share">Please don&rsquo;t include in reports</h2>
+                <ul class="mw-bw-list">
+                    <li>Passwords or passkeys</li>
+                    <li>Account, card or bank numbers</li>
+                    <li>Your balances or a copy of your wallet</li>
+                    <li>Social Security or national ID numbers</li>
+                </ul>
+                <p class="mw-bw-note">Describe <em>what</em> looks wrong instead &mdash; for example, &ldquo;August total is lower than it should be.&rdquo;</p>
+            </section>
+
+            <section class="mw-bw-section" aria-labelledby="mw-bw-h-new">
+                <h2 class="mw-bw-heading" id="mw-bw-h-new">What&rsquo;s new in this build</h2>
+                <ul class="mw-bw-list" data-bw-whats-new></ul>
+            </section>
+
+            <section class="mw-bw-section" aria-labelledby="mw-bw-h-next">
+                <h2 class="mw-bw-heading" id="mw-bw-h-next">Coming soon</h2>
+                <ul class="mw-bw-list mw-bw-list--upcoming" data-bw-upcoming></ul>
+                <p class="mw-bw-note">Planned features &mdash; not promises or dates. Your feedback helps us decide what comes first.</p>
+            </section>
+
+            <label class="mw-bw-ack" data-bw-ack-wrap>
+                <input type="checkbox" class="mw-bw-ack-box" id="mw-bw-ack" data-bw-ack>
+                <span>I understand M-Wallet is pre-release beta software and that I should keep my own backup.</span>
+            </label>
+
+            <button type="button" class="z-btn z-btn-primary mw-auth-block" data-bw-action="start" disabled>
+                Get Started
+            </button>
 
         </div>
     </div>
@@ -4750,7 +4860,7 @@
     <script src="./js/auth/auth-config.js?v=3"></script>
     <script src="./js/auth/auth-client.js?v=3"></script>
     <script src="./js/auth/auth.js?v=5"></script>
-    <script src="./js/auth/auth-ui.js?v=7"></script>
+    <script src="./js/auth/auth-ui.js?v=8"></script>
 
     <!-- Passkeys / device authentication (BP9). Built but OFF: the
          release gate (passkey-release.js) ships disabled, so M-Wallet
@@ -4776,7 +4886,7 @@
          verified owner sees it; it never blocks the app on
          failure and never writes mWalletData until Finish. -->
     <script src="./js/setup/first-run-setup.js?v=2"></script>
-    <script src="./js/setup/setup-ui.js?v=1"></script>
+    <script src="./js/setup/setup-ui.js?v=2"></script>
 
     <!-- Guided app walkthrough (BP6). Loads after auth-ui (fail-open
          experience guard), BP4 and BP5 (auto-start needs ownership
@@ -4785,7 +4895,7 @@
          makes a network call. Navigates existing pages via the
          canonical BudgetNavigation API at runtime. -->
     <script src="./js/walkthrough/guided-walkthrough.js?v=1"></script>
-    <script src="./js/walkthrough/walkthrough-ui.js?v=2"></script>
+    <script src="./js/walkthrough/walkthrough-ui.js?v=3"></script>
 
     <!-- Cloud financial data foundation (BP7). Loads after the auth
          layer (reuses MWalletAuth._getClient()). The codec is pure;
@@ -4841,6 +4951,7 @@
     <script src="./js/beta/beta-ops.js?v=2"></script>
     <script src="./js/beta/beta-feedback.js?v=1"></script>
     <script src="./js/beta/beta-ui.js?v=1"></script>
+    <script src="./js/beta/beta-welcome.js?v=1"></script>
 
     <script src="./js/app.js?v=12"></script>
 

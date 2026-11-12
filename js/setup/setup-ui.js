@@ -239,11 +239,20 @@
     }
 
 
+    /* the one-time beta-tester welcome goes first; wait while it
+       is actually on screen (fail open if it is missing / throws) */
+    function betaWelcomePresenting() {
+        try {
+            var bw = global.MWalletBetaWelcome;
+            return !!(bw && typeof bw.isPresenting === "function" && bw.isPresenting() === true);
+        } catch (e) { return false; }
+    }
+
     function render() {
         if (!gateEl) { return; }
         var decision = decideScreen(firstRunState(), authState());
 
-        if (!decision.gate) {
+        if (!decision.gate || betaWelcomePresenting()) {
             setGateVisible(false);
             syncAuthUi(false);
             return;
@@ -453,6 +462,7 @@
             gateEl.addEventListener("submit", onSubmit);
             gateEl.addEventListener("change", onInput);
             gateEl.addEventListener("blur", onInput, true);
+            doc.addEventListener("mwallet:beta-welcome-changed", function () { render(); });
 
             var f = firstRun();
             if (f && typeof f.subscribe === "function") {

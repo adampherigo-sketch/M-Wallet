@@ -135,6 +135,10 @@
     var walkthroughGuard = null;
     var walkthroughScreenActive = false;
 
+    /* one-time beta-tester welcome (fail open) */
+    var betaWelcomeGuard = null;
+    var betaWelcomeScreenActive = false;
+
 
     /* =====================================================
        PURE LOGIC  (unit-tested, no DOM)
@@ -383,6 +387,14 @@
         setupScreenActive = active === true;
     }
 
+    function setBetaWelcomeGuard(fn) {
+        betaWelcomeGuard = (typeof fn === "function") ? fn : null;
+    }
+
+    function setBetaWelcomeScreenActive(active) {
+        betaWelcomeScreenActive = active === true;
+    }
+
     function setWalkthroughGuard(fn) {
         walkthroughGuard = (typeof fn === "function") ? fn : null;
     }
@@ -434,6 +446,21 @@
         var result;
         try {
             result = setupGuard(authSnap);
+        } catch (e) {
+            return true;
+        }
+        if (!result || typeof result !== "object") { return true; }
+        return result.release !== false;
+    }
+
+    /* FAIL-OPEN. The beta-tester welcome is an experience gate.
+       Returns false (hold) ONLY when a working guard explicitly
+       says { release: false }. No guard / throw / malformed -> true. */
+    function betaWelcomeReleased(authSnap) {
+        if (typeof betaWelcomeGuard !== "function") { return true; }
+        var result;
+        try {
+            result = betaWelcomeGuard(authSnap);
         } catch (e) {
             return true;
         }
@@ -509,6 +536,17 @@
         }
     }
 
+    /* App held for the one-time "Welcome, beta tester" screen
+       (#mw-beta-welcome). Same fail-open shape as setup. */
+    function holdForBetaWelcome() {
+        if (betaWelcomeScreenActive) {
+            hideAllViews();
+            applyVisible(false, { keepAppGated: true });
+        } else {
+            applyVisible(false);
+        }
+    }
+
     /* App held for the guided walkthrough (BP6). The walkthrough
        UI presents #mw-walkthrough (outside .app); auth-ui just
        keeps the app root inert so financial controls can't be
@@ -552,6 +590,12 @@
                    fail-open; released by default in the BP8 build. */
                 if (!bootstrapReleased(lastSnapshot)) {
                     holdForBootstrap();
+                    return;
+                }
+                /* Beta welcome: shown once per tester after sign-in,
+                   before setup / the tour (fully fail-open). */
+                if (!betaWelcomeReleased(lastSnapshot)) {
+                    holdForBetaWelcome();
                     return;
                 }
                 /* BP5: ownership verified -> only a fresh owner who
@@ -901,6 +945,10 @@
         /* BP5 coordination */
         setSetupGuard: setSetupGuard,
         setSetupScreenActive: setSetupScreenActive,
+
+        /* beta welcome coordination */
+        setBetaWelcomeGuard: setBetaWelcomeGuard,
+        setBetaWelcomeScreenActive: setBetaWelcomeScreenActive,
 
         /* BP6 coordination */
         setWalkthroughGuard: setWalkthroughGuard,

@@ -11,6 +11,25 @@ used in their commits.
 
 ## [Unreleased]
 
+### Welcome, beta tester screen
+
+- **New one-time "Welcome, beta tester" screen** shown right after sign-in
+  (once per account per device), before the first-run wizard and guided tour.
+  It covers what "beta" means and keeping a backup, how to report a problem
+  (plus the support email), what not to put in a report, the build version,
+  what's new, and **Coming soon** (features built but still switched off,
+  derived from the live beta limitations, plus an editable curated list in
+  `js/beta/beta-welcome.js`). The tester must tick *"I understand M-Wallet is
+  pre-release beta software…"* before **Get Started** is enabled.
+- **Retires on 1 January 2027** (device local time): from then on it never
+  appears and its Beta Hub replay row is hidden.
+- **Settings → Beta Hub → Beta welcome** reopens it (informational, no gate).
+- Fails open like setup and the tour: if the module is missing or throws, the
+  app still opens. Stores only `mwallet.betaWelcome.v1` (account id + time +
+  app version) locally; no network, never touches `mWalletData`.
+- Service-worker cache `m-wallet-v32`; `auth-ui.js?v=8`, `setup-ui.js?v=2`,
+  `walkthrough-ui.js?v=3`. Tests: `tests/beta-welcome.test.js`.
+
 ### BP12 (in progress) + beta-readiness fixes (`0.9.0-beta.10` → `0.9.0-beta.11`)
 
 BP12 live verification so far, plus a round of fixes from a full beta-readiness

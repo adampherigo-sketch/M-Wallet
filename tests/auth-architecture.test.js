@@ -1051,7 +1051,7 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 test("service-worker precaches the auth + migration + setup + walkthrough + cloud + sync + passkey modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw), "cache bumped to v31");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v32"/.test(sw), "cache bumped to v32");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1130,7 +1130,7 @@ test("index.html has the auth gateway markup + auth.css, and financial page mark
 
 test("changed modules are re-versioned in index.html", () => {
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.ok(/js\/auth\/auth-ui\.js\?v=7/.test(html), "auth-ui.js bumped to ?v=7");
+    assert.ok(/js\/auth\/auth-ui\.js\?v=8/.test(html), "auth-ui.js bumped to ?v=8 (beta welcome gate)");
     assert.ok(/js\/auth\/auth\.js\?v=5/.test(html), "auth.js bumped to ?v=5");
     assert.ok(/js\/auth\/auth-client\.js\?v=3/.test(html), "auth-client.js bumped to ?v=3");
     assert.ok(/js\/settings-ui\.js\?v=12/.test(html), "settings-ui.js bumped to ?v=12 (BP12 sync-on wording)");
@@ -1746,7 +1746,7 @@ test("BP9: version beta.11, cache v31, docs mention passkeys are not E2EE", () =
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.11"/.test(av));
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v32"/.test(sw));
     const doc = fs.readFileSync(path.join(ROOT, "docs/BP9-PASSKEYS.md"), "utf8");
     assert.ok(/not end-to-end encrypt|not.{0,10}E2EE|RLS.{0,4}(≠|!=|is not).{0,4}E2EE/i.test(doc), "BP9 doc keeps the RLS ≠ E2EE line");
     assert.ok(/does not receive your fingerprint|does not receive.*face/i.test(doc), "biometric-privacy statement present");
@@ -1942,7 +1942,7 @@ test("BP10: settings-ui.js + app.js no longer carry the raw import/export/reset 
 
 test("BP10: service-worker precaches the account bundle at cache v29", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v32"/.test(sw));
     for (const asset of ["./css/account.css", "./js/account/account-controls.js", "./js/account/account-ui.js"]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
     }
@@ -2086,7 +2086,7 @@ test("BP11: relative asset paths only (GitHub Pages safe)", () => {
 
 test("BP11: service-worker precaches the beta bundle at cache v30 and never caches non-GET", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v31"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v32"/.test(sw));
     for (const asset of [
         "./css/beta.css",
         "./js/beta/beta-config.js", "./js/beta/beta-known-issues.js",
