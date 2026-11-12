@@ -518,12 +518,21 @@
         lastFocus = null;
     }
 
+    /* the one-time beta-tester welcome goes first; wait while it
+       is actually on screen (fail open if it is missing / throws) */
+    function betaWelcomePresenting() {
+        try {
+            var bw = global.MWalletBetaWelcome;
+            return !!(bw && typeof bw.isPresenting === "function" && bw.isPresenting() === true);
+        } catch (e) { return false; }
+    }
+
     function render() {
         if (!gateEl) { return; }
         var svc = walkthrough();
         var snap = svc ? svc.getState() : null;
 
-        if (!snap || snap.status !== "active") {
+        if (!snap || snap.status !== "active" || betaWelcomePresenting()) {
             var wasOpen = gateEl.hidden === false;
             stopSettleLoop();
             setVisible(false);
@@ -603,6 +612,7 @@
             /* re-place after the app finishes a page render / refresh */
             doc.addEventListener("mwallet:page-changed", function () { queueReposition(); });
             doc.addEventListener("mwallet:app-refreshed", function () { queueReposition(); });
+            doc.addEventListener("mwallet:beta-welcome-changed", function () { render(); });
 
             var svc = walkthrough();
             if (svc && typeof svc.subscribe === "function") {

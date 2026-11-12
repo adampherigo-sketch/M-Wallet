@@ -100,7 +100,8 @@ M-Wallet/
 │   ├── sync.css            BP8 — #mw-sync-bootstrap gate + #mw-sync-conflicts overlay
 │   ├── passkeys.css        BP9 — "Use a Passkey" + Settings passkeys + removal dialog
 │   ├── account.css         BP10 — Settings account sections + change-email / restore / erase dialogs
-│   └── beta.css            BP11 — Settings Beta Hub + feedback / known-issues / what's-new dialogs
+│   ├── beta.css            BP11 — Settings Beta Hub + feedback / known-issues / what's-new dialogs
+│   └── beta-welcome.css    one-time "Welcome, beta tester" screen after sign-in
 │
 ├── js/
 │   ├── app-version.js      single runtime source of truth for the app version
@@ -147,7 +148,8 @@ M-Wallet/
 │   │   ├── beta-known-issues.js MWalletBetaKnownIssues — curated static issue registry
 │   │   ├── beta-ops.js          MWalletBetaOps — build summary, sanitised diagnostics, limitations, report id, release notes
 │   │   ├── beta-feedback.js     MWalletBetaFeedback — validation, payload, the single user-initiated POST
-│   │   └── beta-ui.js           MWalletBetaUI — Beta Hub + feedback / known-issues / what's-new dialogs
+│   │   ├── beta-ui.js           MWalletBetaUI — Beta Hub + feedback / known-issues / what's-new dialogs
+│   │   └── beta-welcome.js      MWalletBetaWelcome — one-time welcome after sign-in (retires 1 Jan 2027)
 │   ├── vendor/
 │   │   └── supabase-js.min.js   vendored @supabase/supabase-js (UMD, pinned)
 │   └── m-cash/
