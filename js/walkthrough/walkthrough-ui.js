@@ -9,7 +9,7 @@
    js/walkthrough/guided-walkthrough.js. It:
      - shows #mw-walkthrough (a fixed overlay OUTSIDE .app) only
        while MWalletWalkthrough status is "active"
-     - drives the 8 steps: Welcome / Home / Budget / Transactions
+     - drives the 8 steps: Welcome / Home / Budget / Activity
        / Savings / M-Cash / Reports / Settings
      - highlights a developer-controlled [data-walkthrough-target]
        on each page; a missing target degrades to a centred card
@@ -46,7 +46,7 @@
         {
             id: "home", page: "home", target: "home-overview", placement: "bottom",
             title: "Your money at a glance",
-            body: "The Home dashboard gives you a quick view of your checking and savings balances, this month’s activity, upcoming bills, and recent transactions."
+            body: "The Home dashboard gives you a quick view of your checking and savings balances, this month’s budget, upcoming bills, and your activity."
         },
         {
             id: "budget", page: "budget", target: "budget-overview", placement: "bottom",
@@ -56,7 +56,7 @@
         {
             id: "transactions", page: "transactions", target: "transactions-overview", placement: "bottom",
             title: "See where your money went",
-            body: "Transactions is your spending history — every recorded payment, with merchant and category details where you’ve added them."
+            body: "Activity, on your Home screen, is your history for the month — every payment and deposit, grouped by day. Search it, or filter by type or category."
         },
         {
             id: "savings", page: "savings", target: "savings-overview", placement: "bottom",

@@ -28,7 +28,7 @@ document.addEventListener(
                Money actions now live in:
                - Universal Add button
                - Budget
-               - Activity
+               - Activity (a section of Home)
                - Savings
                --------------------------------------------- */
 
@@ -485,8 +485,6 @@ document.addEventListener(
 
             "budget",
 
-            "transactions",
-
             "savings",
 
             "m-cash",
@@ -511,9 +509,23 @@ document.addEventListener(
                 "budget",
 
             "money-management":
-                "budget"
+                "budget",
+
+            /* Activity is now a section of Home, not a page.
+               Old #transactions links (and the guided tour)
+               land on Home, scrolled to the Activity section. */
+            transactions:
+                "home",
+
+            activity:
+                "home"
 
         };
+
+        const activityAliases = [
+            "transactions",
+            "activity"
+        ];
 
 
         /* =================================================
@@ -1220,15 +1232,31 @@ document.addEventListener(
                SCROLL TO TOP
                --------------------------------------------- */
 
-            window.scrollTo({
+            const activitySection =
+                activityAliases.includes(pageName)
+                    ? document.getElementById("home-activity")
+                    : null;
 
-                top:
-                    0,
+            if (
+                activitySection &&
+                typeof activitySection.scrollIntoView === "function"
+            ) {
+                activitySection.scrollIntoView({
+                    block: "start",
+                    behavior: "smooth"
+                });
+            }
+            else {
+                window.scrollTo({
 
-                behavior:
-                    "smooth"
+                    top:
+                        0,
 
-            });
+                    behavior:
+                        "smooth"
+
+                });
+            }
 
 
             /* ---------------------------------------------

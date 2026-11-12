@@ -12,7 +12,7 @@
    1. CACHE VERSION
    ========================================================= */
 
-const CACHE_NAME = "m-wallet-v32";
+const CACHE_NAME = "m-wallet-v33";
 
 
 /* =========================================================
@@ -36,6 +36,7 @@ const APP_SHELL = [
     "./css/reports.css",
     "./css/settings.css",
     "./css/zg9.css",
+    "./css/nav-halo.css",
     "./css/auth.css",
     "./css/migration.css",
     "./css/setup.css",

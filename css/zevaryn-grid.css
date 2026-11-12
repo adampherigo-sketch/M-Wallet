@@ -357,7 +357,7 @@ a:focus-visible,
 .money-management-section,
 .savings-actions-section,
 .report-section,
-#transactions-page .transaction-list {
+#home-activity .transaction-list {
     border-color: var(--z-border);
     background: var(--z-panel);
 }

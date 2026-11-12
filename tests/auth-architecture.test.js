@@ -1051,7 +1051,7 @@ test("auth-ui validators: signup password mismatch + signin/forgot/recovery", ()
 
 test("service-worker precaches the auth + migration + setup + walkthrough + cloud + sync + passkey modules and bumped the cache", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v32"/.test(sw), "cache bumped to v32");
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v33"/.test(sw), "cache bumped to v33");
     for (const asset of [
         "./js/auth/auth-config.js",
         "./js/auth/auth-client.js",
@@ -1119,7 +1119,7 @@ test("index.html has the auth gateway markup + auth.css, and financial page mark
     // the gate starts hidden — never blocks first paint
     assert.ok(/id="mw-auth-gate"[\s\S]{0,200}\bhidden\b/.test(html), "#mw-auth-gate starts hidden");
     // financial pages still present
-    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+    for (const p of ["home-page", "budget-page", "home-activity", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
         assert.ok(html.includes('id="' + p + '"'), p + " markup intact");
     }
     // password fields use the right autocomplete tokens
@@ -1181,7 +1181,7 @@ test("index.html has the BP4 migration gateway markup + migration.css, financial
     assert.ok(html.includes('data-migration-action="claim"'), "claim action");
     assert.ok(html.includes('data-migration-action="sign-out"'), "sign-out action");
     /* financial pages still present */
-    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+    for (const p of ["home-page", "budget-page", "home-activity", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
         assert.ok(html.includes('id="' + p + '"'), p + " markup intact");
     }
 });
@@ -1253,7 +1253,7 @@ test("BP5 first-run: setup loads after BP4, gate markup present, financial pages
     assert.ok(/data is safe|Retry/i.test(errSection), "error screen still reassures + offers retry");
 
     /* financial pages untouched */
-    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+    for (const p of ["home-page", "budget-page", "home-activity", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
         assert.ok(html.includes('id="' + p + '"'), p + " markup intact");
     }
 });
@@ -1337,7 +1337,7 @@ test("BP6 walkthrough: loads after BP4 + BP5, overlay markup present, targets on
     assert.ok(html.includes('data-set-action="walkthrough-start"'), "Settings replay button");
 
     /* financial pages untouched */
-    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+    for (const p of ["home-page", "budget-page", "home-activity", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
         assert.ok(html.includes('id="' + p + '"'), p + " intact");
     }
 });
@@ -1611,7 +1611,7 @@ test("BP8: index.html has the bootstrap gate + conflict overlay markup, starting
     assert.ok(/data-sync-action="bootstrap-retry"/.test(html) && /data-sync-action="bootstrap-offline"/.test(html));
     assert.ok(/href="\.\/css\/sync\.css/.test(html), "sync.css linked");
     /* financial pages untouched */
-    for (const p of ["home-page", "budget-page", "transactions-page", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
+    for (const p of ["home-page", "budget-page", "home-activity", "savings-page", "m-cash-page", "reports-page", "settings-page"]) {
         assert.ok(html.includes('id="' + p + '"'), p + " intact");
     }
     /* the Settings sync row never says "backed up" */
@@ -1746,7 +1746,7 @@ test("BP9: version beta.11, cache v31, docs mention passkeys are not E2EE", () =
     const av = fs.readFileSync(path.join(ROOT, "js/app-version.js"), "utf8");
     assert.ok(/APP_VERSION\s*=\s*"0\.9\.0-beta\.11"/.test(av));
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v32"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v33"/.test(sw));
     const doc = fs.readFileSync(path.join(ROOT, "docs/BP9-PASSKEYS.md"), "utf8");
     assert.ok(/not end-to-end encrypt|not.{0,10}E2EE|RLS.{0,4}(≠|!=|is not).{0,4}E2EE/i.test(doc), "BP9 doc keeps the RLS ≠ E2EE line");
     assert.ok(/does not receive your fingerprint|does not receive.*face/i.test(doc), "biometric-privacy statement present");
@@ -1942,7 +1942,7 @@ test("BP10: settings-ui.js + app.js no longer carry the raw import/export/reset 
 
 test("BP10: service-worker precaches the account bundle at cache v29", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v32"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v33"/.test(sw));
     for (const asset of ["./css/account.css", "./js/account/account-controls.js", "./js/account/account-ui.js"]) {
         assert.ok(sw.includes('"' + asset + '"'), "APP_SHELL includes " + asset);
     }
@@ -2086,7 +2086,7 @@ test("BP11: relative asset paths only (GitHub Pages safe)", () => {
 
 test("BP11: service-worker precaches the beta bundle at cache v30 and never caches non-GET", () => {
     const sw = fs.readFileSync(path.join(ROOT, "service-worker.js"), "utf8");
-    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v32"/.test(sw));
+    assert.ok(/CACHE_NAME\s*=\s*"m-wallet-v33"/.test(sw));
     for (const asset of [
         "./css/beta.css",
         "./js/beta/beta-config.js", "./js/beta/beta-known-issues.js",

@@ -2735,6 +2735,8 @@ const BudgetApp = {
 
     bindTransactionControls() {
 
+        this.bindActivityShowMore();
+
         if (this._txControlsBound) {
             return;
         }
@@ -2806,6 +2808,44 @@ const BudgetApp = {
 
 
         this._txControlsBound = true;
+    },
+
+
+    bindActivityShowMore() {
+
+        if (this._txShowMoreBound) {
+            return;
+        }
+
+        const button =
+            document.getElementById("tx-show-more");
+
+        if (!button) {
+            return;
+        }
+
+        button.addEventListener(
+            "click",
+            () => {
+                const collapsing =
+                    Boolean(this.txShowAll);
+
+                this.txShowAll = !collapsing;
+                this.applyTxFilters();
+
+                /* collapsing a long list: bring the section back into view */
+                if (collapsing) {
+                    const section =
+                        document.getElementById("home-activity");
+
+                    if (section && typeof section.scrollIntoView === "function") {
+                        section.scrollIntoView({ block: "start", behavior: "smooth" });
+                    }
+                }
+            }
+        );
+
+        this._txShowMoreBound = true;
     },
 
 
@@ -2893,6 +2933,17 @@ const BudgetApp = {
             );
 
 
+        /* Activity is a section of Home: show the newest
+           ACTIVITY_PREVIEW rows until "Show all" is pressed. */
+        const limit =
+            this.ACTIVITY_PREVIEW;
+
+        const visible =
+            this.txShowAll || filtered.length <= limit
+                ? filtered
+                : filtered.slice(0, limit);
+
+
         this.renderTransactionOverview(filtered);
         this.renderTransactionCount(
             filtered.length,
@@ -2900,10 +2951,54 @@ const BudgetApp = {
             filtersActive
         );
         this.renderTransactionLedger(
-            filtered,
+            visible,
             all.length,
             filtersActive
         );
+        this.renderActivityShowMore(
+            filtered.length,
+            visible.length
+        );
+    },
+
+
+    /* =====================================================
+       17d-1. ACTIVITY ON HOME — "Show all" / "Show less"
+       ===================================================== */
+
+    ACTIVITY_PREVIEW: 8,
+
+    renderActivityShowMore(matching, shown) {
+
+        const button =
+            document.getElementById("tx-show-more");
+
+        if (!button) {
+            return;
+        }
+
+        const expandable =
+            matching > this.ACTIVITY_PREVIEW;
+
+        button.hidden = !expandable;
+
+        if (!expandable) {
+            button.setAttribute("aria-expanded", "false");
+            return;
+        }
+
+        const expanded =
+            shown >= matching && Boolean(this.txShowAll);
+
+        button.setAttribute(
+            "aria-expanded",
+            expanded ? "true" : "false"
+        );
+
+        button.textContent =
+            expanded
+                ? "Show less"
+                : `Show all ${matching}`;
     },
 
 

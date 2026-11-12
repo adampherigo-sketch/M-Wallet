@@ -905,7 +905,7 @@ img {
    Activity Page
    --------------------------------------------------------- */
 
-#transactions-page .transaction-list {
+#home-activity .transaction-list {
     padding: 3px 20px;
 
     border: 1px solid var(--border);
@@ -916,11 +916,11 @@ img {
     box-shadow: var(--shadow-sm);
 }
 
-#transactions-page .transaction-item {
+#home-activity .transaction-item {
     padding: 14px 0;
 }
 
-#transactions-page .empty-message {
+#home-activity .empty-message {
     padding-top: 30px;
     padding-bottom: 30px;
 }
@@ -3941,7 +3941,7 @@ textarea:focus-visible {
         padding: 13px 14px;
     }
 
-    #transactions-page .transaction-list {
+    #home-activity .transaction-list {
         padding: 2px 14px;
     }
 

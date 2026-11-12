@@ -11,6 +11,35 @@ used in their commits.
 
 ## [Unreleased]
 
+### Halo navigation + Activity on Home
+
+- **New 7-button bottom bar** on phones, in this order:
+  **Budget · Savings · M-Cash · Home · Add · Reports · Settings**. M-Cash and
+  Settings are now on the bar (they used to be desktop-only).
+- **Home is the M-Wallet logo** in a raised circle sitting in a notch cut into
+  the centre of the bar, traced by a thin violet line. It glows when you are on
+  Home and dims slightly elsewhere. Every other button keeps its label; the
+  current screen turns violet with a short dash under its label. **Add** is a
+  small filled violet circle just right of Home.
+- **Activity is now a section of Home**, not its own screen. It replaces the
+  old *Recent Transactions* card and keeps the same search, All / Income /
+  Expenses chips, category filter and date-grouped ledger. It shows the newest
+  8 entries, then **Show all N** expands the list in place (**Show less**
+  collapses it). The old Transactions overview totals (Income / Spending / Net)
+  are gone with the page.
+- Old `#transactions` and `#activity` links, and the guided tour's Activity
+  step, open Home scrolled to the Activity section. The tour copy now says
+  Activity lives on Home.
+- **Desktop sidebar** keeps the same destinations: Add on top, then Home,
+  Budget, Savings, M-Cash, Reports, with Settings at the bottom.
+- Drawn with CSS masks and gradients only (the CSP allows no `data:` images).
+  New `css/nav-halo.css` (loads after `zg9.css`); Activity styles in
+  `css/transactions.css` are now scoped to `#home-activity`.
+- Service-worker cache `m-wallet-v33`; `style.css?v=12`,
+  `zevaryn-grid.css?v=4`, `transactions.css?v=2`, `zg9.css?v=3`,
+  `nav-halo.css?v=1`, `nav.js?v=9`, `app.js?v=13`, `walkthrough-ui.js?v=4`.
+  Tests: `tests/nav-halo.test.js`.
+
 ### Welcome, beta tester screen
 
 - **New one-time "Welcome, beta tester" screen** shown right after sign-in
