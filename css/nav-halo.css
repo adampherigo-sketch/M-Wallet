@@ -1,0 +1,410 @@
+/* =========================================================
+   M-WALLET  ·  ZEVARYN GRID
+   NAV HALO — the 7-button bottom bar + matching sidebar
+   Loads after zg9.css and replaces its bottom-bar look.
+
+   < 1024px  Bottom bar, DOM order:
+             Budget · Savings · M-Cash · HOME · Add · Reports · Settings
+             - the bar has a round notch cut into its top centre,
+               traced by a thin violet line;
+             - Home is the M-Wallet logo in a raised orb that sits
+               in the notch, with a violet halo when it is the
+               current page;
+             - every destination keeps its label; the current one
+               turns violet with a short dash under the label;
+             - Add is a small filled violet circle (an action, never
+               "current").
+   >= 1024px Left sidebar: Add on top, then Home, Budget, Savings,
+             M-Cash, Reports; Settings at the bottom.
+
+   Drawn with CSS masks + gradients only: the CSP allows no
+   data: images, and an SVG stretched to the bar width would
+   distort the curve.
+   ========================================================= */
+
+.bottom-nav.nav-halo {
+    --halo-notch-r: 38px;            /* radius of the notch */
+    --halo-orb: 56px;                /* Home orb diameter */
+    --halo-orb-lift: -24px;          /* orb top, relative to the bar top */
+    --halo-bar-bg: rgba(13, 16, 23, 0.97);
+    --halo-edge: rgba(155, 92, 255, 0.75);
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr))
+        calc(var(--halo-notch-r) * 2)
+        repeat(3, minmax(0, 1fr));
+    align-items: start;
+    padding: 8px 4px calc(6px + env(safe-area-inset-bottom));
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow: visible;
+}
+
+/* the bar surface, with the notch masked out of it */
+.bottom-nav.nav-halo::before,
+.bottom-nav.nav-halo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.bottom-nav.nav-halo::before {
+    border-top: 1px solid var(--z-border);
+    background: var(--halo-bar-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    -webkit-mask: radial-gradient(circle var(--halo-notch-r) at 50% 0, transparent calc(var(--halo-notch-r) - 0.5px), #000 var(--halo-notch-r));
+            mask: radial-gradient(circle var(--halo-notch-r) at 50% 0, transparent calc(var(--halo-notch-r) - 0.5px), #000 var(--halo-notch-r));
+}
+
+/* the violet line tracing the notch */
+.bottom-nav.nav-halo::after {
+    background: radial-gradient(
+        circle var(--halo-notch-r) at 50% 0,
+        transparent calc(var(--halo-notch-r) - 1.5px),
+        var(--halo-edge) calc(var(--halo-notch-r) - 1px),
+        var(--halo-edge) var(--halo-notch-r),
+        transparent calc(var(--halo-notch-r) + 0.5px)
+    );
+}
+
+@media (min-width: 641px) {
+    .bottom-nav.nav-halo::before {
+        border: 1px solid var(--z-border);
+        border-bottom: 0;
+        border-radius: var(--z-radius-lg) var(--z-radius-lg) 0 0;
+    }
+}
+
+/* DOM order is the visual order on the bar */
+.bottom-nav.nav-halo > .nav-button,
+.bottom-nav.nav-halo > .nav-button[data-page="home"],
+.bottom-nav.nav-halo > .nav-button[data-page="budget"],
+.bottom-nav.nav-halo > .nav-button[data-quick-add-toggle] {
+    order: 0;
+}
+
+.nav-halo .nav-button,
+.nav-halo .nav-button--extra {
+    display: flex;
+    min-height: 56px;
+    justify-content: flex-start;
+    gap: 3px;
+    padding: 4px 0 8px;
+    font-size: 0.66rem;
+    color: var(--z-text-muted);
+    border-radius: var(--z-radius-sm);
+}
+
+.nav-halo .nav-button:hover {
+    color: var(--z-text);
+    background: transparent;
+}
+
+.nav-halo .nav-icon {
+    width: 32px;
+    height: 28px;
+    border-radius: 0;
+    background: none;
+}
+
+/* current page: violet, with a short dash under the label */
+.nav-halo .nav-button.active,
+.nav-halo .nav-button[aria-current="page"] {
+    color: var(--z-violet-bright);
+    font-weight: 700;
+}
+
+.nav-halo .nav-button.active .nav-icon {
+    background: none;
+}
+
+.nav-halo .nav-button::before {
+    content: none;
+}
+
+.nav-halo .nav-button::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 16px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 3px;
+    background: transparent;
+    transition: background var(--transition);
+}
+
+.nav-halo .nav-button.active::after,
+.nav-halo .nav-button[aria-current="page"]::after {
+    background: var(--z-violet-bright);
+}
+
+.nav-halo .nav-button:focus-visible {
+    outline: none;
+    box-shadow: var(--z-focus-ring);
+}
+
+/* ---- Home: the logo orb in the notch ---- */
+
+.nav-halo .nav-button--home {
+    overflow: visible;
+}
+
+.nav-halo .nav-button--home::after {
+    content: none;
+}
+
+.nav-halo .nav-home-orb {
+    position: absolute;
+    top: calc(var(--halo-orb-lift) - 8px);   /* 8px = bar top padding */
+    left: 50%;
+    width: var(--halo-orb);
+    height: var(--halo-orb);
+    margin-left: calc(var(--halo-orb) / -2);
+    overflow: hidden;
+    border-radius: 999px;
+    border: 1px solid rgba(182, 122, 255, 0.55);
+    background: var(--z-bg-secondary);
+    box-shadow: 0 0 0 5px rgba(155, 92, 255, 0.08);
+    transition: box-shadow var(--transition), border-color var(--transition);
+}
+
+.nav-halo .nav-home-logo {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    opacity: 0.72;
+    transition: opacity var(--transition);
+}
+
+.nav-halo .nav-home-house {
+    display: none;
+}
+
+.nav-halo .nav-button--home.active .nav-home-orb,
+.nav-halo .nav-button--home[aria-current="page"] .nav-home-orb {
+    border-color: #d0a6ff;
+    box-shadow:
+        0 0 0 5px rgba(155, 92, 255, 0.18),
+        0 0 26px rgba(155, 92, 255, 0.55);
+}
+
+.nav-halo .nav-button--home.active .nav-home-logo,
+.nav-halo .nav-button--home[aria-current="page"] .nav-home-logo,
+.nav-halo .nav-button--home:hover .nav-home-logo {
+    opacity: 1;
+}
+
+.nav-halo .nav-button--home:focus-visible {
+    box-shadow: none;
+}
+
+.nav-halo .nav-button--home:focus-visible .nav-home-orb {
+    box-shadow: var(--z-focus-ring);
+}
+
+/* the orb carries Home; its text label stays for screen readers only */
+.nav-halo .nav-button--home .nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* ---- Add: the primary action ---- */
+
+.nav-halo .nav-button[data-quick-add-toggle] {
+    color: #d0a6ff;
+    font-weight: 700;
+}
+
+.nav-halo .nav-button[data-quick-add-toggle]::after {
+    content: none;
+}
+
+.nav-halo .nav-button[data-quick-add-toggle] .nav-icon {
+    width: 30px;
+    height: 30px;
+    margin: -1px 0 -1px;
+    border-radius: 999px;
+    background: var(--z-violet-strong);
+    color: #ffffff;
+}
+
+.nav-halo .nav-button[data-quick-add-toggle] .nav-svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.4;
+}
+
+.nav-halo .nav-button[data-quick-add-toggle]:hover .nav-icon {
+    background: var(--z-violet);
+}
+
+/* very small phones: tighter labels so all seven still fit */
+@media (max-width: 359px) {
+    .bottom-nav.nav-halo {
+        --halo-notch-r: 34px;
+        --halo-orb: 50px;
+        --halo-orb-lift: -20px;
+        padding-left: 2px;
+        padding-right: 2px;
+    }
+
+    .nav-halo .nav-button {
+        font-size: 0.6rem;
+    }
+}
+
+
+/* ---- Sidebar (>= 1024px) ---- */
+
+@media (min-width: 1024px) {
+
+    .bottom-nav.nav-halo {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px;
+        padding: var(--space-5) var(--space-3) calc(var(--space-5) + env(safe-area-inset-bottom));
+        border-right: 1px solid var(--z-border);
+        background: rgba(8, 10, 15, 0.6);
+        overflow-y: auto;
+    }
+
+    .bottom-nav.nav-halo::before,
+    .bottom-nav.nav-halo::after {
+        content: none;
+    }
+
+    /* Add first, Home first destination, Settings last */
+    .bottom-nav.nav-halo > .nav-button[data-quick-add-toggle] { order: -2; }
+    .bottom-nav.nav-halo > .nav-button[data-page="home"] { order: -1; }
+    .bottom-nav.nav-halo > .nav-button[data-page="settings"] { order: 1; }
+
+    .nav-halo .nav-button,
+    .nav-halo .nav-button--extra {
+        min-height: var(--tap);
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        gap: var(--space-3);
+        padding: 0 var(--space-3);
+        font-size: var(--text-sm);
+        line-height: 1;
+        color: var(--z-text-secondary);
+    }
+
+    .nav-halo .nav-button:hover {
+        color: var(--z-text);
+        background: var(--z-hover-soft);
+    }
+
+    .nav-halo .nav-icon {
+        width: 22px;
+        height: 22px;
+    }
+
+    .nav-halo .nav-button.active,
+    .nav-halo .nav-button[aria-current="page"] {
+        color: var(--z-text);
+        background: var(--z-violet-soft);
+    }
+
+    .nav-halo .nav-button.active .nav-icon {
+        color: var(--z-violet-bright);
+    }
+
+    /* the active marker becomes a bar on the left edge */
+    .nav-halo .nav-button::after {
+        left: 0;
+        top: 50%;
+        bottom: auto;
+        width: 3px;
+        height: 20px;
+        transform: translateY(-50%);
+        border-radius: 0 3px 3px 0;
+    }
+
+    /* Home is an ordinary row here: house icon + label */
+    .nav-halo .nav-button--home::after {
+        content: "";
+    }
+
+    .nav-halo .nav-home-orb {
+        position: static;
+        width: 22px;
+        height: 22px;
+        margin: 0;
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        background: none;
+        box-shadow: none;
+    }
+
+    .nav-halo .nav-button--home.active .nav-home-orb,
+    .nav-halo .nav-button--home[aria-current="page"] .nav-home-orb {
+        border: 0;
+        box-shadow: none;
+    }
+
+    .nav-halo .nav-home-logo {
+        display: none;
+    }
+
+    .nav-halo .nav-home-house {
+        display: block;
+        width: 20px;
+        height: 20px;
+    }
+
+    .nav-halo .nav-button--home .nav-label {
+        position: static;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        clip: auto;
+        clip-path: none;
+    }
+
+    .nav-halo .nav-button--home:focus-visible {
+        box-shadow: var(--z-focus-ring);
+    }
+
+    .nav-halo .nav-button[data-quick-add-toggle] {
+        justify-content: center;
+        gap: var(--space-2);
+        margin-bottom: var(--space-4);
+        background: var(--z-violet-strong);
+        color: #ffffff;
+        font-weight: 750;
+    }
+
+    .nav-halo .nav-button[data-quick-add-toggle]:hover {
+        background: var(--z-violet);
+        color: #ffffff;
+    }
+
+    .nav-halo .nav-button[data-quick-add-toggle] .nav-icon,
+    .nav-halo .nav-button[data-quick-add-toggle]:hover .nav-icon {
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        background: none;
+    }
+
+    .nav-halo .nav-button[data-page="settings"] {
+        margin-top: auto;
+    }
+}

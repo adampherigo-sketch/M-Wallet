@@ -47,7 +47,7 @@ Only features that exist today are listed.
 
 | Area | What it does |
 |---|---|
-| **Dashboard** | Total Balance (Checking + Savings + M-Cash), account cards, monthly budget gauge, bills due, recent transactions, this‑month totals, savings snapshot |
+| **Dashboard** | Total Balance (Checking + Savings + M-Cash), account cards, monthly budget gauge, bills due, **Activity** (search, type + category filters, date-grouped ledger — newest 8, then *Show all*), this‑month totals, savings snapshot |
 | **Budget** | Monthly overview, spending by category/subcategory, bills list, expenses ledger, income ledger |
 | **Income** | Add / edit / delete; types; recurring (weekly, biweekly, twice‑monthly, monthly, custom); monthly & yearly totals |
 | **Expenses** | Add / edit / delete; merchant, category, subcategory, notes; recurring occurrences generated across months |
@@ -57,13 +57,14 @@ Only features that exist today are listed.
 | **Paid‑state isolation** | Marking one month's occurrence paid does not affect any other month |
 | **Opening balance rollover** | Each month opens at the previous month's ending balance, counting recurring bills / income / expenses in every month — including months not yet opened. A manual opening balance overrides it for that month |
 | **Exact-cent money** | Every balance change, balance check and total is worked out in whole cents, so moving an exact balance always works |
-| **Transactions** | Derived activity feed; text search (description / merchant / category / notes); All / Income / Expenses filters; category filter; date grouping |
+| **Activity** (on Home) | Derived activity feed; text search (description / merchant / category / notes); All / Income / Expenses filters; category filter; date grouping. No longer a separate screen — old `#transactions` links open Home at the Activity section |
 | **Categories & subcategories** | 21 system categories, 127 system subcategories; add / rename / enable‑disable / delete custom ones (system categories can be renamed and disabled but not deleted); legacy category strings resolve to IDs without being rewritten |
 | **Savings** | General Savings balance; Checking ↔ Savings transfers |
 | **Savings Goals** | Create / edit / delete; **allocate** and **release** funds within Savings without creating or destroying money |
 | **M-Cash** | Denomination inventory (13 denominations, integer‑cent), Add Cash (increments, never replaces), Recount (set exact counts), Calculator (greedy exact‑change suggestion bounded by inventory), Cash Savings (move denominations aside without changing the M-Cash total) |
 | **Reports** | Monthly, Yearly, and Date‑to‑Date; income / spending / bills / expenses / net; spending trend chart; income‑vs‑spending; top categories; top merchants; detailed category + subcategory breakdown |
 | **Settings** | General (currency display), category & subcategory management, M-Cash shortcuts, Export / Import, local‑storage read‑out, System & Beta info, Danger Zone (Reset) |
+| **Navigation** | 7-button bottom bar on phones — Budget · Savings · M-Cash · **Home** · Add · Reports · Settings — with Home as the M-Wallet logo in a notch at the centre; left sidebar on desktop (`css/nav-halo.css`) |
 | **PWA installation** | Installable to Home Screen / desktop; offline‑capable app shell; iOS add‑to‑Home‑Screen guidance |
 
 ---

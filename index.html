@@ -105,7 +105,7 @@
 
     <link
         rel="stylesheet"
-        href="./css/style.css?v=11"
+        href="./css/style.css?v=12"
     >
 
     <link
@@ -122,7 +122,7 @@
 
     <link
         rel="stylesheet"
-        href="./css/zevaryn-grid.css?v=3"
+        href="./css/zevaryn-grid.css?v=4"
     >
 
 
@@ -151,12 +151,12 @@
 
     <!-- =====================================================
          ZEVARYN GRID  ·  TRANSACTIONS (ZG4)
-         Page-specific styling for #transactions-page.
+         Styling for the Activity section on Home (#home-activity).
     ====================================================== -->
 
     <link
         rel="stylesheet"
-        href="./css/transactions.css?v=1"
+        href="./css/transactions.css?v=2"
     >
 
 
@@ -200,7 +200,18 @@
 
     <link
         rel="stylesheet"
-        href="./css/zg9.css?v=2"
+        href="./css/zg9.css?v=3"
+    >
+
+
+    <!-- =====================================================
+         NAV HALO — 7-button bottom bar + sidebar
+         Loads after ZG9 so the Halo bar replaces its nav look.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="./css/nav-halo.css?v=1"
     >
 
 
@@ -755,40 +766,116 @@
 
 
                     <!-- ============================
-                         4. RECENT TRANSACTIONS
+                         4. ACTIVITY
+                         Was its own Transactions page; now a
+                         section of Home. Same ids, so app.js
+                         renders it unchanged (search, type
+                         chips, category filter, date-grouped
+                         ledger). Shows the newest 8, then
+                         "Show all" expands in place.
                     ============================= -->
 
                     <section
-                        class="zg-card zg-recent"
-                        aria-labelledby="zg-recent-label"
+                        class="zg-card zg-activity"
+                        id="home-activity"
+                        aria-labelledby="zg-activity-label"
+                        data-walkthrough-target="transactions-overview"
                     >
 
                         <div class="zg-card-head">
 
-                            <span class="z-eyebrow" id="zg-recent-label">
-                                Recent Transactions
+                            <span class="z-eyebrow" id="zg-activity-label">
+                                Activity
                             </span>
 
-                            <button
-                                type="button"
-                                class="zg-card-link"
-                                data-page="transactions"
+                            <span
+                                class="zg-tx-count"
+                                id="tx-results-count"
+                                aria-live="polite"
+                            ></span>
+
+                        </div>
+
+                        <div class="zg-tx-search">
+
+                            <label class="zg-tx-search-label" for="tx-search">
+                                Search activity
+                            </label>
+
+                            <input
+                                type="search"
+                                id="tx-search"
+                                class="zg-tx-search-input"
+                                placeholder="Merchant, description, category, notes…"
+                                autocomplete="off"
                             >
-                                View All &rsaquo;
-                            </button>
 
                         </div>
 
                         <div
-                            class="list-container"
-                            id="dashboard-recent-transactions"
+                            class="zg-tx-filters"
+                            role="group"
+                            aria-label="Filter by type"
+                        >
+
+                            <button
+                                type="button"
+                                class="zg-tx-chip is-active"
+                                data-tx-filter="all"
+                                aria-pressed="true"
+                            >
+                                All
+                            </button>
+
+                            <button
+                                type="button"
+                                class="zg-tx-chip zg-tx-chip--income"
+                                data-tx-filter="income"
+                                aria-pressed="false"
+                            >
+                                Income
+                            </button>
+
+                            <button
+                                type="button"
+                                class="zg-tx-chip zg-tx-chip--expense"
+                                data-tx-filter="expense"
+                                aria-pressed="false"
+                            >
+                                Expenses
+                            </button>
+
+                            <select
+                                id="tx-category-filter"
+                                class="zg-tx-select"
+                                aria-label="Filter by category"
+                            >
+                                <option value="">All categories</option>
+                            </select>
+
+                        </div>
+
+                        <div
+                            class="transaction-list"
+                            id="transaction-list"
                         >
 
                             <p class="empty-message">
-                                No recent transactions yet.
+                                No transactions yet.
                             </p>
 
                         </div>
+
+                        <button
+                            type="button"
+                            class="zg-activity-more"
+                            id="tx-show-more"
+                            aria-controls="transaction-list"
+                            aria-expanded="false"
+                            hidden
+                        >
+                            Show all
+                        </button>
 
                     </section>
 
@@ -1173,189 +1260,6 @@
                             <p class="empty-message">
                                 No income planned for this month.
                             </p>
-                        </div>
-
-                    </section>
-
-
-                </div>
-
-
-            </section>
-
-
-
-            <!-- ====================================
-                 TRANSACTIONS PAGE
-            ===================================== -->
-
-            <section
-                class="page"
-                id="transactions-page"
-                data-page-content="transactions"
-            >
-
-
-                <div class="page-heading zg-tx-heading">
-
-                    <div>
-
-                        <span class="z-eyebrow">
-                            M-Wallet / Transactions
-                        </span>
-
-                        <h2>
-                            Transactions
-                        </h2>
-
-                        <p>
-                            Search and review your activity for
-                            <span id="tx-period-label">this month</span>.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="zg-tx">
-
-
-                    <!-- ============================
-                         1. TRANSACTION OVERVIEW
-                    ============================= -->
-
-                    <section
-                        class="zgt-card zg-tx-overview"
-                        aria-labelledby="zg-tx-ov-label"
-                        data-walkthrough-target="transactions-overview"
-                    >
-
-                        <span class="z-eyebrow" id="zg-tx-ov-label">
-                            Transaction Overview
-                        </span>
-
-                        <div class="zg-tx-ov-grid">
-
-                            <article class="zg-tx-ov-stat zg-tx-ov-stat--income">
-                                <span>Income</span>
-                                <strong id="tx-total-income">$0.00</strong>
-                            </article>
-
-                            <article class="zg-tx-ov-stat zg-tx-ov-stat--spending">
-                                <span>Spending</span>
-                                <strong id="tx-total-spending">$0.00</strong>
-                            </article>
-
-                            <article class="zg-tx-ov-stat zg-tx-ov-stat--net">
-                                <span>Net</span>
-                                <strong id="tx-total-net">$0.00</strong>
-                            </article>
-
-                        </div>
-
-                    </section>
-
-
-                    <!-- ============================
-                         2. SEARCH + FILTERS
-                    ============================= -->
-
-                    <section
-                        class="zgt-card zg-tx-controls"
-                        aria-labelledby="zg-tx-ctl-label"
-                    >
-
-                        <span class="z-eyebrow" id="zg-tx-ctl-label">
-                            Search &amp; Filter
-                        </span>
-
-                        <div class="zg-tx-search">
-
-                            <label class="zg-tx-search-label" for="tx-search">
-                                Search transactions
-                            </label>
-
-                            <input
-                                type="search"
-                                id="tx-search"
-                                class="zg-tx-search-input"
-                                placeholder="Merchant, description, category, notes…"
-                                autocomplete="off"
-                            >
-
-                        </div>
-
-                        <div
-                            class="zg-tx-filters"
-                            role="group"
-                            aria-label="Filter by type"
-                        >
-
-                            <button
-                                type="button"
-                                class="zg-tx-chip is-active"
-                                data-tx-filter="all"
-                                aria-pressed="true"
-                            >
-                                All
-                            </button>
-
-                            <button
-                                type="button"
-                                class="zg-tx-chip zg-tx-chip--income"
-                                data-tx-filter="income"
-                                aria-pressed="false"
-                            >
-                                Income
-                            </button>
-
-                            <button
-                                type="button"
-                                class="zg-tx-chip zg-tx-chip--expense"
-                                data-tx-filter="expense"
-                                aria-pressed="false"
-                            >
-                                Expenses
-                            </button>
-
-                            <select
-                                id="tx-category-filter"
-                                class="zg-tx-select"
-                                aria-label="Filter by category"
-                            >
-                                <option value="">All categories</option>
-                            </select>
-
-                        </div>
-
-                        <p class="zg-tx-count" id="tx-results-count"></p>
-
-                    </section>
-
-
-                    <!-- ============================
-                         3. LEDGER
-                    ============================= -->
-
-                    <section
-                        class="zgt-card zg-tx-ledger-card"
-                        aria-labelledby="zg-tx-ledger-label"
-                    >
-
-                        <span class="z-eyebrow" id="zg-tx-ledger-label">
-                            Activity Ledger
-                        </span>
-
-                        <div
-                            class="transaction-list"
-                            id="transaction-list"
-                        >
-
-                            <p class="empty-message">
-                                No transactions yet.
-                            </p>
-
                         </div>
 
                     </section>
@@ -3086,17 +2990,57 @@
         ========================================= -->
 
         <!--
-            One navigation element for every width:
-            bottom bar < 1024px, left sidebar >= 1024px (css/zg9.css).
-            Add is first in DOM order so it is the first tab stop in
-            the sidebar; on the bottom bar CSS places it in the centre.
-            M-Cash + Settings show only in the sidebar; on small screens
-            they stay reachable from the header gear and Dashboard card.
+            One navigation element for every width (css/nav-halo.css):
+            - < 1024px: the "Halo" bottom bar, 7 buttons in DOM order
+              Budget · Savings · M-Cash · HOME · Add · Reports · Settings.
+              Home is the raised logo orb sitting in a notch cut into the
+              bar; Add is the primary action, right of Home.
+            - >= 1024px: the left sidebar. CSS order lifts Add to the top
+              and Home to the first destination; Settings sits at the
+              bottom.
+            Activity is no longer a page: it is a section of Home.
         -->
         <nav
-            class="bottom-nav"
+            class="bottom-nav nav-halo"
             aria-label="Main navigation"
         >
+
+            <button
+                class="nav-button"
+                type="button"
+                data-page="budget"
+            >
+                <span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg></span>
+                <span class="nav-label">Budget</span>
+            </button>
+
+            <button
+                class="nav-button"
+                type="button"
+                data-page="savings"
+            >
+                <span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span>
+                <span class="nav-label">Savings</span>
+            </button>
+
+            <button
+                class="nav-button"
+                type="button"
+                data-page="m-cash"
+            >
+                <span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg></span>
+                <span class="nav-label">M-Cash</span>
+            </button>
+
+            <button
+                class="nav-button nav-button--home active"
+                type="button"
+                data-page="home"
+                aria-current="page"
+            >
+                <span class="nav-icon nav-home-orb"><img class="nav-home-logo" src="./icons/m-wallet-icon-192.png" alt="" width="56" height="56" decoding="async"><svg class="nav-svg nav-home-house" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>
+                <span class="nav-label">Home</span>
+            </button>
 
             <button
                 class="nav-button"
@@ -3112,43 +3056,6 @@
             </button>
 
             <button
-                class="nav-button active"
-                type="button"
-                data-page="home"
-                aria-current="page"
-            >
-                <span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>
-                <span class="nav-label">Home</span>
-            </button>
-
-            <button
-                class="nav-button"
-                type="button"
-                data-page="budget"
-            >
-                <span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg></span>
-                <span class="nav-label">Budget</span>
-            </button>
-
-            <button
-                class="nav-button"
-                type="button"
-                data-page="transactions"
-            >
-                <span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 4 3 8l4 4"/><path d="M3 8h14"/><path d="m17 20 4-4-4-4"/><path d="M21 16H7"/></svg></span>
-                <span class="nav-label">Activity</span>
-            </button>
-
-            <button
-                class="nav-button"
-                type="button"
-                data-page="savings"
-            >
-                <span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span>
-                <span class="nav-label">Savings</span>
-            </button>
-
-            <button
                 class="nav-button"
                 type="button"
                 data-page="reports"
@@ -3158,16 +3065,7 @@
             </button>
 
             <button
-                class="nav-button nav-button--extra"
-                type="button"
-                data-page="m-cash"
-            >
-                <span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg></span>
-                <span class="nav-label">M-Cash</span>
-            </button>
-
-            <button
-                class="nav-button nav-button--extra"
+                class="nav-button"
                 type="button"
                 data-page="settings"
             >
@@ -4895,7 +4793,7 @@
          makes a network call. Navigates existing pages via the
          canonical BudgetNavigation API at runtime. -->
     <script src="./js/walkthrough/guided-walkthrough.js?v=1"></script>
-    <script src="./js/walkthrough/walkthrough-ui.js?v=3"></script>
+    <script src="./js/walkthrough/walkthrough-ui.js?v=4"></script>
 
     <!-- Cloud financial data foundation (BP7). Loads after the auth
          layer (reuses MWalletAuth._getClient()). The codec is pure;
@@ -4917,7 +4815,7 @@
 
     <script src="./js/storage.js?v=9"></script>
 
-    <script src="./js/nav.js?v=8"></script>
+    <script src="./js/nav.js?v=9"></script>
 
     <script src="./js/m-cash/cash-storage.js?v=2"></script>
 
@@ -4953,7 +4851,7 @@
     <script src="./js/beta/beta-ui.js?v=1"></script>
     <script src="./js/beta/beta-welcome.js?v=1"></script>
 
-    <script src="./js/app.js?v=12"></script>
+    <script src="./js/app.js?v=13"></script>
 
     <script src="./js/money.js?v=8"></script>
 

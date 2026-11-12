@@ -30,8 +30,8 @@
     .money-modal input,
     .money-modal select,
     .money-modal textarea,
-    #transactions-page .zg-tx-search-input,
-    #transactions-page .zg-tx-select,
+    #home-activity .zg-tx-search-input,
+    #home-activity .zg-tx-select,
     #reports-page .report-field select,
     #m-cash-page .zg-mc-qty,
     #m-cash-page .zg-mc-field input {
@@ -53,8 +53,8 @@
 .zgb-link,
 #budget-page .zg-bill-actions .zg-bill-btn,
 #budget-page .add-button,
-#transactions-page .zg-tx-chip,
-#transactions-page .zg-tx-select,
+#home-activity .zg-tx-chip,
+#home-activity .zg-tx-select,
 #m-cash-page .zg-mc-nav-btn,
 #settings-page .zg-set-link,
 #settings-page .zg-set-add-trigger,
@@ -75,7 +75,7 @@
     gap: 4px;
 }
 
-#transactions-page .zg-tx-chip {
+#home-activity .zg-tx-chip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -85,7 +85,7 @@
    don't read as different widths */
 @media (min-width: 760px) {
 
-    #transactions-page .zg-tx-select {
+    #home-activity .zg-tx-select {
         max-width: 460px;
     }
 }
@@ -633,7 +633,7 @@ body {
 
 #home-page .page-heading,
 #budget-page .page-heading,
-#transactions-page .page-heading,
+#home-activity .page-heading,
 #savings-page .page-heading,
 #reports-page .page-heading,
 #settings-page .page-heading,
